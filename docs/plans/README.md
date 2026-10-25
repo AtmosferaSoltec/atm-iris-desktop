@@ -56,6 +56,7 @@ timing), rebuilt as an Electron desktop app that needs no server:
 | 13  | [Folder library](13-folder-library/README.md): filesystem-based images/videos, folder and refresh controls         | [x]                      |
 | 14  | [Bible translations](14-bible-translations/README.md): Settings import, multiple translations and picker selection | [x]                      |
 | 15  | [Cross-platform delivery](15-cross-platform-delivery/README.md): Windows/macOS workflows and safe manual upgrades  | [x]                      |
+| 16  | [Compact workspace](16-compact-workspace/README.md): four/five-column slides with normal text, release 0.2.1       | [x]                      |
 | 99  | [Optional downloader](99-optional-downloader/README.md): **deferred; do not start without the user's go-ahead**    | —                        |
 
 Tick the box when a phase is done and fill its _Deviations_ section ("None" if there are none).

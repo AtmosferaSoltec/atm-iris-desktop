@@ -1,6 +1,6 @@
 # Arquitectura implementada
 
-Iris Desktop 0.2.0 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
+Iris Desktop 0.2.1 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
 
 ## Procesos y límites
 

@@ -84,7 +84,7 @@ pnpm build:mac --arm64 --publish never
 pnpm build:mac --x64 --publish never
 ```
 
-La versión 0.2.0 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema: los workflows independientes de [Windows](.github/workflows/build-win.yml) y [macOS](.github/workflows/build-mac.yml) se activan al subir a `main` y publican artifacts con la versión de `package.json`. También pueden ejecutarse manualmente. Cada build abre su app empaquetada con datos temporales antes de subir los archivos.
+La versión 0.2.1 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema: los workflows independientes de [Windows](.github/workflows/build-win.yml) y [macOS](.github/workflows/build-mac.yml) se activan al subir a `main` y publican artifacts con la versión de `package.json`. También pueden ejecutarse manualmente. Cada build abre su app empaquetada con datos temporales antes de subir los archivos.
 
 **Actualizar conserva los datos:** cierra Iris y ejecuta el instalador nuevo en Windows, o reemplaza Iris.app en Aplicaciones en Mac. Se reutilizan la carpeta Iris y la base existente; las migraciones crean antes una copia de seguridad y se aplican en una transacción. No hay actualización automática ni feed. Consulta [la guía de instalación, actualización y recuperación](docs/updating.md).
 

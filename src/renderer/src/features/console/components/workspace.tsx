@@ -20,7 +20,7 @@ export function Workspace({ ctrl }: { ctrl: LiveConsole }) {
   const item = ctrl.openItem;
 
   return (
-    <Surface className="flex min-h-0 flex-1 flex-col gap-4 p-5">
+    <Surface className="@container flex min-h-0 flex-1 flex-col gap-4 p-5">
       {item ? (
         <div className="min-w-0">
           <div className="flex items-center gap-3">
@@ -63,19 +63,10 @@ function EmptyHint() {
   );
 }
 
-/** Black cards with white lyrics, always the same look (the chosen typography only shows on the preview); the one on the screens glows. */
+/** Compact operator cards use normal UI text; projection typography belongs to the live preview. */
 function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
   const liveIndex = ctrl.live?.key === item.planItemId && !ctrl.isCleared ? ctrl.live.slide : -1;
   const liveCard = useRef<HTMLLIElement>(null);
-  const frames = useMemo(
-    () =>
-      item.slides.map<ProjectionFrame>((slide) => ({
-        background: null,
-        content: { kind: "text", text: slide.text, footnote: slide.footnote ?? null },
-        typography: DEFAULT_TYPOGRAPHY,
-      })),
-    [item.slides],
-  );
 
   const [editing, setEditing] = useState<number | null>(null);
   const focus = item.focus;
@@ -97,7 +88,10 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
 
   return (
     <>
-      <ol className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-4 gap-y-6 p-1">
+      <ol
+        aria-label="Diapositivas"
+        className="grid grid-cols-2 gap-3 p-1 @sm:grid-cols-3 @lg:grid-cols-4 @4xl:grid-cols-5"
+      >
         {item.slides.map((slide, index) => (
           <li
             key={slide.id}
@@ -118,7 +112,11 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
                     }
                   : undefined
               }
-              title={item.kind === "song" ? "Clic derecho para editar o dividir" : undefined}
+              title={
+                item.kind === "song"
+                  ? `${slide.text}\n\nClic derecho para editar o dividir`
+                  : slide.text
+              }
               aria-label={`Enviar a la pantalla: ${slide.label ?? `diapositiva ${index + 1}`}`}
               aria-current={index === liveIndex ? "true" : undefined}
               className={cn(
@@ -128,11 +126,24 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
                   : "ring-1 ring-line hover:ring-line-strong",
               )}
             >
-              <ProjectionCanvas frame={frames[index]} />
+              <span className="flex h-24 flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-sm leading-snug text-white">
+                <span
+                  className={cn(
+                    "break-words whitespace-pre-line",
+                    slide.footnote ? "line-clamp-3" : "line-clamp-4",
+                  )}
+                >
+                  {slide.text}
+                </span>
+                {slide.footnote && (
+                  <span className="truncate text-xs text-ink-2">{slide.footnote}</span>
+                )}
+              </span>
             </button>
-            {slide.label && (
-              <span className="truncate text-[13px] font-medium text-ink-2">{slide.label}</span>
-            )}
+            <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-ink-2">
+              <span className="shrink-0 tabular-nums">{index + 1}</span>
+              {slide.label && <span className="truncate">{slide.label}</span>}
+            </span>
           </li>
         ))}
         <li className="flex flex-col gap-1.5">
@@ -142,7 +153,7 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
             aria-label="Pantalla en blanco (B)"
             aria-current={ctrl.isCleared ? "true" : undefined}
             className={cn(
-              "grid aspect-video w-full cursor-pointer place-items-center rounded-md bg-black text-ink-2 transition-shadow",
+              "grid h-24 w-full cursor-pointer place-items-center rounded-md bg-black text-ink-2 transition-shadow",
               ctrl.isCleared
                 ? "shadow-[0_0_24px_-4px_rgb(255_122_89/0.55)] ring-[3px] ring-coral"
                 : "ring-1 ring-line hover:ring-line-strong",
@@ -150,7 +161,7 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
           >
             <Eraser aria-hidden className="size-6" />
           </button>
-          <span className="truncate text-[13px] font-medium text-ink-2">En blanco</span>
+          <span className="truncate text-xs font-medium text-ink-2">En blanco</span>
         </li>
       </ol>
       {editing !== null && (

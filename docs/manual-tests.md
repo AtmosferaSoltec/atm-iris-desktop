@@ -81,3 +81,8 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 
 - Verificado localmente en Mac Apple Silicon: build 0.2.0 DMG/ZIP y apertura del ejecutable empaquetado, nombre/versión y consola/IPC, con un perfil y carpeta Iris temporales. No verifica una descarga con cuarentena de macOS ni el reemplazo de una instalación real.
 - Automatizado: actualización de bases en disco desde estructuras 8, 9 y 10 a 11, con conservación de datos, archivos intactos, respaldo previo idéntico e idempotencia.
+
+## Diapositivas compactas (fase 16)
+
+- Pendiente en Windows con datos de prueba: actualizar mediante `atm-iris-desktop-0.2.1-setup.exe` sobre la instalación anterior, manteniendo la misma cuenta de Windows y carpeta Iris. Confirmar canciones, Biblias, archivos y ajustes conservados. La entrega 0.2.1 mantiene el esquema 11, sin migración adicional.
+- Pendiente en el equipo real/HDMI: abrir una canción de 20–30 diapositivas; comprobar cuatro/cinco columnas según el espacio disponible, texto normal legible, selección y edición, y que En vivo/proyección mantengan su tipografía. Probar escala de Windows 100 %, 150 % y 200 % según el monitor disponible.

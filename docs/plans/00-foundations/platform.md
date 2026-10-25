@@ -319,3 +319,5 @@ Bible decision update: phase 12 adds local RVR1960 metadata/verses in migration 
 Bible decision update (phase 14, explicit user request): migration 0011 preserves RVR1960 and adds multiple local translations, Settings import and persistent picker selection. No texts are bundled or fetched; the existing complete 66-book XML format remains the import boundary.
 
 Delivery decision update (phase 15, explicit user request): support Windows x64 plus native macOS arm64/x64 DMG/ZIP builds with independent CI workflows. Keep app identity and Iris home unchanged; manual replacement uses existing transactional, backed-up migrations. No automatic update feed or signing/notarization credentials are introduced.
+
+Workspace decision update (phase 16, explicit user request): operator text cards use compact, normal-size excerpts in a four/five-column responsive grid instead of miniature projection canvases. Live preview/output and stored slide text remain unchanged. Version 0.2.1 keeps schema 11 and the existing data location.

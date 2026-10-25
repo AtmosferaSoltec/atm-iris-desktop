@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.1
+
+- Diapositivas del espacio de trabajo compactas, con texto normal, numeración y cuatro/cinco columnas según el espacio disponible. Se mantiene la proyección y la vista En vivo.
+- Se reutilizan los datos existentes y el esquema 11, sin una migración adicional.
+
 ## 0.2.0
 
 - Entrega Windows/macOS con dos workflows, DMG/ZIP para Apple Silicon e Intel y prueba de apertura de cada app empaquetada.
