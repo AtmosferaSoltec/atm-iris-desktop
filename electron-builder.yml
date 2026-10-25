@@ -1,0 +1,29 @@
+appId: com.atmosfera.iris
+productName: Iris
+directories:
+  buildResources: build
+files:
+  - out/**
+  - resources/**
+  - package.json
+asarUnpack:
+  - resources/**
+win:
+  executableName: Iris
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  perMachine: false
+  oneClick: true
+  deleteAppDataOnUninstall: false
+  installerLanguages: [es_ES]
+  language: "3082"
+npmRebuild: false

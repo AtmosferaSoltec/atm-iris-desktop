@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/* Iris design tokens (IRIS_SPEC §4). Dark-only by design: the app is used in dim sanctuaries.
+   Views use these tokens through Tailwind utilities; no loose colors or sizes. */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-canvas: #07070b;
+  --color-elevated: #0e0e15;
+  --color-surface: rgb(255 255 255 / 0.05);
+  --color-surface-raised: rgb(255 255 255 / 0.08);
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-line-strong: rgb(255 255 255 / 0.18);
+
+  --color-ink: #f6f3ee;
+  --color-ink-2: rgb(246 243 238 / 0.64);
+  --color-ink-3: rgb(246 243 238 / 0.4);
+  --color-ink-inverse: #120d0a;
+
+  --color-ember: #ffb547;
+  --color-coral: #ff7a59;
+  --color-rose: #f0508c;
+  --color-violet: #9b5cff;
+  --color-indigo: #4e5bff;
+
+  --color-glow-violet: #2a1658;
+  --color-glow-indigo: #131e5c;
+  --color-glow-rose: #3d1235;
+  --color-glow-ember: #3a1e08;
+
+  --color-success: #3ddc97;
+  --color-warning: #ffc857;
+  --color-danger: #ff5c7a;
+  --color-live: #ff3b5c;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+
+  --tracking-eyebrow: 0.18em;
+  --tracking-tight: -0.02em;
+
+  --container-readable: 560px;
+  --container-settings: 720px;
+  --container-content: 1280px;
+
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Floating layers: menus, popovers, toasts. */
+  --shadow-menu: 0 24px 48px -12px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.05);
+
+  --animate-pulse-live: pulse-live 0.9s ease-in-out infinite alternate;
+  --animate-fade-in: fade-in 0.35s var(--ease-calm);
+
+  @keyframes pulse-live {
+    to {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+
+/* Cross-fade of the projection canvas (screen and EN VIVO). Opacity only: GPU-composited. */
+@keyframes projection-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The lyrics on screen leave before the next ones come in: they never overlap. */
+@keyframes projection-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ember → coral → rose */
+@utility bg-accent {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-ember),
+    var(--color-coral),
+    var(--color-rose)
+  );
+}
+
+@utility text-accent {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-ember),
+    var(--color-coral),
+    var(--color-rose)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Overline section headers: "SERVICIOS", "BLOQUES". */
+@utility eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+/* Frosted panel (IrisSurface). */
+@utility surface-panel {
+  background-color: color-mix(in srgb, var(--color-elevated) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 24px 40px -12px rgb(0 0 0 / 0.45);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background-color: var(--color-canvas);
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: rgb(255 122 89 / 0.35);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-coral);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+:root {
+  --font-inter: "Inter";
+  --font-newsreader: "Newsreader";
+  --font-projection-inter: "Inter";
+  --font-projection-montserrat: "Montserrat";
+  --font-projection-poppins: "Poppins";
+  --font-projection-oswald: "Oswald";
+  --font-projection-bebas: "Bebas Neue";
+  --font-projection-playfair: "Playfair Display";
+  --font-projection-lora: "Lora";
+  --font-projection-merriweather: "Merriweather";
+}

@@ -1,0 +1,44 @@
+name: Build Iris for Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm format:check
+      - run: pnpm test:e2e
+      - run: pnpm build:win --publish never
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iris-windows-0.1.0
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.blockmap
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: electron-test-results
+          path: test-results/
+          if-no-files-found: ignore
