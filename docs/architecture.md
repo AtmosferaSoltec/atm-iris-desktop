@@ -27,7 +27,7 @@ La consola publica frames completos. Main los conserva y los envía a la salida 
 
 El renderer principal conserva CSP sin scripts remotos. La excepción de YouTube se limita a una página empaquetada en `iris-player://app`, dentro de un iframe con origen diferente y sin preload. La API oficial solo se carga allí; comandos, tiempo y errores pasan por postMessage validado y comprobación del emisor. El protocolo sirve únicamente HTML y assets empaquetados en producción; durante desarrollo remite al servidor Vite. El header Referer identifica `com.atmosfera.iris` solo ante YouTube. El spike real reprodujo video en macOS; Windows y HDMI siguen pendientes. No se descargan contenidos ni se bloquean anuncios.
 
-La única red de producto es YouTube y la búsqueda opcional de letras en LRCLIB, con timeout. No hay telemetría ni actualización automática. Los logs rotan en `userData/logs`.
+La única red de producto es YouTube. Las letras se escriben o pegan manualmente; no hay consulta de letras en línea. No hay telemetría ni actualización automática. Los logs rotan en `userData/logs`.
 
 ## Verificación y distribución
 

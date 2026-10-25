@@ -20,7 +20,7 @@
 | Service timing: people, service types, block timer, records, summaries                          | iPad companion (kept in mind only: see `ideas.md`)     |
 | Settings: church name and time zone, storage, backups, start over                               |                                                        |
 
-Everything runs **offline** except YouTube (embedded player + oEmbed check) and the optional online lyrics lookup.
+Everything runs **offline** except YouTube (embedded player + oEmbed check). Lyrics are entered manually (subsequent user decision; see phase 04 deviations).
 
 ---
 
@@ -56,7 +56,7 @@ Everything runs **offline** except YouTube (embedded player + oEmbed check) and 
 │        ▼                                 ▼                                │
 │   Iris/Database/iris.db           Iris/Audio · Videos · Images · …        │
 └───────────────────────────────────────────────────────────────────────────┘
-        Network: only YouTube (embed, oEmbed) and the optional lyrics lookup
+        Network: only YouTube (embed, oEmbed)
 ```
 
 - **Main** (`src/main`): app lifecycle, windows, monitors, database, files, protocol, services. Node and Electron APIs.

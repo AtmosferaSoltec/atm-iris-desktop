@@ -79,12 +79,6 @@ const songSchema = z
 /** Parses the editor form into the contract's `SongInput`. */
 export const songFormSchema = songSchema;
 
-/** "Buscar letra": the song's title and, optionally, who sings it. */
-export const lyricsSearchSchema = z.object({
-  title: z.string().trim().min(2, "Escribe el nombre de la canción.").max(120),
-  artist: z.string().trim().max(120),
-});
-
 /** What the track picker sends: a pasted link. */
 export const youTubeLinkSchema = z.string().trim().min(1).max(500);
 

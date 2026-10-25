@@ -23,7 +23,6 @@ import {
 import type { ConsoleData, ConsoleItem } from "../domain/console";
 import { planTargetSchema, planMoveSchema, planIdSchema, slideEditSchema } from "../schemas/plan";
 import type { Song, SongSummary } from "../domain/models";
-import type { FoundLyrics } from "../domain/lyrics";
 import type { YouTubeVideo } from "../lib/youtube";
 import {
   songInputSchema,
@@ -31,7 +30,6 @@ import {
   songDeleteSchema,
   songIdSchema,
   songListSchema,
-  lyricsSearchSchema,
   youtubeIdSchema,
 } from "../schemas/songs";
 import type { EventApi } from "./events";
@@ -209,11 +207,6 @@ export const contract = {
   "songs:delete": defineChannel("songs:delete", songDeleteSchema, z.void()),
   "songs:archive": defineChannel("songs:archive", songIdSchema, z.custom<Song>()),
   "songs:unarchive": defineChannel("songs:unarchive", songIdSchema, z.custom<Song>()),
-  "songs:lookup-lyrics": defineChannel(
-    "songs:lookup-lyrics",
-    lyricsSearchSchema,
-    z.custom<{ results?: FoundLyrics[]; error?: string }>(),
-  ),
   "youtube:check": defineChannel(
     "youtube:check",
     youtubeIdSchema,

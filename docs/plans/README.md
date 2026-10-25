@@ -44,7 +44,7 @@ timing), rebuilt as an Electron desktop app that needs no server:
 | 01  | [Design system and shell](01-design-system/README.md): tokens, `ui` components, fonts, router, app layout       | [x]                      |
 | 02  | [Local data](02-local-data/README.md): Iris folder, SQLite and migrations, repositories, IPC contract, errors   | [x]                      |
 | 03  | [Media library](03-media-library/README.md): import, scan, `iris-media://`, storage usage                       | [x]                      |
-| 04  | [Songs](04-songs/README.md): songs, sections, tracks, archive, search, online lyrics lookup                     | [x]                      |
+| 04  | [Songs](04-songs/README.md): songs, sections, tracks, archive, search, manual lyrics entry                      | [x]                      |
 | 05  | [Console](05-console/README.md): toolbar, Library, Service, Stage, drag and drop, live state                    | [x]                      |
 | 06  | [Projection](06-projection/README.md): monitors, projection windows, frames, backgrounds, playback sync         | [x]                      |
 | 07  | [Tools](07-tools/README.md): typography, timer, sounds, the Tools menu                                          | [x]                      |

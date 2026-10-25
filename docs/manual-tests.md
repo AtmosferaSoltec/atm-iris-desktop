@@ -46,7 +46,7 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 - Restauración real de SQLite: con Iris cerrado, conservar la base y reemplazarla por un snapshot. Se espera recuperar canciones, plan y tiempos según el momento del snapshot; la multimedia debe seguir en sus carpetas.
 - Windows: probar copiar/pegar, deshacer/rehacer, navegación por Tab, foco en diálogos y menús en español. Comprobar Ctrl+Mayús+P, flechas, espacio, B y P fuera de campos de texto.
 - Windows: iniciar una segunda instancia; se espera enfocar la consola ya abierta. Cambiar de monitor antes de reabrir; la barra de título debe seguir accesible.
-- Windows: apagar internet, crear/editar/proyectar contenido local y abrir tiempos/ajustes. Se espera funcionamiento local; YouTube y búsqueda de letras muestran un aviso sin interrumpir la letra proyectada.
+- Windows: apagar internet, crear/editar/proyectar contenido local y abrir tiempos/ajustes. Se espera funcionamiento local; YouTube muestra un aviso sin interrumpir la letra proyectada; las canciones se crean pegando o escribiendo su letra.
 
 ## Evidencia disponible en este entorno
 

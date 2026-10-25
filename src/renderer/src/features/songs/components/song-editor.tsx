@@ -1,4 +1,4 @@
-import { Music, Quote, Search, Trash2, User } from "lucide-react";
+import { Music, Quote, Trash2, User } from "lucide-react";
 import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { SlidePreview } from "@renderer/components/projection/slide-preview";
@@ -18,13 +18,11 @@ import { TextField } from "@renderer/components/ui/text-field";
 import { toast } from "@renderer/components/ui/toaster";
 import type { Song } from "@shared/domain/models";
 import { formatLyrics, parseLyrics } from "@shared/lib/lyrics";
-import { lyricsFromPlainText } from "@shared/lib/lyrics-import";
 import { SongBackgroundField } from "@renderer/features/console/backgrounds/song-background-field";
 import type { ProjectionBackground } from "@renderer/features/projection/model";
 import type { YouTubeVideo } from "@shared/lib/youtube";
 import { plural } from "@shared/lib/text";
 import type { SongField } from "@shared/schemas/songs";
-import { LyricsSearchDialog } from "./lyrics-search-dialog";
 import { TrackField, type Track } from "./track-field";
 
 const FORM_ID = "song-form";
@@ -118,7 +116,6 @@ export function SongEditor({
       ? (song?.backgroundId ?? "")
       : "",
   );
-  const [isSearchingLyrics, setIsSearchingLyrics] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, startDelete] = useTransition();
   const [shouldDeleteAudio, setShouldDeleteAudio] = useState(false);
@@ -227,16 +224,6 @@ export function SongEditor({
             clearErrors("lyrics");
           }}
           error={errorFor("lyrics", lyrics)}
-          accessory={
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Search className="size-4" />}
-              onClick={() => setIsSearchingLyrics(true)}
-            >
-              Buscar letra
-            </Button>
-          }
           hint="Deja una línea en blanco entre diapositivas. Para nombrar una, escribe # y el nombre en su primera línea (por ejemplo #Coro). Si la canción tiene pista, la letra es opcional."
           className="min-h-[420px] font-serif text-[17px]"
           spellCheck
@@ -290,22 +277,6 @@ export function SongEditor({
           </ol>
         )}
       </section>
-
-      {isSearchingLyrics && (
-        <LyricsSearchDialog
-          initialTitle={title}
-          initialArtist={author}
-          replacesLyrics={lyrics.trim() !== ""}
-          onClose={() => setIsSearchingLyrics(false)}
-          onPick={(found) => {
-            setLyrics(lyricsFromPlainText(found.lyrics));
-            if (!title.trim()) setTitle(found.title);
-            if (!author.trim()) setAuthor(found.artist);
-            setIsSearchingLyrics(false);
-            toast.success("Letra cargada. Revísala antes de guardar.");
-          }}
-        />
-      )}
 
       <ConfirmDialog
         open={isConfirmingDelete}

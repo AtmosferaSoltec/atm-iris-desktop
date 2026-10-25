@@ -1,6 +1,5 @@
 import type { SongsService } from "../services/songs-service";
 import type { SongsRepository } from "../repositories/types";
-import { searchLyrics } from "../services/lyrics-lookup";
 import { lookUpYouTube } from "../services/youtube-oembed";
 import type { IpcHandlers } from "./dispatch";
 
@@ -16,7 +15,6 @@ export function songsHandlers(
   | "songs:delete"
   | "songs:archive"
   | "songs:unarchive"
-  | "songs:lookup-lyrics"
   | "youtube:check"
 > {
   return {
@@ -27,7 +25,6 @@ export function songsHandlers(
     "songs:delete": ({ id, deleteAudio }) => service.delete(id, deleteAudio),
     "songs:archive": (id) => service.archive(id, true),
     "songs:unarchive": (id) => service.archive(id, false),
-    "songs:lookup-lyrics": ({ title, artist }) => searchLyrics(title, artist),
     "youtube:check": (id) => lookUpYouTube(id),
   };
 }

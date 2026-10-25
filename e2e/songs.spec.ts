@@ -18,6 +18,8 @@ test("creates, searches without accents, edits, archives, restores and deletes a
       ),
     ).toBeVisible();
     await editor.getByLabel("Autor", { exact: true }).fill("José");
+    await expect(editor.getByRole("button", { name: /Buscar (?:letra|canción)/i })).toHaveCount(0);
+    expect(await page.evaluate(() => Reflect.has(window.iris, "songs:lookup-lyrics"))).toBe(false);
     await editor
       .getByLabel("Letra", { exact: true })
       .fill("#Estrofa 1\nSublime gracia del Señor\n\n#Coro\nQué preciosa gracia");

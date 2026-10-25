@@ -19,14 +19,3 @@ export async function findYouTubeTrack(
     return { error: errorMessage(error) };
   }
 }
-
-export async function findLyrics(
-  title: string,
-  artist: string,
-): Promise<{ results?: import("@shared/domain/lyrics").FoundLyrics[]; error?: string }> {
-  try {
-    return await invoke("songs:lookup-lyrics", { title, artist });
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-}

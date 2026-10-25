@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Se elimina por completo la búsqueda de letras en línea. Las letras se escriben o pegan manualmente.
+
 ## 0.1.0
 
 - Consola local de Iris con biblioteca, canciones, pistas, multimedia y plan de servicio.

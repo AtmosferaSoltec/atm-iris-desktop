@@ -77,6 +77,8 @@ backgrounds live (06).
 
 ## Deviations
 
+- Subsequent user decision: removed online lyrics lookup entirely after a reported crash in the installed app. Step 8 is superseded: lyrics are entered manually; the dialog, renderer action, IPC channel/schema, LRCLIB service and lookup-only helpers/types/tests are removed. Local library search remains available.
+
 - Used normalized SQLite `LIKE` to narrow candidates, then the web's title → author → lyrics ranking; FTS5 is unnecessary for this local library size.
 - Ported the pure projection model and a local background thumbnail field as editor prerequisites; phase 06 supplies the complete shared canvas. YouTube track cards use a local icon until phase 09 adds the approved thumbnail/player integration.
 - The archive copy explains that lyrics and tracks are retained, matching this phase's deliberate desktop behavior. Removed cloud cleanup semantics: replaced and orphaned tracks remain user-owned files.

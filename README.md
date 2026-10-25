@@ -45,7 +45,7 @@ Arma el servicio arrastrando elementos. Selecciona una diapositiva para enviarla
 
 «Seleccionar servicio» permite crear sus bloques y llevar los tiempos. Cada cambio se guarda; cerrar y abrir recupera el bloque en curso. «Tiempos» reúne los registros y resúmenes. El temporizador de pantalla es independiente del cronómetro del servicio.
 
-Todo lo local funciona sin internet. YouTube y la búsqueda opcional de letras necesitan conexión. YouTube conserva su reproductor y anuncios; Iris no descarga videos. Las letras siguen disponibles si la pista de YouTube falla.
+Las letras se escriben o pegan manualmente. Todo lo local funciona sin internet; solo YouTube necesita conexión. YouTube conserva su reproductor y anuncios; Iris no descarga videos. Las letras siguen disponibles si la pista de YouTube falla.
 
 ## Respaldos y recuperación
 
