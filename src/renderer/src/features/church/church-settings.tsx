@@ -1,3 +1,4 @@
+import { BiblesPanel } from "@renderer/features/console/bible/bibles-panel";
 import { MaintenancePanels } from "@renderer/features/backup/components/maintenance-panels";
 import { Building2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -110,6 +111,7 @@ export function ChurchSettingsPage() {
           <ChurchForm church={settings.data.church} />
         </Panel>
       )}
+      <BiblesPanel />
       <MaintenancePanels />
     </div>
   );

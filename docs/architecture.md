@@ -1,6 +1,6 @@
 # Arquitectura implementada
 
-Iris Desktop 0.1.0 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
+Iris Desktop 0.2.0 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
 
 ## Procesos y límites
 
@@ -15,7 +15,7 @@ Todas las ventanas mantienen aislamiento de contexto, sandbox y `webSecurity`; n
 
 La carpeta `<home>/Iris` contiene `Audio`, `Videos`, `Images`, `Backgrounds`, `Sounds`, `Database` y `Backups`. `IRIS_HOME` sustituye esa ubicación; también se reconoce `userData/config.json` con `homeDir` absoluto. No hay selector de ubicación en la interfaz.
 
-SQLite usa foreign keys, journal DELETE y synchronous FULL. Diez migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960; la décima registra modificaciones de archivos multimedia. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
+SQLite usa foreign keys, journal DELETE y synchronous FULL. Once migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960; la décima registra modificaciones de archivos multimedia y la undécima conserva varias traducciones bíblicas sin perder la RVR1960 existente. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
 
 El registro en curso se guarda en cada cambio de bloque y se reanuda desde sus timestamps UTC. Los nombres históricos permanecen aunque se elimine la persona o el tipo. «Hoy», horarios, periodos y snapshots diarios usan la zona de la iglesia.
 
@@ -33,11 +33,11 @@ La única red de producto es YouTube. Las letras se escriben o pegan manualmente
 
 Vitest cubre reglas, servicios, repositorios y migraciones. Playwright abre Electron con perfil e `IRIS_HOME` temporales, bloquea red externa por defecto y simula los servicios externos cuando se necesitan. El checklist físico está en [manual-tests.md](manual-tests.md).
 
-Windows se configura con instalador NSIS por usuario y ZIP x64, marca Iris y datos fuera de la instalación. El workflow construye y publica únicamente artifacts de CI, sin desplegar releases. La ejecución del workflow, el instalador real y SmartScreen no se verificaron en este Mac.
+Windows usa instalador NSIS por usuario y ZIP x64; macOS añade DMG/ZIP arm64 y x64, con marca Iris y datos fuera de la instalación. Dos workflows construyen y publican artifacts de CI, sin desplegar Releases. Abren además el ejecutable empaquetado con un perfil temporal antes de subir los archivos. Las actualizaciones manuales conservan la identidad y la carpeta Iris; se reutilizan las migraciones transaccionales con respaldo previo. Ver [actualización y recuperación](updating.md). Firma de distribución, notarización y comprobaciones físicas quedan pendientes.
 
-## Biblia local (fase 12)
+## Biblias locales (fases 12 y 14)
 
-El selector y las referencias portan la consola web. La traducción fija es RVR1960. Main valida y parsea el XML elegido mediante diálogo nativo, conserva su atribución y reemplaza metadata/versículos en una transacción; el renderer pide capítulos por IPC y no accede a rutas. El XML no se incluye en Git ni en el instalador. Los pasajes temporales usan frames de texto con pie de referencia, conservan fondos/tipografía y admiten navegación dentro del capítulo. No cambian las categorías persistentes del plan ni requieren red.
+El selector y las referencias portan la consola web. Configuración permite importar varias traducciones XML locales; la consola permite elegir entre ellas y recuerda la selección. Main valida y parsea el XML elegido mediante diálogo nativo, conserva su atribución y reemplaza solo los metadatos/versículos de esa traducción en una transacción; el renderer pide capítulos por traducción mediante IPC y separa su caché por traducción y no accede a rutas. El XML no se incluye en Git ni en el instalador. Los pasajes temporales usan frames de texto con pie de referencia, conservan fondos/tipografía y admiten navegación dentro del capítulo. No cambian las categorías persistentes del plan ni requieren red.
 
 ## Biblioteca por carpetas (fase 13)
 

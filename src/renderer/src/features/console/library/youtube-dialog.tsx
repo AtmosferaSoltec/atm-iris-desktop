@@ -38,7 +38,7 @@ export function YouTubeDialog({
       open
       onClose={onClose}
       title="Video de YouTube"
-      description="Pega el enlace. Se reproduce en la pantalla con el reproductor de YouTube y el sonido sale de la pantalla de proyección. Necesita internet."
+      description="Pega el enlace. El título y el autor se obtienen automáticamente. Se reproduce en la pantalla con el reproductor de YouTube y el sonido sale de la pantalla de proyección. Necesita internet."
       size="md"
     >
       <form

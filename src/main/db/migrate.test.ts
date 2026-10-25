@@ -3,6 +3,9 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SqliteDatabase } from "./sqlite";
+import { SqliteBibleRepository } from "../repositories/sqlite/bible-repository";
+import { parseBibleXml } from "../services/bible-xml";
+import { bibleSampleXml } from "@shared/domain/test-fixtures/bible-sample";
 import { migrate, MIGRATIONS } from "./migrate";
 import { createTestDatabase } from "./test-database";
 
@@ -64,4 +67,28 @@ describe("SQLite migrations", () => {
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name='partial'").get()).toBeUndefined();
     expect(() => db.transaction(() => db.transaction(() => undefined))).toThrow("anidadas");
   });
+});
+
+it("upgrades an existing RVR1960 Bible without losing text or attribution", () => {
+  const db = memory();
+  migrate(
+    db,
+    undefined,
+    MIGRATIONS.filter((migration) => migration.version <= 10),
+  );
+  db.exec(
+    "INSERT INTO bible_metadata VALUES(1,'rvr1960','Aviso anterior','2026-01-01T00:00:00.000Z',1); INSERT INTO bible_verses VALUES('JHN',3,16,'Texto guardado');",
+  );
+  migrate(db);
+  const repository = new SqliteBibleRepository(db);
+  expect(repository.status()).toMatchObject({
+    selectedTranslation: "rvr1960",
+    verseCount: 1,
+    copyright: "Aviso anterior",
+  });
+  expect(repository.chapter("rvr1960", "JHN", 3).verses).toEqual([
+    { number: 16, text: "Texto guardado" },
+  ]);
+  repository.replace(parseBibleXml(bibleSampleXml().replace("Spanish RVR 1960", "NVI")));
+  expect(repository.status().selectedTranslation).toBe("rvr1960");
 });

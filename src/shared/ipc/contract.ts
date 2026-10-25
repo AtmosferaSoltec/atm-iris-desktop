@@ -1,4 +1,4 @@
-import { bibleChapterSchema } from "../schemas/bible";
+import { bibleChapterSchema, bibleTranslationSchema } from "../schemas/bible";
 import type { BibleChapter, BibleStatus } from "../domain/bible";
 import { eraseSchema } from "../schemas/backup";
 import { youtubeLinkSchema, savedYoutubeIdSchema } from "../schemas/youtube";
@@ -58,6 +58,7 @@ export function defineChannel<I, O>(
 }
 
 export const contract = {
+  "bible:select": defineChannel("bible:select", bibleTranslationSchema, z.custom<BibleStatus>()),
   "bible:status": defineChannel("bible:status", z.void(), z.custom<BibleStatus>()),
   "bible:import": defineChannel("bible:import", z.void(), z.custom<BibleStatus | null>()),
   "bible:chapter": defineChannel("bible:chapter", bibleChapterSchema, z.custom<BibleChapter>()),

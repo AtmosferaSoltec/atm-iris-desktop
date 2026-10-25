@@ -26,4 +26,16 @@ nsis:
   deleteAppDataOnUninstall: false
   installerLanguages: [es_ES]
   language: "3082"
+mac:
+  icon: build/icon.icns
+  category: public.app-category.utilities
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+  target:
+    - dmg
+    - zip
+  identity: "-"
+  hardenedRuntime: false
+  notarize: false
+dmg:
+  title: ${productName} ${version}
 npmRebuild: false

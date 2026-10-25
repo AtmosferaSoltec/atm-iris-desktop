@@ -38,6 +38,12 @@ test("reads images from their folder, opens the matching folder, and refreshes a
       .toBe(join(actualHome, "Images"));
     await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^fixture:/)).toBeVisible();
+    const imageRow = library.getByTitle(/^fixture:/);
+    await expect(imageRow.getByText("fixture", { exact: true })).toBeVisible();
+    const previewBounds = await imageRow.getByRole("img").boundingBox();
+    const titleBounds = await imageRow.getByText("fixture", { exact: true }).boundingBox();
+    expect(previewBounds!.x + previewBounds!.width).toBeLessThanOrEqual(titleBounds!.x);
+    expect(Math.abs(previewBounds!.y - titleBounds!.y)).toBeLessThan(previewBounds!.height);
     await page.getByTitle(/^fixture:/).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "fixture", exact: true });
@@ -116,6 +122,11 @@ test("a video served by iris-media can seek", async () => {
     await page.getByRole("radio", { name: "Videos", exact: true }).click();
     await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^fixture:/)).toBeVisible();
+    const videoRow = page
+      .getByRole("region", { name: "Biblioteca", exact: true })
+      .getByTitle(/^fixture:/);
+    await expect(videoRow.getByText("fixture", { exact: true })).toBeVisible();
+    await expect(videoRow.locator("video")).toBeVisible();
     await page.getByTitle(/^fixture:/).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();
     const video = page.getByRole("dialog", { name: "fixture", exact: true }).locator("video");

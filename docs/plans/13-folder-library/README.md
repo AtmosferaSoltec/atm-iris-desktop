@@ -30,6 +30,7 @@ Renaming the existing Iris folders, changing Iris home, removing SQLite metadata
 
 ## Deviations
 
+- Subsequent user request: show images, videos and YouTube links as rows with a thumbnail on the left and the stored title on the right, retaining drag, quick projection and context menus. YouTube already retrieves and persists its title/author through oEmbed; these are now visible without hovering. No additional network request is needed to render the list.
 - This user decision supersedes the Library upload UX from phases 03/05. The native import API remains for the separate track/background/sound workflows; the console's local image/video Library uses folders only.
 - Folder icons open the selected Images/Videos subfolder to avoid mixing file types. The parent Iris folder remains available from Settings → About.
 - Missing entries remain in the metadata index to preserve service references and maintenance actions, but disappear from the folder-backed Library until the file returns.

@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { z } from "@shared/zod";
 import { BIBLE_BOOKS } from "@shared/domain/bible-books";
 import { AppError } from "@shared/errors";
 
 export type ImportedBible = {
+  code: string;
+  name: string;
   copyright: string;
   verses: { bookId: string; chapter: number; number: number; text: string }[];
 };
@@ -19,10 +22,7 @@ const documentSchema = z
   .object({
     bible: z
       .object({
-        translation: z
-          .string()
-          .max(500)
-          .regex(/(?:rvr\s*1960|reina[-\s]*valera\s*1960)/i),
+        translation: z.string().trim().min(1).max(500),
         status: z.string().max(4000).default(""),
         link: z.string().max(2048).optional(),
         testament: z
@@ -39,7 +39,7 @@ export function parseBibleXml(xml: string): ImportedBible {
   const fail = (): never => {
     throw new AppError(
       "VALIDATION_FAILED",
-      "Ese archivo no es una Biblia RVR1960 completa en el formato XML compatible.",
+      "Ese archivo no es una Biblia completa en el formato XML compatible.",
     );
   };
   // No DTD/custom entities, external resources or nested verse markup are needed for this format.
@@ -90,5 +90,18 @@ export function parseBibleXml(xml: string): ImportedBible {
       }
     }
   }
-  return { copyright: parsed.data.bible.status, verses };
+  const name = parsed.data.bible.translation;
+  const normalized = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const code = /(?:rvr|rv|reinavalera)(?:19)?60/.test(normalized)
+    ? "rvr1960"
+    : /(?:rvr|rv|reinavalera)(?:19)?09/.test(normalized)
+      ? "rvr1909"
+      : /(?:nvi|nuevaversioninternacional)/.test(normalized)
+        ? "nvi"
+        : createHash("sha256").update(normalized).digest("hex").slice(0, 20);
+  return { code, name, copyright: parsed.data.bible.status, verses };
 }

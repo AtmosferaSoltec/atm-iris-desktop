@@ -66,3 +66,18 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 
 - Pendiente en Windows: en Imágenes, comprobar el orden Buscar → carpeta → actualizar; la carpeta debe abrir Images en el Explorador. Copiar una imagen allí y volver a Iris: debe aparecer sin un diálogo de subida. Repetir con Videos y un MP4, incluida la reproducción en HDMI.
 - Pendiente en Windows: reemplazar una imagen con el mismo nombre, actualizar y comprobar la vista nueva. Eliminarla desde el Explorador y actualizar: desaparece; restaurarla y actualizar: reaparece. Un MP4 colocado en Images no debe listarse en esa pestaña. YouTube solo debe ofrecer agregar un enlace.
+
+## Varias Biblias (fase 14)
+
+- Pendiente en Windows: actualizar una instalación con RVR1960 ya importada y confirmar que permanece disponible. En Configuración → Biblias, importar XML compatibles de otras traducciones; un XML inválido no debe borrar las existentes.
+- Pendiente en Windows/HDMI: cambiar entre traducciones desde Biblia, comprobar texto y referencia de cada una, cerrar/reabrir y verificar la selección recordada. Con una sola traducción no aparece selector. «Tradicional» separa Antiguo/Nuevo Testamento; «A–Z» ordena los libros. No hay botón de importación en el panel de proyección.
+- Las pruebas automatizadas usan traducciones sintéticas; no verifican archivos reales de otras versiones ni su proyección en hardware Windows.
+
+## Entrega Windows/macOS y actualizaciones (fase 15)
+
+- Pendiente en Windows: instalar 0.1.0 con datos de prueba y actualizar a 0.2.0 con el instalador nuevo. Confirmar una sola aplicación/acceso directo, canciones, multimedia, Biblias, ajustes y plan conservados; comprobar el respaldo previo si hubo migración.
+- Pendiente en Mac Intel y en una descarga nueva de Mac Apple Silicon: abrir el DMG de la arquitectura correcta, reemplazar Iris.app, conservar datos y comprobar los avisos reales de Gatekeeper. La firma ad-hoc no equivale a firma Developer ID/notarización.
+- Pendiente en ambos sistemas: probar instalación, reemplazo y desinstalación en equipos finales y proyección/audio HDMI. No se consideran comprobados por los tests de apertura de la app empaquetada.
+
+- Verificado localmente en Mac Apple Silicon: build 0.2.0 DMG/ZIP y apertura del ejecutable empaquetado, nombre/versión y consola/IPC, con un perfil y carpeta Iris temporales. No verifica una descarga con cuarentena de macOS ni el reemplazo de una instalación real.
+- Automatizado: actualización de bases en disco desde estructuras 8, 9 y 10 a 11, con conservación de datos, archivos intactos, respaldo previo idéntico e idempotencia.

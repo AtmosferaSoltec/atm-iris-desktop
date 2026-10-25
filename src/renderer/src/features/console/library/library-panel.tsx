@@ -23,7 +23,7 @@ import { archiveSong } from "./actions";
 import { ArchivedSongs } from "./archived-songs";
 import { LibraryDialogs, type LibraryDialog } from "./library-dialogs";
 import { LibraryRow } from "./library-row";
-import { LibraryTile } from "./library-tile";
+import { LibraryMediaRow } from "./library-media-row";
 import { LibraryToolbar } from "./library-toolbar";
 import type { Library } from "./use-library";
 
@@ -217,12 +217,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           {showArchived ? "Volver a la biblioteca" : "Archivadas"}
         </button>
       )}
-      <ul
-        className={cn(
-          "-mx-2 min-h-0 flex-1 overflow-y-auto",
-          tab === "media" ? "grid grid-cols-3 content-start gap-2 px-2" : "flex flex-col",
-        )}
-      >
+      <ul className="-mx-2 flex min-h-0 flex-1 flex-col overflow-y-auto">
         {tab === "song" && showArchived && (
           <li className="col-span-full">
             <ArchivedSongs library={library} query={query} />
@@ -242,7 +237,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
             return (
               <li key={entry.id}>
                 {tab === "media" ? (
-                  <LibraryTile {...common} onShow={ctrl.presentQuick} />
+                  <LibraryMediaRow {...common} onShow={ctrl.presentQuick} />
                 ) : (
                   <LibraryRow {...common} />
                 )}

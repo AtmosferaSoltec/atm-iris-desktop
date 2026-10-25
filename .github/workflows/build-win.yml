@@ -28,9 +28,14 @@ jobs:
       - run: pnpm format:check
       - run: pnpm test:e2e
       - run: pnpm build:win --publish never
+      - run: pnpm test:packaged dist/win-unpacked/Iris.exe
+      - name: Read app version
+        id: version
+        shell: bash
+        run: node -e "require('node:fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
       - uses: actions/upload-artifact@v7
         with:
-          name: iris-windows-0.1.0
+          name: iris-windows-${{ steps.version.outputs.version }}
           path: |
             dist/*.exe
             dist/*.zip
@@ -39,6 +44,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: electron-test-results
+          name: electron-test-results-windows
           path: test-results/
           if-no-files-found: ignore

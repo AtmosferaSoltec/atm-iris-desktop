@@ -9,7 +9,7 @@ user asks. They are here so decisions made now do not close the door.
   data (a backend or a local-network link) and was deliberately left out. Today's hooks: UUID v7 ids, `created_at` /
   `updated_at`, models shaped like the web's, repositories behind interfaces, mutations only through services.
 - **A backend, later.** If it is needed, it will be a new decision. Nothing in this repo should assume it exists.
-- **The Bible.** Restored by explicit user request as [phase 12](12-bible/README.md), with a locally imported RVR1960 XML. Other translations and bundled text remain out of scope.
+- **The Bible.** Restored by explicit user request as [phase 12](12-bible/README.md), with a locally imported RVR1960 XML. Phase 14 adds multiple compatible XML translations and Settings import at the user’s request. Bundled text remains out of scope.
 - **Audio output device selection** per use (room speakers vs the TV): `HTMLMediaElement.setSinkId` for local audio;
   the YouTube iframe does not allow it.
 - **Auto-update** with a release feed, and **code signing**.

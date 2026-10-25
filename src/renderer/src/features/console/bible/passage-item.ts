@@ -14,7 +14,7 @@ export function passageItem(
   key: { planItemId: string; refId: string },
 ): ConsoleItem {
   const book = BIBLE_BOOK_BY_ID.get(passage.bookId)?.name ?? passage.bookId;
-  const translation = passage.code.toUpperCase();
+  const translation = chapter.translationLabel ?? passage.code.toUpperCase();
   const verses = chapter.verses.filter((verse) => verse.text.trim());
   const first = verses.findIndex((verse) => verse.number >= passage.from);
   const last = verses.findLastIndex((verse) => verse.number <= passage.to);

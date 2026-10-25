@@ -1,0 +1,63 @@
+name: Build Iris for macOS
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm format:check
+      - run: pnpm test:e2e
+      - run: pnpm build:mac --${{ matrix.arch }} --publish never
+      - name: Open packaged Iris with temporary data
+        shell: bash
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            pnpm test:packaged dist/mac-arm64/Iris.app/Contents/MacOS/Iris
+          else
+            pnpm test:packaged dist/mac/Iris.app/Contents/MacOS/Iris
+          fi
+      - name: Read app version
+        id: version
+        run: node -e "require('node:fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iris-macos-${{ steps.version.outputs.version }}-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: electron-test-results-macos-${{ matrix.arch }}
+          path: test-results/
+          if-no-files-found: ignore

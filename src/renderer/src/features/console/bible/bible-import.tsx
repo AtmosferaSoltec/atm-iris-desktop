@@ -13,14 +13,14 @@ export function BibleImport() {
     onSuccess: async (result) => {
       if (!result) return;
       await client.invalidateQueries({ queryKey: ["bible"] });
-      toast.success("Biblia RVR1960 importada");
+      toast.success("Biblia importada");
     },
   });
   return (
     <div className="flex flex-col gap-3">
       {mutation.isError && <Banner tone="error">{errorMessage(mutation.error)}</Banner>}
       <Button variant="secondary" onClick={() => mutation.mutate()} isLoading={mutation.isPending}>
-        Importar RVR1960
+        Importar Biblia
       </Button>
     </div>
   );

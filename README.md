@@ -1,6 +1,6 @@
 # Iris Desktop · 0.1.0
 
-Consola local de proyección y tiempos para iglesias, para Windows. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. Incluye proyección de Biblia RVR1960 importada localmente. El descargador opcional no está incluido.
+Consola local de proyección y tiempos para iglesias, para Windows y macOS. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. Incluye proyección de Biblias importadas localmente. El descargador opcional no está incluido.
 
 ## Desarrollo
 
@@ -49,13 +49,15 @@ Arma el servicio arrastrando elementos. Selecciona una diapositiva para enviarla
 
 Las letras se escriben o pegan manualmente. Todo lo local funciona sin internet; solo YouTube necesita conexión. YouTube conserva su reproductor y anuncios; Iris no descarga videos. Las letras siguen disponibles si la pista de YouTube falla.
 
-## Biblia RVR1960
+## Biblias
 
-Abre **Biblia** en la consola (atajo **V**) y pulsa **Importar RVR1960**. Elige tu archivo `SpanishRVR1960Bible.xml` en la PC donde está instalado Iris. Se importa una sola versión a SQLite y después funciona sin conexión, aunque muevas el XML original.
+En **Configuración → Biblias**, pulsa **Importar Biblia** y elige tu XML. Puedes conservar varias traducciones: RVR1960, RVR1909, NVI u otras con el mismo formato compatible. El nombre se lee del archivo. Importar de nuevo la misma traducción actualiza solo su contenido; las demás permanecen guardadas. La RVR1960 importada antes de esta actualización se conserva automáticamente.
 
-Escribe `Juan 3:16` o `Juan 3:16-18` y pulsa Enter para proyectar. También puedes elegir libro, capítulo y versículo. El capítulo completo se abre en la consola; Anterior/Siguiente y las flechas cambian el versículo, con referencia y RVR1960 al pie. El pasaje es temporal y no se agrega al plan del servicio. Se mantienen el fondo y la tipografía elegidos.
+Abre **Biblia** en la consola (atajo **V**). **Tradicional** agrupa los libros por Antiguo y Nuevo Testamento; **A–Z** los ordena alfabéticamente. Si hay varias traducciones, elige una en el selector: Iris recordará tu elección. Con una sola, muestra su nombre sin selector.
 
-El instalador no incluye el texto bíblico. Para otra PC, lleva también tu XML e impórtalo una vez. Se admite el formato XML de libros/capítulos/versículos indicado en la fase 12; los archivos binarios `.bib` no se importan. Una importación inválida conserva la Biblia anterior. Los snapshots de SQLite sí contienen la Biblia importada; el respaldo JSON de canciones y YouTube no la incluye.
+Escribe `Juan 3:16` o `Juan 3:16-18` y pulsa Enter para proyectar, o elige libro, capítulo y versículo. Anterior/Siguiente y las flechas cambian el versículo, con la referencia y la traducción al pie. El pasaje es temporal y no se agrega al plan del servicio. Se mantienen el fondo y la tipografía elegidos.
+
+El instalador no incluye texto bíblico. La importación es local y luego funciona sin internet, aunque muevas el XML original. Se admite XML con elementos `bible` (atributo `translation`), `testament` (`Old`/`New`), `book`, `chapter` y `verse` numerados, con los 66 libros completos. Otros esquemas XML y archivos binarios `.bib` no se importan. Una importación inválida conserva las Biblias anteriores. Los snapshots de SQLite incluyen todas las Biblias; el respaldo JSON de canciones y YouTube no las incluye.
 
 ## Respaldos y recuperación
 
@@ -74,19 +76,24 @@ Si la base está dañada, Iris muestra estas instrucciones y conserva el archivo
 
 «Empezar de cero» elimina solo las categorías elegidas tras escribir `ELIMINAR`. También limpia sus entradas del plan; los archivos se envían a la papelera. No elimina los registros históricos de tiempos.
 
-## Windows y distribución
+## Windows, macOS y distribución
 
 ```sh
 pnpm build:win --publish never
+pnpm build:mac --arm64 --publish never
+pnpm build:mac --x64 --publish never
 ```
 
-El build configura un instalador NSIS por usuario en español y un ZIP x64 en `dist/`, con iconos derivados de la marca Iris. No incorpora datos del usuario y desinstalar conserva la carpeta Iris. La configuración y [workflow de Windows](.github/workflows/build-win.yml) están incluidos; **los artifacts de Windows y la instalación en un PC limpio no se han verificado en este Mac Apple Silicon**. Cuando exista un remote, ejecuta el workflow en GitHub Actions para producirlos.
+La versión 0.2.0 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema: los workflows independientes de [Windows](.github/workflows/build-win.yml) y [macOS](.github/workflows/build-mac.yml) se activan al subir a `main` y publican artifacts con la versión de `package.json`. También pueden ejecutarse manualmente. Cada build abre su app empaquetada con datos temporales antes de subir los archivos.
 
-La versión no está firmada. Windows puede mostrar SmartScreen: «Más información → Ejecutar de todas formas». Una distribución firmada requiere un certificado de firma de código de Windows y configurar sus credenciales en el entorno de build. La actualización automática está deshabilitada; no hay feed ni llamadas de actualización al inicio.
+**Actualizar conserva los datos:** cierra Iris y ejecuta el instalador nuevo en Windows, o reemplaza Iris.app en Aplicaciones en Mac. Se reutilizan la carpeta Iris y la base existente; las migraciones crean antes una copia de seguridad y se aplican en una transacción. No hay actualización automática ni feed. Consulta [la guía de instalación, actualización y recuperación](docs/updating.md).
+
+Windows no está firmado; macOS usa firma ad-hoc y no está notarizado. Los avisos de descarga, la instalación/actualización en los equipos finales y HDMI requieren las pruebas manuales indicadas en la guía.
 
 ## Solución de problemas
 
 - Electron inicia como Node: usa el comando con `env -u ELECTRON_RUN_AS_NODE` en macOS.
+- En desarrollo en macOS, el Dock usa el icono de Iris, pero el nombre puede seguir siendo Electron porque se ejecuta su aplicación anfitriona. El instalador de Windows configura el nombre y el icono de Iris.
 - Falta un archivo: vuelve a ponerlo en la carpeta original y ejecuta «Buscar archivos», o quita su registro e impórtalo de nuevo.
 - No hay espacio: libera espacio en el disco de Iris y vuelve a importar; el origen no se sobrescribe.
 - Desaparece el monitor: Iris cierra la salida y avisa; reconecta, elige la pantalla y vuelve a proyectar.

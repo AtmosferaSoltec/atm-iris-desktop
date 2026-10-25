@@ -6,6 +6,7 @@ test("opens the secure Iris console", async () => {
   try {
     const page = await instance.app.firstWindow();
     await expect(page).toHaveTitle("Iris");
+    expect(await instance.app.evaluate(({ app }) => app.getName())).toBe("Iris");
     await expect(page.getByRole("heading", { name: "Biblioteca", exact: true })).toBeVisible();
     const bridge = await page.evaluate(() => ({
       hasIris: typeof Reflect.get(window, "iris") === "object",

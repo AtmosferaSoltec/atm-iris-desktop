@@ -27,6 +27,9 @@ test("saves a YouTube link, adds it to the plan and keeps the player sandboxed",
     await page.getByLabel("Enlace", { exact: true }).fill("https://youtu.be/M7lc1UVf-VE");
     await page.getByRole("button", { name: "Guardar en la biblioteca" }).click();
     const tile = page.getByTitle(/^Video de prueba:/);
+    await expect(tile.getByText("Video de prueba", { exact: true })).toBeVisible();
+    await expect(tile.getByText("YouTube · Autor", { exact: true })).toBeVisible();
+    await expect(tile.getByRole("img")).toHaveAttribute("src", /M7lc1UVf-VE/);
     await tile.getByRole("button", { name: "Agregar «Video de prueba» al servicio" }).focus();
     await page.keyboard.press("Enter");
     await expect(

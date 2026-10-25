@@ -52,6 +52,8 @@ if (!app.requestSingleInstanceLock()) {
     window?.focus();
   });
   void app.whenReady().then(() => {
+    // macOS ignores BrowserWindow icons and uses the Electron host icon during development.
+    app.dock?.setIcon(join(__dirname, "../../resources/icon.png"));
     initializeLogging(join(app.getPath("userData"), "logs"));
     app.setAppLogsPath(join(app.getPath("userData"), "logs"));
     installMenu();

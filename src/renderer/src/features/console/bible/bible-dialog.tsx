@@ -1,14 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@renderer/lib/ipc";
 import { Banner } from "@renderer/components/ui/banner";
-import { BibleImport } from "./bible-import";
+import { Select } from "@renderer/components/ui/select";
 
 import { ChevronRight, CornerDownLeft, Search } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Dialog } from "@renderer/components/ui/dialog";
 import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
-import { DEFAULT_TRANSLATION, type BibleBookInfo } from "@shared/domain/bible-books";
+import { type BibleBookInfo } from "@shared/domain/bible-books";
 import { cn } from "@renderer/lib/cn";
 import { parseReference, passageId } from "@shared/lib/bible-reference";
 import type { LiveConsole } from "../use-live-console";
@@ -36,6 +36,16 @@ export function BibleDialog({
     queryKey: ["bible", "status"],
     queryFn: () => invoke("bible:status", undefined),
   });
+  const client = useQueryClient();
+  const selected = status.data?.selectedTranslation ?? null;
+  const translation = status.data?.translations.find((entry) => entry.code === selected);
+  const selection = useMutation({
+    mutationFn: (code: string) => invoke("bible:select", code),
+    onSuccess: (result) => {
+      client.setQueryData(["bible", "status"], result);
+      setError(null);
+    },
+  });
   const [query, setQuery] = useState("");
   const [book, setBook] = useState<BibleBookInfo | null>(null);
   const [chapterNumber, setChapterNumber] = useState<number | null>(null);
@@ -43,7 +53,7 @@ export function BibleDialog({
   const [order, setOrder] = useState<BookOrder>("canonical");
   const [error, setError] = useState<string | null>(null);
   const [isProjecting, startProject] = useTransition();
-  const chapter = useChapter(book?.id ?? null, chapterNumber);
+  const chapter = useChapter(selected, book?.id ?? null, chapterNumber);
 
   function search(text: string) {
     setQuery(text);
@@ -62,7 +72,8 @@ export function BibleDialog({
 
   function project(bookId: string, chapterNo: number, from: number, to = from) {
     startProject(async () => {
-      const found = await loadChapter(bookId, chapterNo);
+      if (!selected) return;
+      const found = await loadChapter(selected, bookId, chapterNo);
       if (
         !found ||
         !found.verses.some((candidate) => candidate.number === from) ||
@@ -71,7 +82,7 @@ export function BibleDialog({
         setError("Ese versículo no existe.");
         return;
       }
-      const passage = { code: DEFAULT_TRANSLATION.code, bookId, chapter: chapterNo, from, to };
+      const passage = { code: selected, bookId, chapter: chapterNo, from, to };
       const item = passageItem(found, passage, {
         planItemId: QUICK_KEY,
         refId: passageId(passage),
@@ -101,10 +112,9 @@ export function BibleDialog({
           ) : (
             <>
               <p className="text-sm text-ink-2">
-                Importa tu archivo XML de Reina-Valera 1960 una vez. La Biblia quedará guardada en
-                esta computadora y funcionará sin internet.
+                No hay Biblias importadas. Ve a Configuración → Biblias para importar un archivo
+                XML. Después podrás consultar y proyectar sus versículos sin internet.
               </p>
-              <BibleImport />
             </>
           )}
         </div>
@@ -146,7 +156,10 @@ export function BibleDialog({
           />
         </form>
 
-        <nav aria-label="Dónde estás" className="flex items-center gap-1 px-1 text-xs text-ink-2">
+        <nav
+          aria-label="Dónde estás"
+          className="flex flex-wrap items-center gap-1 px-1 text-xs text-ink-2"
+        >
           <button
             type="button"
             onClick={() => goTo("books")}
@@ -176,7 +189,7 @@ export function BibleDialog({
             <div role="tablist" aria-label="Orden de los libros" className="ml-auto flex gap-0.5">
               {(
                 [
-                  ["canonical", "Bíblico"],
+                  ["canonical", "Tradicional"],
                   ["alphabetical", "A–Z"],
                 ] as const
               ).map(([value, label]) => (
@@ -196,7 +209,23 @@ export function BibleDialog({
               ))}
             </div>
           )}
-          <span className={book ? "ml-auto" : undefined}>{DEFAULT_TRANSLATION.label}</span>
+          {status.data.translations.length > 1 ? (
+            <Select
+              id="bible-translation"
+              ariaLabel="Traducción de la Biblia"
+              value={selected ?? undefined}
+              options={status.data.translations.map((entry) => ({
+                value: entry.code,
+                label: entry.name,
+              }))}
+              onValueChange={(code) => selection.mutate(code)}
+              disabled={selection.isPending}
+              className="h-8 text-xs"
+              containerClassName="min-w-0 max-w-64"
+            />
+          ) : (
+            <span className="min-w-0 truncate">{translation?.name}</span>
+          )}
         </nav>
 
         <div className="h-[46vh] overflow-y-auto">
@@ -214,12 +243,9 @@ export function BibleDialog({
             />
           )}
         </div>
-        <div className="border-t border-line pt-3">
-          <BibleImport />
-          {status.data.copyright && (
-            <p className="mt-3 text-xs text-ink-2">{status.data.copyright}</p>
-          )}
-        </div>
+        {translation?.copyright && (
+          <p className="border-t border-line pt-3 text-xs text-ink-2">{translation.copyright}</p>
+        )}
       </div>
     </Dialog>
   );

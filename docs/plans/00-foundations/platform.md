@@ -288,7 +288,7 @@ Paths are in `../atm-iris-web/src`. "Port" = copy and adapt imports; "Rewrite" =
 | `features/console/running-backup.ts`, `use-service-timer.ts` (crash recovery)                                                                               | **Rewrite**: the running record is saved in the database as it runs; no local-vs-API conflict logic                                    |
 | `features/auth/*`, `features/account/*`, `features/landing/*`, `app/(auth)/*`, `app/welcome`, `app/downloads`, `server/session`, `server/dal`, `server/env` | **Drop**                                                                                                                               |
 | `app/api/*` (display link, pairing, stream, health, mock-storage, session)                                                                                  | **Drop**                                                                                                                               |
-| `features/console/bible/*`, `domain/bible-books.ts`, `lib/bible-*`                                                                                          | **Port in phase 12**: fixed RVR1960, user XML import, temporary quick projection                                                       |
+| `features/console/bible/*`, `domain/bible-books.ts`, `lib/bible-*`                                                                                          | **Port in phases 12/14**: local XML translations, Settings import, temporary quick projection                                          |
 | `app/page.tsx` (console), `app/(app)/times`, `app/(app)/settings`, `app/display`                                                                            | Routes `#/`, `#/times`, `#/settings`, `#/display`                                                                                      |
 
 ---
@@ -312,6 +312,10 @@ Paths are in `../atm-iris-web/src`. "Port" = copy and adapt imports; "Rewrite" =
 - **iPad companion / backend.** Ids are UUID v7, rows carry `created_at` / `updated_at`, models match the web's, data
   goes through repository interfaces and mutations go through services. A future sync layer can sit beside the
   repositories without changing the UI. Do not add sync, sync columns or network code now.
-- **Accounts and linked TVs** remain excluded. The Bible was restored by explicit user request in phase 12, with only imported RVR1960. See `12-bible/README.md`.
+- **Accounts and linked TVs** remain excluded. The Bible was restored by explicit user request in phase 12, initially with RVR1960; phase 14 extends it to multiple imported XML translations at the user’s request. See `14-bible-translations/README.md`.
 
 Bible decision update: phase 12 adds local RVR1960 metadata/verses in migration 0009, validated main-only XML import and chapter IPC. Bible passages are temporary console items; the plan kinds remain unchanged. No Bible text is bundled or fetched online.
+
+Bible decision update (phase 14, explicit user request): migration 0011 preserves RVR1960 and adds multiple local translations, Settings import and persistent picker selection. No texts are bundled or fetched; the existing complete 66-book XML format remains the import boundary.
+
+Delivery decision update (phase 15, explicit user request): support Windows x64 plus native macOS arm64/x64 DMG/ZIP builds with independent CI workflows. Keep app identity and Iris home unchanged; manual replacement uses existing transactional, backed-up migrations. No automatic update feed or signing/notarization credentials are introduced.
