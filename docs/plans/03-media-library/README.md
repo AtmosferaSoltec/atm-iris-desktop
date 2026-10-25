@@ -75,6 +75,8 @@ The console's Library panel (05), backgrounds picker (06), sounds UI (07), song 
 
 ## Deviations
 
+- Subsequent user decision in phase 13: the active image/video Library reads the Images/Videos folders and has folder/refresh controls instead of upload/drop-copy controls. Binary media remains on disk; SQLite remains a metadata index.
+
 - Added `media_assets.is_import_pending` so rejecting an imported background removes only its new copy; files found by scanning are never removed on a metadata validation failure.
 - Import queue copy uses “Importaciones” / “Importando” for local copies. The temporary console entry opens the media dialogs until the console Library is ported in phase 05.
 

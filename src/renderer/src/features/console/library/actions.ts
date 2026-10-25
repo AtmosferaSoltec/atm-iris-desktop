@@ -1,9 +1,10 @@
+import { localAssetUrl } from "@shared/lib/asset-url";
+import { measureMediaUrl } from "@renderer/features/media/upload/measure";
 import type { ConsoleItem, LibraryEntry } from "@shared/domain/console";
 import type { LocalMediaAsset } from "@shared/domain/models";
 import { mediaEntry, songEntry, youtubeEntry } from "@shared/domain/library-entries";
 import { errorMessage } from "@shared/errors";
 import { invoke } from "@renderer/lib/ipc";
-import { assetUrl } from "@renderer/features/media/upload/use-media-upload";
 
 export type ItemContent = Omit<ConsoleItem, "planItemId">;
 export async function libraryItem(
@@ -17,7 +18,7 @@ export async function libraryItem(
       return { entry: songEntry({ ...song, sectionCount: song.sections.length }), content };
     }
     const asset = await invoke("media:get", id);
-    return { entry: mediaEntry(asset, asset.isMissing ? null : assetUrl(id)), content };
+    return { entry: mediaEntry(asset, asset.isMissing ? null : localAssetUrl(asset)), content };
   } catch (error) {
     return { error: errorMessage(error) };
   }
@@ -73,8 +74,13 @@ export async function mediaFile(
   id: string,
 ): Promise<{ asset?: LocalMediaAsset; url?: string | null; error?: string }> {
   try {
-    const asset = await invoke("media:get", id);
-    return { asset, url: asset.isMissing ? null : assetUrl(id) };
+    let asset = await invoke("media:get", id);
+    const url = asset.isMissing ? null : localAssetUrl(asset);
+    if (asset.needsMeasures && url) {
+      const measures = await measureMediaUrl(url, asset.kind);
+      asset = await invoke("media:set-measures", { id, ...measures });
+    }
+    return { asset, url };
   } catch (error) {
     return { error: errorMessage(error) };
   }

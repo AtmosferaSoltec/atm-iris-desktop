@@ -37,6 +37,20 @@ describe("iris-media protocol", () => {
     expect(await response.text()).toBe("2345");
     expect(await (await mediaResponse(request("bytes=-3"), repository, home)).text()).toBe("789");
     expect(await (await mediaResponse(request(), repository, home)).text()).toBe("0123456789");
+    expect(
+      await (
+        await mediaResponse(new Request(`iris-media://asset/${id}?v=123`), repository, home)
+      ).text(),
+    ).toBe("0123456789");
+    expect(
+      (
+        await mediaResponse(
+          new Request(`iris-media://asset/${id}?path=../secret`),
+          repository,
+          home,
+        )
+      ).status,
+    ).toBe(404);
     expect((await mediaResponse(request("bytes=20-30"), repository, home)).status).toBe(416);
     const head = await mediaResponse(request(undefined, "HEAD"), repository, home);
     expect(head.headers.get("content-length")).toBe("10");

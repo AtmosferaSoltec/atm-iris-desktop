@@ -61,3 +61,8 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 - Pendiente en Windows: cancelar la importación, elegir un XML incorrecto y volver a abrir un capítulo ya importado; no se debe perder la Biblia anterior ni cerrarse la aplicación.
 
 - Verificado en macOS con un perfil temporal: `SpanishRVR1960Bible.xml` se importó con 31.104 versículos y su atribución; el contenido permaneció tras cerrar y reabrir Iris. La prueba automatizada usa texto sintético y comprueba la proyección en dos ventanas. Esto no verifica Windows ni HDMI.
+
+## Biblioteca por carpetas (fase 13)
+
+- Pendiente en Windows: en Imágenes, comprobar el orden Buscar → carpeta → actualizar; la carpeta debe abrir Images en el Explorador. Copiar una imagen allí y volver a Iris: debe aparecer sin un diálogo de subida. Repetir con Videos y un MP4, incluida la reproducción en HDMI.
+- Pendiente en Windows: reemplazar una imagen con el mismo nombre, actualizar y comprobar la vista nueva. Eliminarla desde el Explorador y actualizar: desaparece; restaurarla y actualizar: reaparece. Un MP4 colocado en Images no debe listarse en esa pestaña. YouTube solo debe ofrecer agregar un enlace.

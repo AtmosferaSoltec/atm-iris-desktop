@@ -1,3 +1,4 @@
+import { localAssetUrl } from "@shared/lib/asset-url";
 import type { YoutubeService } from "./youtube-service";
 import type { ConsoleData, ConsoleItem } from "@shared/domain/console";
 import type { PlanItemKind } from "@shared/domain/models";
@@ -34,7 +35,7 @@ export class ConsoleService {
         asset && !asset.isMissing
           ? {
               id: asset.id,
-              url: `iris-media://asset/${asset.id}`,
+              url: localAssetUrl(asset),
               durationSeconds: asset.durationSeconds,
             }
           : null;
@@ -81,7 +82,7 @@ export class ConsoleService {
         ? null
         : {
             id: asset.id,
-            url: `iris-media://asset/${asset.id}`,
+            url: localAssetUrl(asset),
             durationSeconds: asset.durationSeconds,
           },
     };
@@ -118,10 +119,8 @@ export class ConsoleService {
         ...songs.map(songEntry),
         ...(this.youtube?.repository.list().map(youtubeEntry) ?? []),
         ...assets
-          .filter((asset) => asset.role === "library")
-          .map((asset) =>
-            mediaEntry(asset, asset.isMissing ? null : `iris-media://asset/${asset.id}`),
-          ),
+          .filter((asset) => asset.role === "library" && !asset.isMissing)
+          .map((asset) => mediaEntry(asset, asset.isMissing ? null : localAssetUrl(asset))),
       ]),
       backgrounds: assets
         .filter((asset) => asset.isBackground && !asset.isMissing && !asset.needsMeasures)
@@ -130,8 +129,8 @@ export class ConsoleService {
           name: asset.title,
           colors: MEDIA_BACKGROUND_COLORS,
           ...(asset.kind === "video"
-            ? { videoUrl: `iris-media://asset/${asset.id}`, durationSeconds: asset.durationSeconds }
-            : { imageUrl: `iris-media://asset/${asset.id}` }),
+            ? { videoUrl: localAssetUrl(asset), durationSeconds: asset.durationSeconds }
+            : { imageUrl: localAssetUrl(asset) }),
         })),
       sounds: assets
         .filter((asset) => asset.role === "sound" && !asset.isMissing)

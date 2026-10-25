@@ -20,10 +20,12 @@ type MediaRow = SqlRow & {
   is_import_pending: number;
   created_at: string;
   updated_at: string;
+  file_modified_at: string | null;
 };
 function map(row: MediaRow): MediaEntry {
   const asset: LocalMediaAsset = {
     id: row.id,
+    fileModifiedAt: row.file_modified_at,
     kind: row.kind,
     role: row.role,
     title: row.title,
@@ -66,7 +68,7 @@ export class SqliteMediaRepository implements MediaRepository {
     const a = entry.asset;
     this.db
       .prepare(
-        "INSERT INTO media_assets(id,kind,role,title,description,file_name,relative_path,content_type,size_bytes,duration_seconds,width,height,sound_icon,is_missing,is_import_pending,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO media_assets(id,kind,role,title,description,file_name,relative_path,content_type,size_bytes,duration_seconds,width,height,sound_icon,is_missing,is_import_pending,created_at,updated_at,file_modified_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .run(
         a.id,
@@ -86,13 +88,14 @@ export class SqliteMediaRepository implements MediaRepository {
         Number(entry.isImportPending),
         a.createdAt,
         a.updatedAt,
+        a.fileModifiedAt ?? null,
       );
   }
   update(entry: MediaEntry): void {
     const a = entry.asset;
     this.db
       .prepare(
-        "UPDATE media_assets SET role=?,title=?,description=?,relative_path=?,size_bytes=?,duration_seconds=?,width=?,height=?,sound_icon=?,is_missing=?,is_import_pending=?,updated_at=? WHERE id=?",
+        "UPDATE media_assets SET role=?,title=?,description=?,relative_path=?,size_bytes=?,duration_seconds=?,width=?,height=?,sound_icon=?,is_missing=?,is_import_pending=?,updated_at=?,file_modified_at=? WHERE id=?",
       )
       .run(
         a.role,
@@ -107,6 +110,7 @@ export class SqliteMediaRepository implements MediaRepository {
         Number(a.isMissing),
         Number(entry.isImportPending),
         new Date().toISOString(),
+        a.fileModifiedAt ?? null,
         a.id,
       );
   }

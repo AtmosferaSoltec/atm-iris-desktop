@@ -1,6 +1,7 @@
+import { LibraryFolderActions } from "./library-folder-actions";
 import { useSearchParamState, literalParser, searchParser } from "@renderer/lib/search-params";
 import { Archive, ListFilter, Search, X } from "lucide-react";
-import { useCallback, useMemo, useState, useTransition, type DragEvent } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "@renderer/components/ui/toaster";
 import {
   DropdownMenu,
@@ -14,8 +15,6 @@ import {
 import { SegmentedControl } from "@renderer/components/ui/segmented-control";
 import { Surface } from "@renderer/components/ui/surface";
 import { TextField } from "@renderer/components/ui/text-field";
-import { UploadQueue } from "@renderer/features/media/components/upload-queue";
-import { useMediaUpload } from "@renderer/features/media/upload/use-media-upload";
 import { cn } from "@renderer/lib/cn";
 import { nameKey } from "@shared/lib/text";
 import type { LibraryEntry } from "../model";
@@ -31,9 +30,8 @@ import type { Library } from "./use-library";
 import { MEDIA_EMPTY } from "../messages";
 
 /**
- * BIBLIOTECA (IRIS_SPEC §6.4 on the desktop): always open. "+" or double click adds to the
- * service; songs, files and YouTube links are also made, edited and deleted here, in dialogs
- * over the console. Multimedia has a tab per kind: images, videos and YouTube.
+ * Local media is discovered in Iris folders. Songs and YouTube links are created in dialogs;
+ * dragging existing entries still builds the service, while media double-click projects directly.
  */
 export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Library }) {
   const [tab, setTab] = useSearchParamState(
@@ -46,7 +44,6 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
   );
   const [query, setQuery] = useSearchParamState("search", searchParser);
   const [dialog, setDialog] = useState<LibraryDialog | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [archiveMode, setArchiveMode] = useSearchParamState(
     "archive",
     literalParser(["active", "archived"] as const, "active"),
@@ -54,13 +51,6 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
   const showArchived = archiveMode === "archived";
   const [artistKey, setArtistKey] = useSearchParamState("artist", searchParser);
   const adding = useAdding(ctrl);
-  const { uploaded } = library;
-  const upload = useMediaUpload("library", {
-    onUploaded: (asset) => {
-      setMediaTab(asset.kind === "video" ? "video" : "image");
-      uploaded(asset);
-    },
-  });
   const added = useMemo(() => new Set(ctrl.items.map((item) => item.refId)), [ctrl.items]);
 
   // The artists the songs already have, grouped by name (accents and case aside).
@@ -112,34 +102,19 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
     [hideArchived],
   );
 
-  // Files dropped anywhere on the panel go up as media.
-  function onDrop(event: DragEvent) {
-    event.preventDefault();
-    setIsDragging(false);
-    if (event.dataTransfer.files.length === 0) return;
-    setTab("media");
-    const first = event.dataTransfer.files[0];
-    setMediaTab(first?.type.startsWith("video/") ? "video" : "image");
-    void upload.importFiles(Array.from(event.dataTransfer.files));
-  }
-
   return (
     <Surface
       role="region"
       aria-label="Biblioteca"
-      className={cn(
-        "flex min-h-0 flex-col gap-3 p-4 transition",
-        isDragging && "ring-2 ring-coral",
-      )}
+      className="flex min-h-0 flex-col gap-3 p-4"
       onDragOver={(event) => {
-        if (!event.dataTransfer.types.includes("Files")) return;
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+      }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.files.length) return;
         event.preventDefault();
-        setIsDragging(true);
+        toast.info("Coloca los archivos en la carpeta de Iris y pulsa Actualizar biblioteca.");
       }}
-      onDragLeave={(event) => {
-        if (event.currentTarget === event.target) setIsDragging(false);
-      }}
-      onDrop={onDrop}
     >
       <h2 className="px-1 eyebrow text-ink-2">Biblioteca</h2>
       <SegmentedControl
@@ -165,13 +140,14 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
         />
       )}
 
-      <LibraryToolbar
-        tab={tab === "song" ? "song" : mediaTab}
-        onNewSong={() => setDialog({ kind: "song", id: null })}
-        onUpload={(files) => void upload.importFiles(files ? Array.from(files) : undefined)}
-        onYouTube={() => setDialog({ kind: "youtube" })}
-      />
-      <div className="flex items-center gap-2">
+      {(tab === "song" || mediaTab === "youtube") && (
+        <LibraryToolbar
+          tab={tab === "song" ? "song" : mediaTab}
+          onNewSong={() => setDialog({ kind: "song", id: null })}
+          onYouTube={() => setDialog({ kind: "youtube" })}
+        />
+      )}
+      <div role="group" aria-label="Controles de biblioteca" className="flex items-center gap-2">
         <TextField
           id="library-search"
           density="sm"
@@ -183,6 +159,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           onChange={(event) => setQuery(event.target.value)}
           containerClassName="min-w-0 flex-1"
         />
+        {tab === "media" && mediaTab !== "youtube" && <LibraryFolderActions kind={mediaTab} />}
         {tab === "song" && artists.length > 0 && !showArchived && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -239,14 +216,6 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           <Archive aria-hidden className="size-3.5" />
           {showArchived ? "Volver a la biblioteca" : "Archivadas"}
         </button>
-      )}
-      {tab === "media" && mediaTab !== "youtube" && (
-        <UploadQueue
-          items={upload.items}
-          onRetry={() => void upload.importFiles()}
-          onDismiss={upload.onDismiss}
-          onClearFinished={upload.onClearFinished}
-        />
       )}
       <ul
         className={cn(

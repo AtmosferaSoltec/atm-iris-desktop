@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtemp, readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, unlink, writeFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createIrisHome, type IrisHome } from "../files/iris-home";
@@ -31,6 +31,49 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 describe("media imports and scanning", () => {
+  it("detects a changed file with the same size, retains its id and invalidates cached measurements", async () => {
+    const path = join(home.imagesDir, "same.png");
+    await writeFile(path, "first");
+    await service.scan();
+    const original = repository.all()[0].asset;
+    await service.setMeasures({ id: original.id, durationSeconds: null, width: 20, height: 10 });
+    await writeFile(path, "other");
+    const changedAt = new Date(Date.now() + 5000);
+    await utimes(path, changedAt, changedAt);
+    expect(await service.scan()).toEqual({ changed: 1 });
+    const changed = service.get(original.id);
+    expect(changed).toMatchObject({
+      id: original.id,
+      sizeBytes: 5,
+      width: null,
+      height: null,
+      needsMeasures: true,
+    });
+    expect(changed.fileModifiedAt).not.toBe(original.fileModifiedAt);
+    expect(await service.scan()).toEqual({ changed: 0 });
+  });
+  it("opens only the matching Iris folder and scans file kinds from their own folders without copying files", async () => {
+    expect(service.folder("image")).toBe(home.imagesDir);
+    expect(service.folder("video")).toBe(home.videosDir);
+    expect(service.folder("audio")).toBe(home.audioDir);
+    await writeFile(join(home.imagesDir, "imagen.png"), "image");
+    await writeFile(join(home.imagesDir, "video.mp4"), "misplaced video");
+    await writeFile(join(home.videosDir, "video.mp4"), "video");
+    await writeFile(join(home.videosDir, "imagen.png"), "misplaced image");
+    await writeFile(join(home.audioDir, "pista.mp3"), "audio");
+    expect(await service.scan()).toEqual({ changed: 3 });
+    expect(
+      repository
+        .all()
+        .map((entry) => entry.relativePath)
+        .sort(),
+    ).toEqual(["Audio/pista.mp3", "Images/imagen.png", "Videos/video.mp4"]);
+    expect(await readdir(home.imagesDir)).toEqual(
+      expect.arrayContaining(["imagen.png", "video.mp4"]),
+    );
+    expect(await readFile(join(home.videosDir, "video.mp4"), "utf8")).toBe("video");
+    expect(await service.scan()).toEqual({ changed: 0 });
+  });
   it("selects folders by role, rejects unsupported types and sizes and names collisions safely", () => {
     expect(mediaFolder("track", "audio")).toBe("Audio");
     expect(mediaFolder("sound", "audio")).toBe("Sounds");

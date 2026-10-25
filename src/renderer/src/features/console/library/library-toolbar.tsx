@@ -1,22 +1,17 @@
-import { Plus, Upload, RefreshCw } from "lucide-react";
-import { invoke } from "@renderer/lib/ipc";
-import { Button, IconButton } from "@renderer/components/ui/button";
+import { Plus } from "lucide-react";
+import { Button } from "@renderer/components/ui/button";
 
-/** What the library's second row can make: a song, files of one kind, or a YouTube link. */
+/** Local media is managed in its folders; only songs and YouTube links have creation actions. */
 export type ToolbarTab = "song" | "image" | "video" | "youtube";
-
-import { UPLOAD_LABELS } from "../messages";
 
 /** What can be made from the library: songs, images, videos or YouTube links. */
 export function LibraryToolbar({
   tab,
   onNewSong,
-  onUpload,
   onYouTube,
 }: {
   tab: ToolbarTab;
   onNewSong: () => void;
-  onUpload: (files?: FileList) => void;
   onYouTube: () => void;
 }) {
   if (tab === "song") {
@@ -34,14 +29,5 @@ export function LibraryToolbar({
       </Button>
     );
 
-  return (
-    <>
-      <Button size="sm" icon={<Upload className="size-4" />} onClick={() => onUpload()}>
-        {UPLOAD_LABELS[tab]}
-      </Button>
-      <IconButton label="Buscar archivos" onClick={() => void invoke("media:scan", undefined)}>
-        <RefreshCw />
-      </IconButton>
-    </>
-  );
+  return null;
 }

@@ -70,16 +70,10 @@ test("video reports its time from the projection and screen muting leaves previe
   const instance = await launchApp();
   try {
     const page = await instance.app.firstWindow();
-    const source = await createVideoFixture(page, instance.home, 8000);
-    await instance.app.evaluate(({ dialog }, path) => {
-      dialog.showOpenDialog = (async () => ({
-        canceled: false,
-        filePaths: [path],
-      })) as typeof dialog.showOpenDialog;
-    }, source);
+    await createVideoFixture(page, join(instance.home, "Videos"), 8000);
     await page.getByRole("radio", { name: "Multimedia", exact: true }).click();
     await page.getByRole("radio", { name: "Videos", exact: true }).click();
-    await page.getByRole("button", { name: "Subir videos", exact: true }).click();
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     const library = page.getByRole("region", { name: "Biblioteca", exact: true });
     const service = page.getByRole("region", { name: "Servicio", exact: true });
     await expect(library.getByTitle(/^fixture:/)).toBeVisible();

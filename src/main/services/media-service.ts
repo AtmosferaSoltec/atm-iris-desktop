@@ -4,7 +4,13 @@ import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
 import { basename, extname } from "node:path";
 import type { z } from "@shared/zod";
-import type { LocalMediaAsset, MediaRole, Paginated, StorageUsage } from "@shared/domain/models";
+import type {
+  LocalMediaAsset,
+  MediaKind,
+  MediaRole,
+  Paginated,
+  StorageUsage,
+} from "@shared/domain/models";
 import { backgroundProblem } from "@shared/domain/media-rules";
 import { AppError } from "@shared/errors";
 import { soundEntry } from "@shared/domain/sounds";
@@ -31,6 +37,9 @@ export class MediaService {
     private readonly changed: () => void = () => {},
     private readonly progress: (value: ImportProgress) => void = () => {},
   ) {}
+  folder(kind: MediaKind): string {
+    return this.home.resolveInside(mediaFolder(kind === "audio" ? "track" : "library", kind));
+  }
   getEntry(id: string): MediaEntry {
     const entry = this.repository.get(id);
     if (!entry) throw new AppError("NOT_FOUND", "No encontramos el archivo.");
@@ -65,6 +74,7 @@ export class MediaService {
     role: MediaRole,
     sizeBytes: number,
     isImportPending = false,
+    fileModifiedAt: string | null = null,
   ): MediaEntry {
     const type = validateMediaFile(path, sizeBytes);
     mediaFolder(role, type.kind);
@@ -74,6 +84,7 @@ export class MediaService {
       isImportPending,
       asset: {
         id: createId(),
+        fileModifiedAt,
         ...type,
         role,
         title: basename(path, extname(path)).slice(0, 120),
@@ -138,7 +149,14 @@ export class MediaService {
             }),
             output.createWriteStream(),
           );
-          const entry = this.entry(relativePath, role, info.size, role === "background");
+          const copied = await stat(destination);
+          const entry = this.entry(
+            relativePath,
+            role,
+            copied.size,
+            role === "background",
+            copied.mtime.toISOString(),
+          );
           this.repository.insert(entry);
           this.progress({
             fileName: basename(source),
@@ -231,36 +249,49 @@ export class MediaService {
     const seen = new Set<string>();
     let count = 0;
     const existing = new Map(this.repository.all().map((entry) => [entry.relativePath, entry]));
-    const walk = async (directory: string, role: MediaRole): Promise<void> => {
+    const walk = async (
+      directory: string,
+      role: MediaRole,
+      expectedKind: MediaKind | null,
+    ): Promise<void> => {
       for (const child of await readdir(this.home.resolveInside(directory), {
         withFileTypes: true,
       })) {
         if (child.name.startsWith(".") || child.isSymbolicLink()) continue;
         const path = `${directory}/${child.name}`;
         if (child.isDirectory()) {
-          await walk(path, role);
+          await walk(path, role, expectedKind);
           continue;
         }
-        if (!child.isFile() || !fileType(child.name)) continue;
+        const type = fileType(child.name);
+        if (!child.isFile() || !type || (expectedKind && type.kind !== expectedKind)) continue;
         seen.add(path);
         if (this.activeImports.has(path)) continue;
         try {
           const info = await stat(this.home.resolveInside(path));
           const old = existing.get(path);
+          const fileModifiedAt = info.mtime.toISOString();
           if (!old) {
-            this.repository.insert(this.entry(path, role, info.size));
+            this.repository.insert(this.entry(path, role, info.size, false, fileModifiedAt));
             count++;
-          } else if (old.asset.isMissing || old.asset.sizeBytes !== info.size) {
+          } else if (
+            old.asset.isMissing ||
+            old.asset.sizeBytes !== info.size ||
+            old.asset.fileModifiedAt !== fileModifiedAt
+          ) {
+            const hasContentChanged =
+              old.asset.sizeBytes !== info.size ||
+              Boolean(old.asset.fileModifiedAt && old.asset.fileModifiedAt !== fileModifiedAt);
             this.repository.update({
               ...old,
               asset: {
                 ...old.asset,
                 isMissing: false,
                 sizeBytes: info.size,
-                durationSeconds:
-                  old.asset.sizeBytes === info.size ? old.asset.durationSeconds : null,
-                width: old.asset.sizeBytes === info.size ? old.asset.width : null,
-                height: old.asset.sizeBytes === info.size ? old.asset.height : null,
+                fileModifiedAt,
+                durationSeconds: hasContentChanged ? null : old.asset.durationSeconds,
+                width: hasContentChanged ? null : old.asset.width,
+                height: hasContentChanged ? null : old.asset.height,
               },
             });
             count++;
@@ -270,14 +301,14 @@ export class MediaService {
         }
       }
     };
-    for (const [folder, role] of [
-      ["Audio", "track"],
-      ["Videos", "library"],
-      ["Images", "library"],
-      ["Backgrounds", "background"],
-      ["Sounds", "sound"],
+    for (const [folder, role, kind] of [
+      ["Audio", "track", "audio"],
+      ["Videos", "library", "video"],
+      ["Images", "library", "image"],
+      ["Backgrounds", "background", null],
+      ["Sounds", "sound", "audio"],
     ] as const)
-      await walk(folder, role);
+      await walk(folder, role, kind);
     for (const [path, entry] of existing)
       if (!seen.has(path) && !entry.asset.isMissing) {
         this.repository.update({ ...entry, asset: { ...entry.asset, isMissing: true } });

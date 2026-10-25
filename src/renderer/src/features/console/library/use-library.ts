@@ -1,10 +1,9 @@
 import { useCallback, useState } from "react";
 import { toast } from "@renderer/components/ui/toaster";
-import type { MediaAsset } from "@shared/domain/models";
 import type { LibraryEntry } from "../model";
 import type { LiveConsole } from "../use-live-console";
 import { libraryItem } from "./actions";
-import { mediaEntry, sortEntries } from "./entries";
+import { sortEntries } from "./entries";
 
 /**
  * BIBLIOTECA's own state: the songs and files, kept current here after a song is saved, a
@@ -76,16 +75,7 @@ export function useLibrary(
     [upsert],
   );
 
-  const uploaded = useCallback(
-    (asset: MediaAsset) => {
-      upsert(mediaEntry(asset));
-      toast.success(`Se subió «${asset.title}»`);
-      void refresh("media", asset.id); // brings its preview
-    },
-    [upsert, refresh],
-  );
-
-  return { entries, refresh, forget, archived, restored, uploaded, savedYouTube };
+  return { entries, refresh, forget, archived, restored, savedYouTube };
 }
 
 export type Library = ReturnType<typeof useLibrary>;

@@ -238,6 +238,11 @@ export const contract = {
   "media:scan": defineChannel("media:scan", z.void(), z.custom<{ changed: number }>()),
   "media:delete": defineChannel("media:delete", mediaIdSchema, z.void()),
   "media:reveal": defineChannel("media:reveal", mediaIdSchema, z.void()),
+  "media:open-folder": defineChannel(
+    "media:open-folder",
+    z.enum(["image", "video", "audio"]),
+    z.void(),
+  ),
   "media:open-home": defineChannel("media:open-home", z.void(), z.void()),
   "storage:usage": defineChannel("storage:usage", z.void(), z.custom<StorageUsage>()),
   "settings:get": defineChannel("settings:get", z.void(), z.custom<Settings>()),

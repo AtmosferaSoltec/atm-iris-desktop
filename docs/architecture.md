@@ -15,7 +15,7 @@ Todas las ventanas mantienen aislamiento de contexto, sandbox y `webSecurity`; n
 
 La carpeta `<home>/Iris` contiene `Audio`, `Videos`, `Images`, `Backgrounds`, `Sounds`, `Database` y `Backups`. `IRIS_HOME` sustituye esa ubicación; también se reconoce `userData/config.json` con `homeDir` absoluto. No hay selector de ubicación en la interfaz.
 
-SQLite usa foreign keys, journal DELETE y synchronous FULL. Nueve migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
+SQLite usa foreign keys, journal DELETE y synchronous FULL. Diez migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960; la décima registra modificaciones de archivos multimedia. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
 
 El registro en curso se guarda en cada cambio de bloque y se reanuda desde sus timestamps UTC. Los nombres históricos permanecen aunque se elimine la persona o el tipo. «Hoy», horarios, periodos y snapshots diarios usan la zona de la iglesia.
 
@@ -38,3 +38,7 @@ Windows se configura con instalador NSIS por usuario y ZIP x64, marca Iris y dat
 ## Biblia local (fase 12)
 
 El selector y las referencias portan la consola web. La traducción fija es RVR1960. Main valida y parsea el XML elegido mediante diálogo nativo, conserva su atribución y reemplaza metadata/versículos en una transacción; el renderer pide capítulos por IPC y no accede a rutas. El XML no se incluye en Git ni en el instalador. Los pasajes temporales usan frames de texto con pie de referencia, conservan fondos/tipografía y admiten navegación dentro del capítulo. No cambian las categorías persistentes del plan ni requieren red.
+
+## Biblioteca por carpetas (fase 13)
+
+Multimedia muestra los archivos presentes en Images/Videos con búsqueda, carpeta y actualizar. El escaneo conserva ids por ruta relativa, respeta los tipos de cada carpeta y detecta modificaciones por tamaño y fecha del archivo. Las URLs de assets admiten únicamente un parámetro numérico de versión para renovar previews; se mantienen los controles de ruta y Range. Los archivos faltantes se ocultan en esa biblioteca, conservando sus referencias para avisos en el plan y mantenimiento. SQLite almacena solo metadatos, nunca los bytes de imágenes, videos o audios. La importación de las otras herramientas sigue separada del nuevo flujo de biblioteca.

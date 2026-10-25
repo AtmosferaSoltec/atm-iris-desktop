@@ -1,5 +1,5 @@
 import { createVideoFixture } from "./video-fixture";
-import { writeFile, unlink } from "node:fs/promises";
+import { writeFile, unlink, readFile, readdir, utimes, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { launchApp } from "./helpers";
@@ -8,20 +8,35 @@ const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jv1sAAAAASUVORK5CYII=",
   "base64",
 );
-test("imports a fixture, serves its preview, and scans added and missing files", async () => {
+test("reads images from their folder, opens the matching folder, and refreshes added and missing files", async () => {
   const instance = await launchApp();
   try {
-    const source = join(instance.home, "fixture.png");
+    const actualHome = await realpath(instance.home);
+    const source = join(instance.home, "Images", "fixture.png");
     await writeFile(source, PNG);
-    await instance.app.evaluate(({ dialog }, filePath) => {
-      dialog.showOpenDialog = (async () => ({
-        canceled: false,
-        filePaths: [filePath],
-      })) as typeof dialog.showOpenDialog;
-    }, source);
+    await instance.app.evaluate(({ shell }) => {
+      shell.openPath = async (path) => {
+        Reflect.set(globalThis, "lastOpenedFolder", path);
+        return "";
+      };
+    });
     const page = await instance.app.firstWindow();
     await page.getByRole("radio", { name: "Multimedia", exact: true }).click();
-    await page.getByRole("button", { name: "Subir imágenes", exact: true }).click();
+    const library = page.getByRole("region", { name: "Biblioteca", exact: true });
+    await expect(library.getByRole("button", { name: /Subir|Importar/ })).toHaveCount(0);
+    const controls = library.getByRole("group", { name: "Controles de biblioteca", exact: true });
+    await expect(controls.locator("input, button").nth(0)).toHaveAccessibleName(
+      "Buscar en la biblioteca",
+    );
+    await expect(controls.getByRole("button").nth(0)).toHaveAccessibleName(
+      "Abrir carpeta de imágenes",
+    );
+    await expect(controls.getByRole("button").nth(1)).toHaveAccessibleName("Actualizar biblioteca");
+    await library.getByRole("button", { name: "Abrir carpeta de imágenes", exact: true }).click();
+    await expect
+      .poll(() => instance.app.evaluate(() => Reflect.get(globalThis, "lastOpenedFolder")))
+      .toBe(join(actualHome, "Images"));
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^fixture:/)).toBeVisible();
     await page.getByTitle(/^fixture:/).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();
@@ -36,14 +51,56 @@ test("imports a fixture, serves its preview, and scans added and missing files",
         })),
     ).toEqual({ width: 1, height: 1 });
     await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+    expect(await readFile(source)).toEqual(PNG);
+    expect(await readdir(join(instance.home, "Images"))).toEqual(["fixture.png"]);
+    const thumbnail = library.getByRole("img", { name: "fixture", exact: true });
+    const previousUrl = await thumbnail.getAttribute("src");
+    const updatedPng = await page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 2;
+      canvas.height = 3;
+      const context = canvas.getContext("2d")!;
+      context.fillStyle = "blue";
+      context.fillRect(0, 0, 2, 3);
+      return canvas.toDataURL("image/png").split(",")[1];
+    });
+    const changedBytes = Buffer.from(updatedPng, "base64");
+    await writeFile(source, changedBytes);
+    const modifiedAt = new Date(Date.now() + 5000);
+    await utimes(source, modifiedAt, modifiedAt);
+    await library.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
+    await expect(thumbnail).not.toHaveAttribute("src", previousUrl!);
+    await expect
+      .poll(() =>
+        thumbnail.evaluate((image: HTMLImageElement) => ({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        })),
+      )
+      .toEqual({ width: 2, height: 3 });
+    expect(await readFile(source)).toEqual(changedBytes);
+    await page.getByRole("radio", { name: "Videos", exact: true }).click();
+    await page.getByRole("button", { name: "Abrir carpeta de videos", exact: true }).click();
+    await expect
+      .poll(() => instance.app.evaluate(() => Reflect.get(globalThis, "lastOpenedFolder")))
+      .toBe(join(actualHome, "Videos"));
+    await page.getByRole("radio", { name: "YouTube", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Agregar enlace", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: /Abrir carpeta de imágenes|Abrir carpeta de videos|Actualizar biblioteca/,
+      }),
+    ).toHaveCount(0);
+    await page.getByRole("radio", { name: "Imágenes", exact: true }).click();
     await writeFile(join(instance.home, "Images", "added.png"), PNG);
-    await page.getByRole("button", { name: "Buscar archivos", exact: true }).click();
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^added:/)).toBeVisible();
     await unlink(join(instance.home, "Images", "added.png"));
-    await page.getByRole("button", { name: "Buscar archivos", exact: true }).click();
-    await page.getByTitle(/^added:/).click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();
-    await expect(page.getByText("No encontramos el archivo.", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
+    await expect(page.getByTitle(/^added:/)).toHaveCount(0);
+    await writeFile(join(instance.home, "Images", "added.png"), PNG);
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
+    await expect(page.getByTitle(/^added:/)).toBeVisible();
   } finally {
     await instance.close();
   }
@@ -53,15 +110,11 @@ test("a video served by iris-media can seek", async () => {
   const instance = await launchApp();
   try {
     const page = await instance.app.firstWindow();
-    const source = await createVideoFixture(page, instance.home);
-    await instance.app.evaluate(({ dialog }, filePath) => {
-      dialog.showOpenDialog = (async () => ({
-        canceled: false,
-        filePaths: [filePath],
-      })) as typeof dialog.showOpenDialog;
-    }, source);
+    await createVideoFixture(page, join(instance.home, "Videos"));
     await page.getByRole("radio", { name: "Multimedia", exact: true }).click();
-    await page.getByRole("button", { name: "Subir imágenes", exact: true }).click();
+    await expect(page.getByTitle(/^fixture:/)).toHaveCount(0);
+    await page.getByRole("radio", { name: "Videos", exact: true }).click();
+    await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^fixture:/)).toBeVisible();
     await page.getByTitle(/^fixture:/).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();

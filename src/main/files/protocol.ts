@@ -32,7 +32,8 @@ export async function mediaResponse(
   try {
     const url = new URL(request.url);
     const match = /^\/([0-9a-f-]{36})$/.exec(url.pathname);
-    if (url.protocol !== "iris-media:" || url.hostname !== "asset" || url.search || !match)
+    const hasValidVersion = !url.search || /^\?v=-?\d+$/.test(url.search);
+    if (url.protocol !== "iris-media:" || url.hostname !== "asset" || !hasValidVersion || !match)
       return new Response(null, { status: 404 });
     const entry = repository.get(match[1]);
     if (!entry || entry.asset.isMissing) return new Response(null, { status: 404 });

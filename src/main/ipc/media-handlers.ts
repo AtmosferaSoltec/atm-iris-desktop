@@ -1,3 +1,4 @@
+import { AppError } from "@shared/errors";
 import { dialog, shell } from "electron";
 import type { IpcHandlers } from "./dispatch";
 import type { MediaService } from "../services/media-service";
@@ -16,6 +17,7 @@ export function mediaHandlers(
   | "media:delete"
   | "media:reveal"
   | "media:open-home"
+  | "media:open-folder"
   | "storage:usage"
 > {
   return {
@@ -58,6 +60,11 @@ export function mediaHandlers(
     "media:delete": (id) => service.delete(id),
     "media:reveal": (id) => {
       shell.showItemInFolder(service.home.resolveInside(service.getEntry(id).relativePath));
+    },
+    "media:open-folder": async (kind) => {
+      const problem = await shell.openPath(service.folder(kind));
+      if (problem)
+        throw new AppError("INTERNAL", "No pudimos abrir la carpeta. Revisa que siga disponible.");
     },
     "media:open-home": async () => {
       await shell.openPath(service.home.root);

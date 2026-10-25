@@ -53,6 +53,7 @@ timing), rebuilt as an Electron desktop app that needs no server:
 | 10  | [Settings and maintenance](10-settings/README.md): church settings, storage, backups, start over                | [x]                      |
 | 11  | [Quality and delivery](11-quality-delivery/README.md): test sweep, manual checklist, Windows build, report      | [x] ⚠️ Windows pendiente |
 | 12  | [Bible RVR1960](12-bible/README.md): local XML import, picker and verse projection (requested after phase 11)   | [x]                      |
+| 13  | [Folder library](13-folder-library/README.md): filesystem-based images/videos, folder and refresh controls      | [x]                      |
 | 99  | [Optional downloader](99-optional-downloader/README.md): **deferred; do not start without the user's go-ahead** | —                        |
 
 Tick the box when a phase is done and fill its _Deviations_ section ("None" if there are none).

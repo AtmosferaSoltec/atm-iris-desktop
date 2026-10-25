@@ -205,6 +205,7 @@ export type Settings = { church: ChurchSettings; projection: ProjectionSettings 
 
 export type MediaRole = "library" | "background" | "track" | "sound";
 export type LocalMediaAsset = MediaAsset & {
+  fileModifiedAt?: string | null;
   role: MediaRole;
   isMissing: boolean;
   needsMeasures: boolean;

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Biblioteca multimedia por carpetas: buscar, abrir Images/Videos y actualizar, sin subida de imágenes/videos; detección de archivos reemplazados y separación por tipo.
+
 - Biblia RVR1960 mediante importación XML local, selección por cita o libro/capítulo/versículo y proyección con navegación.
 
 - Se elimina por completo la búsqueda de letras en línea. Las letras se escriben o pegan manualmente.

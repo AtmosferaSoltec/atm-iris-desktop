@@ -8,11 +8,14 @@ export const KIND_NAMES: Record<ConsoleItem["kind"], string> = {
   youtube: "YouTube",
 };
 export const MEDIA_EMPTY = {
-  image: "Aún no hay imágenes. Súbelas con el botón o arrástralas aquí.",
-  video: "Aún no hay videos. Súbelos con el botón o arrástralos aquí.",
+  image: "Aún no hay imágenes. Abre su carpeta, coloca tus archivos y actualiza la biblioteca.",
+  video: "Aún no hay videos. Abre su carpeta, coloca tus archivos y actualiza la biblioteca.",
   youtube: "Aún no hay enlaces de YouTube. Agrega el primero con el botón.",
 };
-export const UPLOAD_LABELS = { image: "Subir imágenes", video: "Subir videos" };
+export const FOLDER_LABELS = {
+  image: "Abrir carpeta de imágenes",
+  video: "Abrir carpeta de videos",
+};
 
 export const TOOL_LABELS = { text: "Texto", timer: "Temporizador", sounds: "Sonidos" };
 export const SOUND_ICON_LABELS = {

@@ -5,7 +5,7 @@ import { typographySchema } from "./settings";
 const assetId = z.string().uuid();
 const assetUrl = z
   .string()
-  .regex(/^iris-media:\/\/asset\/[\da-f-]{36}$/i, "Ese archivo no existe.");
+  .regex(/^iris-media:\/\/asset\/[\da-f-]{36}(?:\?v=-?\d+)?$/i, "Ese archivo no existe.");
 const position = {
   playing: z.boolean(),
   position: z.number().finite().min(0),
