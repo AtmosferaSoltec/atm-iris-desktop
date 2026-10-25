@@ -30,6 +30,7 @@ Auto-update feed, Apple notarization/Developer ID provisioning, Windows certific
 
 ## Deviations
 
+- Windows CI follow-up: the folder-opening E2E compared path spellings and failed when Electron returned the DOS 8.3 alias of the runner profile. It now compares the actual directory's device/inode identity, preserving the check that Images and Videos open their respective folders without depending on path spelling. Production path handling remains unchanged.
 - macOS delivery is now explicitly authorized, extending the original Windows-only distribution scope. Separate architecture builds avoid requiring Rosetta for native execution.
 - No distribution certificates were provided. macOS uses ad-hoc signing without Hardened Runtime/notarization; Windows retains its unsigned installer. These are not presented as signed/notarized client releases.
 - Data and migration handling already exist. Added upgrade regression coverage and delivery documentation rather than changing data locations or introducing a second migration mechanism.

@@ -1,5 +1,5 @@
 import { createVideoFixture } from "./video-fixture";
-import { writeFile, unlink, readFile, readdir, utimes, realpath } from "node:fs/promises";
+import { writeFile, unlink, readFile, readdir, utimes, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { launchApp } from "./helpers";
@@ -8,10 +8,30 @@ const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jv1sAAAAASUVORK5CYII=",
   "base64",
 );
+
+type DirectoryIdentity = { device: string; inode: string; isDirectory: boolean };
+
+async function directoryIdentity(path: string): Promise<DirectoryIdentity> {
+  const info = await stat(path, { bigint: true });
+  return {
+    device: info.dev.toString(),
+    inode: info.ino.toString(),
+    isDirectory: info.isDirectory(),
+  };
+}
+
+async function openedFolderIdentity(
+  instance: Awaited<ReturnType<typeof launchApp>>,
+): Promise<DirectoryIdentity | null> {
+  const path: unknown = await instance.app.evaluate(() =>
+    Reflect.get(globalThis, "lastOpenedFolder"),
+  );
+  return typeof path === "string" ? directoryIdentity(path) : null;
+}
+
 test("reads images from their folder, opens the matching folder, and refreshes added and missing files", async () => {
   const instance = await launchApp();
   try {
-    const actualHome = await realpath(instance.home);
     const source = join(instance.home, "Images", "fixture.png");
     await writeFile(source, PNG);
     await instance.app.evaluate(({ shell }) => {
@@ -33,9 +53,10 @@ test("reads images from their folder, opens the matching folder, and refreshes a
     );
     await expect(controls.getByRole("button").nth(1)).toHaveAccessibleName("Actualizar biblioteca");
     await library.getByRole("button", { name: "Abrir carpeta de imágenes", exact: true }).click();
+    // Windows can report the same folder through its long name or its DOS 8.3 alias.
     await expect
-      .poll(() => instance.app.evaluate(() => Reflect.get(globalThis, "lastOpenedFolder")))
-      .toBe(join(actualHome, "Images"));
+      .poll(() => openedFolderIdentity(instance))
+      .toEqual(await directoryIdentity(join(instance.home, "Images")));
     await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();
     await expect(page.getByTitle(/^fixture:/)).toBeVisible();
     const imageRow = library.getByTitle(/^fixture:/);
@@ -88,8 +109,8 @@ test("reads images from their folder, opens the matching folder, and refreshes a
     await page.getByRole("radio", { name: "Videos", exact: true }).click();
     await page.getByRole("button", { name: "Abrir carpeta de videos", exact: true }).click();
     await expect
-      .poll(() => instance.app.evaluate(() => Reflect.get(globalThis, "lastOpenedFolder")))
-      .toBe(join(actualHome, "Videos"));
+      .poll(() => openedFolderIdentity(instance))
+      .toEqual(await directoryIdentity(join(instance.home, "Videos")));
     await page.getByRole("radio", { name: "YouTube", exact: true }).click();
     await expect(page.getByRole("button", { name: "Agregar enlace", exact: true })).toBeVisible();
     await expect(
