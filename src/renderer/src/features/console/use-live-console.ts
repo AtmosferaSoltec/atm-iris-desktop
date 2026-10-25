@@ -324,6 +324,15 @@ export function useLiveConsole(data: ConsoleData) {
     setIsCleared(false);
   }, []);
 
+  const presentPassage = useCallback(
+    (item: ConsoleItem, slide: number) => {
+      setQuickItemState(item);
+      setOpenKey(item.planItemId);
+      show({ key: item.planItemId, slide });
+    },
+    [show],
+  );
+
   /**
    * Library "doble clic" on an image, video or YouTube link: straight to the screens, without
    * adding it to the service (unless it is already there). Videos and YouTube start playing.
@@ -380,7 +389,7 @@ export function useLiveConsole(data: ConsoleData) {
     (offset: number) => {
       const key = live?.key ?? openKey;
       const item = key ? itemByKey.get(key) : null;
-      if (!item || item.kind !== "song" || item.slides.length === 0) {
+      if (!item || (item.kind !== "song" && item.kind !== "bible") || item.slides.length === 0) {
         return;
       }
       // Not on the screens yet: a passage starts at its first verse (or ends at its last).
@@ -523,6 +532,7 @@ export function useLiveConsole(data: ConsoleData) {
     resumeTimer,
     hideTimer,
     presentQuick,
+    presentPassage,
     sounds,
     addSound: (sound: SoundEntry) =>
       setSounds((current) => [...current.filter((item) => item.id !== sound.id), sound]),

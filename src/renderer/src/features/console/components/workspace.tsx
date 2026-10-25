@@ -1,4 +1,4 @@
-import { Eraser, MousePointerClick } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eraser, MousePointerClick } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button } from "@renderer/components/ui/button";
@@ -32,6 +32,7 @@ export function Workspace({ ctrl }: { ctrl: LiveConsole }) {
               <p className="hidden min-w-0 truncate text-sm text-ink-2 xl:block">{item.subtitle}</p>
             )}
           </div>
+          {item.kind === "bible" && <VerseSteps ctrl={ctrl} item={item} />}
         </div>
       ) : (
         <h1 className="font-serif text-xl leading-tight font-medium text-ink-2">Servicio</h1>
@@ -40,7 +41,7 @@ export function Workspace({ ctrl }: { ctrl: LiveConsole }) {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!item ? (
           <EmptyHint />
-        ) : item.kind === "song" ? (
+        ) : item.kind === "song" || item.kind === "bible" ? (
           <SlideGrid ctrl={ctrl} item={item} />
         ) : (
           <MediaStage ctrl={ctrl} item={item} />
@@ -275,6 +276,36 @@ function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
         </Button>
       )}
       <p className="max-w-md text-center text-sm text-ink-2">{hint}</p>
+    </div>
+  );
+}
+
+/** A passage on the screens: the verse before or after (also ← →), through its chapter. */
+function VerseSteps({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
+  const index = ctrl.live?.key === item.planItemId ? ctrl.live.slide : -1;
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        icon={<ChevronLeft className="size-4" />}
+        disabled={index === 0}
+        onClick={() => ctrl.step(-1)}
+      >
+        Anterior
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={index === item.slides.length - 1}
+        onClick={() => ctrl.step(1)}
+      >
+        Siguiente
+        <ChevronRight className="size-4" />
+      </Button>
+      {index >= 0 && (
+        <span className="text-sm text-ink-2">En pantalla: {item.slides[index]?.label}</span>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { ConsoleItem } from "./model";
 export const KIND_NAMES: Record<ConsoleItem["kind"], string> = {
   song: "Canción",
+  bible: "Biblia",
   track: "Pista",
   image: "Imagen",
   video: "Video",

@@ -1,3 +1,4 @@
+import { BibleButton } from "../bible/bible-button";
 import { ProjectionButton } from "@renderer/features/projection/projection-button";
 import { BackgroundPicker } from "../backgrounds/background-picker";
 import { IrisWordmark } from "@renderer/components/brand/iris-mark";
@@ -29,6 +30,7 @@ export function ConsoleTopBar({
         <ButtonLink href="/settings" variant="ghost">
           Configuración
         </ButtonLink>
+        <BibleButton ctrl={ctrl} />
         <ToolsButton ctrl={ctrl} />
         <BackgroundPicker ctrl={ctrl} />
         <ProjectionButton />

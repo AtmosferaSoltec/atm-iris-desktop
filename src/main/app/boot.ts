@@ -1,3 +1,6 @@
+import { BibleService } from "../services/bible-service";
+import { SqliteBibleRepository } from "../repositories/sqlite/bible-repository";
+import { bibleHandlers } from "../ipc/bible-handlers";
 import { BackupService } from "../services/backup-service";
 import { SnapshotService } from "../services/snapshot-service";
 import { StorageService } from "../services/storage-service";
@@ -79,7 +82,9 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       logError(error);
     }
     const { monitors, projection } = createProjection(repository);
+    const bible = new BibleService(new SqliteBibleRepository(db));
     registerIpc({
+      ...bibleHandlers(bible),
       ...backupHandlers(backup, snapshots, storage, home.root),
       "youtube-videos:list": () => youtube.repository.list(),
       "youtube-videos:get": (id) => youtube.get(id),

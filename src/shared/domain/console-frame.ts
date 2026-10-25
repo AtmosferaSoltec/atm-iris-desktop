@@ -18,7 +18,7 @@ export function consoleContent(
   if (isCleared) return { kind: "blank" };
   if (timer) return timer;
   if (!item) return { kind: "blank" };
-  if (item.kind === "song") {
+  if (item.kind === "song" || item.kind === "bible") {
     const content = item.slides[slide];
     return content
       ? { kind: "text", text: content.text, footnote: content.footnote ?? null }

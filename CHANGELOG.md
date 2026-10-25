@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Biblia RVR1960 mediante importación XML local, selección por cita o libro/capítulo/versículo y proyección con navegación.
+
 - Se elimina por completo la búsqueda de letras en línea. Las letras se escriben o pegan manualmente.
 
 ## 0.1.0

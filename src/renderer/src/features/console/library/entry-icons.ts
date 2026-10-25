@@ -1,8 +1,17 @@
-import { CirclePlay, Film, Image as ImageIcon, ListMusic, Music, Type } from "lucide-react";
+import {
+  BookOpen,
+  CirclePlay,
+  Film,
+  Image as ImageIcon,
+  ListMusic,
+  Music,
+  Type,
+} from "lucide-react";
 import type { ConsoleItem } from "../model";
 
 /** One icon and color per kind of thing, in the library and in the service. */
 export const ENTRY_ICONS = {
+  bible: { icon: BookOpen, color: "var(--color-violet)" },
   /** Lyrics only. */
   song: { icon: Type, color: "var(--color-ember)" },
   /** Lyrics and a track (an MP3 or YouTube). */

@@ -54,3 +54,10 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 - Unitario: reglas puras, validaciones, migraciones/rollback/base futura, rutas/symlinks, servicios/repositorios, importación sin duplicados, rotación de snapshots, geometría de ventana, base dañada preservada y logs con rotación. Los archivos temporales y las respuestas simuladas sustituyen dispositivos/servicios externos.
 - Spike manual de fase 09 en macOS: video real de YouTube mediante Referer y el reproductor final aislado; el tiempo avanzó hasta 17 segundos y no hubo errores de consola. No verifica sonido audible ni reproducción en Windows/HDMI.
 - Pendiente: ejecución del workflow en GitHub, artifacts Windows, instalación y todas las pruebas físicas listadas arriba. No se equivalen a resultados de CI aprobados.
+
+## Biblia RVR1960 (fase 12)
+
+- Pendiente en Windows/HDMI: importar el XML propio una vez, proyectar Juan 3:16, avanzar/retroceder y comprobar texto, referencia RVR1960, fondo y tipografía a distancia. Cerrar y reabrir Iris: la Biblia permanece disponible sin internet ni el XML original.
+- Pendiente en Windows: cancelar la importación, elegir un XML incorrecto y volver a abrir un capítulo ya importado; no se debe perder la Biblia anterior ni cerrarse la aplicación.
+
+- Verificado en macOS con un perfil temporal: `SpanishRVR1960Bible.xml` se importó con 31.104 versículos y su atribución; el contenido permaneció tras cerrar y reabrir Iris. La prueba automatizada usa texto sintético y comprueba la proyección en dos ventanas. Esto no verifica Windows ni HDMI.

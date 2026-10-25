@@ -1,3 +1,4 @@
+import bibleSql from "./migrations/0009-bible.sql?raw";
 import youtubeSql from "./migrations/0008-youtube.sql?raw";
 import peopleSql from "./migrations/0005-people.sql?raw";
 import serviceTypesSql from "./migrations/0006-service-types.sql?raw";
@@ -21,6 +22,7 @@ export const MIGRATIONS: Migration[] = [
   { version: 6, sql: serviceTypesSql },
   { version: 7, sql: recordsSql },
   { version: 8, sql: youtubeSql },
+  { version: 9, sql: bibleSql },
 ];
 
 export function migrate(db: SqliteDatabase, backupsDir?: string, migrations = MIGRATIONS): void {

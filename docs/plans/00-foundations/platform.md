@@ -10,15 +10,15 @@
 **Iris** projects songs, images and videos on the church screen and times each block of the service. This repo is the
 **desktop app**: one Windows PC, one operator, a second monitor or projector connected by HDMI.
 
-| Included                                                                                        | Not included (kept out on purpose)                     |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Songs with lyrics (sections), a track (local audio **or** YouTube link) and optional background | Sign-in, accounts, teams, roles, modules               |
-| Media library: images, videos, backgrounds, audio tracks, sound effects, in the Iris folder     | Any backend, sync, cloud storage, upload quota         |
-| Service plan (the live list), console with Library · Service · Stage · live preview             | The Bible (removed from scope by the user, 2026-10-24) |
-| Projection to a chosen monitor, backgrounds, black/clear, video and YouTube playback            | Linking TVs by code, projecting through a TV browser   |
-| Typography settings, countdown timer, sound effects, the Tools menu                             | Cloud backups, auto-update server, store delivery      |
-| Service timing: people, service types, block timer, records, summaries                          | iPad companion (kept in mind only: see `ideas.md`)     |
-| Settings: church name and time zone, storage, backups, start over                               |                                                        |
+| Included                                                                                        | Not included (kept out on purpose)                   |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Songs with lyrics (sections), a track (local audio **or** YouTube link) and optional background | Sign-in, accounts, teams, roles, modules             |
+| Media library: images, videos, backgrounds, audio tracks, sound effects, in the Iris folder     | Any backend, sync, cloud storage, upload quota       |
+| Service plan (the live list), console with Library · Service · Stage · live preview             |                                                      |
+| Projection to a chosen monitor, backgrounds, black/clear, video and YouTube playback            | Linking TVs by code, projecting through a TV browser |
+| Typography settings, countdown timer, sound effects, the Tools menu                             | Cloud backups, auto-update server, store delivery    |
+| Service timing: people, service types, block timer, records, summaries                          | iPad companion (kept in mind only: see `ideas.md`)   |
+| Settings: church name and time zone, storage, backups, start over                               |                                                      |
 
 Everything runs **offline** except YouTube (embedded player + oEmbed check). Lyrics are entered manually (subsequent user decision; see phase 04 deviations).
 
@@ -180,7 +180,7 @@ The user can drop files into these folders by hand; a scan registers them (phase
 - Repository rows are mapped to the **same shapes as the web models** (`src/domain/models.ts` in the web project:
   `Song`, `SongSection`, `SongSummary`, `MediaAsset`, `YoutubeVideo`, `ServicePlanItem`, `Person`, `ServiceType`,
   `BlockTemplate`, `ServiceRecord`, `BlockRecord`, `ProjectionSettings`) minus anything about sessions, churches as
-  tenants, uploads, displays and the Bible. Same names and fields means the ported components change as little as
+  tenants, uploads and displays. Bible models are restored for phase 12. Same names and fields means the ported components change as little as
   possible and a later sync stays possible.
 
 ### 6.3 Target tables (each phase owns its migration)
@@ -281,14 +281,14 @@ Paths are in `../atm-iris-web/src`. "Port" = copy and adapt imports; "Rewrite" =
 | `app/globals.css`, `components/ui/*`, `components/brand/*`, `components/service/*`, `components/projection/*`                                               | **Port** to `renderer/src/styles` and `components/*` (phase 01). `next/link`, `Route` types → router                                   |
 | `domain/*`, `lib/*` (pure: lyrics, lyrics-import, text, format, zoned-time, youtube, time-statistics, next-service, media-rules, projection-fonts)          | **Port** to `shared/domain` and `shared/lib` with their tests                                                                          |
 | `features/projection/*` (model, `ProjectionCanvas`, fonts, youtube-api)                                                                                     | **Port** (phase 06). Drop `channel.ts`, `file-cache.ts`, `file-store.ts`, `file-resolver.tsx`, remote-source code in `screen-view.tsx` |
-| `features/console/*` UI (panels, library, workspace, dnd, dialogs, tools, sounds, timer, typography, backgrounds)                                           | **Port** (phases 05–07). Drop `bible/*`, `displays-dialog`, `use-remote-displays`, `selected-service-cookie`                           |
+| `features/console/*` UI (panels, library, workspace, dnd, dialogs, tools, sounds, timer, typography, backgrounds)                                           | **Port** (phases 05–07). Drop `displays-dialog`, `use-remote-displays`, `selected-service-cookie`                                      |
 | `features/songs/*`, `features/media/*`, `features/people/*`, `features/times/*`, `features/backup/*`, `features/church/*`                                   | **Port** UI and schemas. **Rewrite** `actions.ts` (Server Actions) as IPC handlers + services                                          |
 | `server/repositories/types.ts`, `server/repositories/mock/*` (rules, e.g. duplicates)                                                                       | **Rewrite**: interfaces in `main/repositories/types.ts`, one SQLite implementation. The mock is the readable spec of the rules         |
 | `features/console/load.ts` (`loadConsole`)                                                                                                                  | **Rewrite** as the query `console:load` (items with `iris-media://` URLs; no signed URLs, no refresh timer)                            |
 | `features/console/running-backup.ts`, `use-service-timer.ts` (crash recovery)                                                                               | **Rewrite**: the running record is saved in the database as it runs; no local-vs-API conflict logic                                    |
 | `features/auth/*`, `features/account/*`, `features/landing/*`, `app/(auth)/*`, `app/welcome`, `app/downloads`, `server/session`, `server/dal`, `server/env` | **Drop**                                                                                                                               |
 | `app/api/*` (display link, pairing, stream, health, mock-storage, session)                                                                                  | **Drop**                                                                                                                               |
-| `features/console/bible/*`, `domain/bible-books.ts`, `lib/bible-*`                                                                                          | **Drop** (the Bible is out of scope)                                                                                                   |
+| `features/console/bible/*`, `domain/bible-books.ts`, `lib/bible-*`                                                                                          | **Port in phase 12**: fixed RVR1960, user XML import, temporary quick projection                                                       |
 | `app/page.tsx` (console), `app/(app)/times`, `app/(app)/settings`, `app/display`                                                                            | Routes `#/`, `#/times`, `#/settings`, `#/display`                                                                                      |
 
 ---
@@ -312,4 +312,6 @@ Paths are in `../atm-iris-web/src`. "Port" = copy and adapt imports; "Rewrite" =
 - **iPad companion / backend.** Ids are UUID v7, rows carry `created_at` / `updated_at`, models match the web's, data
   goes through repository interfaces and mutations go through services. A future sync layer can sit beside the
   repositories without changing the UI. Do not add sync, sync columns or network code now.
-- **The Bible, accounts, linked TVs** were deliberately removed. See `ideas.md`.
+- **Accounts and linked TVs** remain excluded. The Bible was restored by explicit user request in phase 12, with only imported RVR1960. See `12-bible/README.md`.
+
+Bible decision update: phase 12 adds local RVR1960 metadata/verses in migration 0009, validated main-only XML import and chapter IPC. Bible passages are temporary console items; the plan kinds remain unchanged. No Bible text is bundled or fetched online.

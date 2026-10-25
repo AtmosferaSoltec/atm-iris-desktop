@@ -15,7 +15,7 @@ Todas las ventanas mantienen aislamiento de contexto, sandbox y `webSecurity`; n
 
 La carpeta `<home>/Iris` contiene `Audio`, `Videos`, `Images`, `Backgrounds`, `Sounds`, `Database` y `Backups`. `IRIS_HOME` sustituye esa ubicación; también se reconoce `userData/config.json` con `homeDir` absoluto. No hay selector de ubicación en la interfaz.
 
-SQLite usa foreign keys, journal DELETE y synchronous FULL. Ocho migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros y videos de YouTube. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
+SQLite usa foreign keys, journal DELETE y synchronous FULL. Nueve migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
 
 El registro en curso se guarda en cada cambio de bloque y se reanuda desde sus timestamps UTC. Los nombres históricos permanecen aunque se elimine la persona o el tipo. «Hoy», horarios, periodos y snapshots diarios usan la zona de la iglesia.
 
@@ -34,3 +34,7 @@ La única red de producto es YouTube. Las letras se escriben o pegan manualmente
 Vitest cubre reglas, servicios, repositorios y migraciones. Playwright abre Electron con perfil e `IRIS_HOME` temporales, bloquea red externa por defecto y simula los servicios externos cuando se necesitan. El checklist físico está en [manual-tests.md](manual-tests.md).
 
 Windows se configura con instalador NSIS por usuario y ZIP x64, marca Iris y datos fuera de la instalación. El workflow construye y publica únicamente artifacts de CI, sin desplegar releases. La ejecución del workflow, el instalador real y SmartScreen no se verificaron en este Mac.
+
+## Biblia local (fase 12)
+
+El selector y las referencias portan la consola web. La traducción fija es RVR1960. Main valida y parsea el XML elegido mediante diálogo nativo, conserva su atribución y reemplaza metadata/versículos en una transacción; el renderer pide capítulos por IPC y no accede a rutas. El XML no se incluye en Git ni en el instalador. Los pasajes temporales usan frames de texto con pie de referencia, conservan fondos/tipografía y admiten navegación dentro del capítulo. No cambian las categorías persistentes del plan ni requieren red.

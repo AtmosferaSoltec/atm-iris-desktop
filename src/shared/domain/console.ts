@@ -7,7 +7,7 @@ export type ConsoleItem = {
   planItemId: string;
   refId: string;
   /** `track` is a song that is only a track: it plays in the room, the screen does not change. */
-  kind: "song" | "track" | "image" | "video" | "youtube";
+  kind: "song" | "track" | "image" | "video" | "youtube" | "bible";
   title: string;
   subtitle: string | null;
   /** A song's lyrics, one per screen; a passage's whole chapter, one verse per screen. */
@@ -29,7 +29,7 @@ export type ConsoleSlide = {
   id: string;
   label: string | null;
   text: string;
-  /** Under the text on the screens: a verse's reference ("Juan 3:16 · RVR1909"). */
+  /** Under the text on the screens: a verse's reference ("Juan 3:16 · RVR1960"). */
   footnote?: string;
 };
 

@@ -1,6 +1,6 @@
 # Iris Desktop · 0.1.0
 
-Consola local de proyección y tiempos para iglesias, para Windows. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. La Biblia y el descargador opcional no están incluidos.
+Consola local de proyección y tiempos para iglesias, para Windows. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. Incluye proyección de Biblia RVR1960 importada localmente. El descargador opcional no está incluido.
 
 ## Desarrollo
 
@@ -46,6 +46,14 @@ Arma el servicio arrastrando elementos. Selecciona una diapositiva para enviarla
 «Seleccionar servicio» permite crear sus bloques y llevar los tiempos. Cada cambio se guarda; cerrar y abrir recupera el bloque en curso. «Tiempos» reúne los registros y resúmenes. El temporizador de pantalla es independiente del cronómetro del servicio.
 
 Las letras se escriben o pegan manualmente. Todo lo local funciona sin internet; solo YouTube necesita conexión. YouTube conserva su reproductor y anuncios; Iris no descarga videos. Las letras siguen disponibles si la pista de YouTube falla.
+
+## Biblia RVR1960
+
+Abre **Biblia** en la consola (atajo **V**) y pulsa **Importar RVR1960**. Elige tu archivo `SpanishRVR1960Bible.xml` en la PC donde está instalado Iris. Se importa una sola versión a SQLite y después funciona sin conexión, aunque muevas el XML original.
+
+Escribe `Juan 3:16` o `Juan 3:16-18` y pulsa Enter para proyectar. También puedes elegir libro, capítulo y versículo. El capítulo completo se abre en la consola; Anterior/Siguiente y las flechas cambian el versículo, con referencia y RVR1960 al pie. El pasaje es temporal y no se agrega al plan del servicio. Se mantienen el fondo y la tipografía elegidos.
+
+El instalador no incluye el texto bíblico. Para otra PC, lleva también tu XML e impórtalo una vez. Se admite el formato XML de libros/capítulos/versículos indicado en la fase 12; los archivos binarios `.bib` no se importan. Una importación inválida conserva la Biblia anterior. Los snapshots de SQLite sí contienen la Biblia importada; el respaldo JSON de canciones y YouTube no la incluye.
 
 ## Respaldos y recuperación
 

@@ -9,10 +9,7 @@ user asks. They are here so decisions made now do not close the door.
   data (a backend or a local-network link) and was deliberately left out. Today's hooks: UUID v7 ids, `created_at` /
   `updated_at`, models shaped like the web's, repositories behind interfaces, mutations only through services.
 - **A backend, later.** If it is needed, it will be a new decision. Nothing in this repo should assume it exists.
-- **The Bible.** Removed from scope on 2026-10-24. If it returns: public-domain RVR 1909 text is at
-  `../atm-iris-api/data/bible/spaRV1909_vpl.txt` (source and license in `../atm-iris-api/docs/bible-source.md`), the
-  web had a Bible dialog, quick projection (`V`) and Bible items in the service plan. Other translations have copyright
-  and must be imported by the user.
+- **The Bible.** Restored by explicit user request as [phase 12](12-bible/README.md), with a locally imported RVR1960 XML. Other translations and bundled text remain out of scope.
 - **Audio output device selection** per use (room speakers vs the TV): `HTMLMediaElement.setSinkId` for local audio;
   the YouTube iframe does not allow it.
 - **Auto-update** with a release feed, and **code signing**.
