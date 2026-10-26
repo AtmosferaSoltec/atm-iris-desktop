@@ -49,7 +49,7 @@ export function SongDialog({
       size="xl"
       actionsRef={setActionsSlot}
       title={title}
-      description="Escribe o busca la letra y pega el enlace de su pista en YouTube."
+      description="Escribe la letra y elige un audio MP3. Puedes usar solo letra o solo audio."
     >
       <div className="pb-6">
         {(songId && loaded.isPending) || media.isPending ? (

@@ -1,16 +1,12 @@
-import type { MediaAsset, SongSummary, YoutubeVideo } from "./models";
-import { youTubeThumbnail } from "../lib/youtube";
+import type { MediaAsset, SongSummary } from "./models";
 import type { LibraryEntry } from "./console";
 
 // How the library shows each song and file (BIBLIOTECA). Pure: the server builds the first
 // list with it and the console keeps it current after a song is saved or a file uploaded.
 
-type SongFacts = Pick<
-  SongSummary,
-  "id" | "title" | "author" | "sectionCount" | "audio" | "youtubeId"
->;
+type SongFacts = Pick<SongSummary, "id" | "title" | "author" | "sectionCount" | "audio">;
 
-/** Just the author: a track is shown with its icon (YouTube or music), not words. */
+/** Just the author: a track is shown with its icon (music), not words. */
 export function songSubtitle(song: Pick<SongFacts, "author">): string {
   return song.author;
 }
@@ -21,15 +17,10 @@ export function songEntry(song: SongFacts): LibraryEntry {
     id: song.id,
     title: song.title,
     subtitle: songSubtitle(song),
-    icon: !(song.audio || song.youtubeId)
-      ? "song"
-      : song.sectionCount === 0
-        ? "track"
-        : "songTrack",
+    icon: !song.audio ? "song" : song.sectionCount === 0 ? "track" : "songTrack",
     durationSeconds: song.audio?.durationSeconds ?? null,
     previewUrl: null,
     author: song.author,
-    hasYouTube: Boolean(song.youtubeId),
     hasAudio: Boolean(song.audio),
   };
 }
@@ -47,21 +38,9 @@ export function mediaEntry(asset: MediaAsset, previewUrl: string | null = null):
   };
 }
 
-export function youtubeEntry(video: YoutubeVideo): LibraryEntry {
-  return {
-    kind: "youtube",
-    id: video.id,
-    title: video.title,
-    subtitle: video.author ? `YouTube · ${video.author}` : "YouTube",
-    icon: "youtube",
-    durationSeconds: null,
-    previewUrl: youTubeThumbnail(video.videoId),
-  };
-}
+const KIND_ORDER = { song: 0, media: 1 } as const;
 
-const KIND_ORDER = { song: 0, media: 1, youtube: 2 } as const;
-
-/** Songs first, then files, then YouTube, each by title: the order the panel lists them in. */
+/** Songs first, then files, each by title: the order the panel lists them in. */
 export function sortEntries(entries: LibraryEntry[]): LibraryEntry[] {
   return [...entries].sort(
     (a, b) =>

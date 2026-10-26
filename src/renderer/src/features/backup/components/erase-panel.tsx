@@ -10,19 +10,17 @@ import { eraseContent } from "../actions";
 const OPTIONS = [
   { key: "songs", label: "Canciones", hint: "Con su letra y sus pistas subidas." },
   { key: "media", label: "Multimedia", hint: "Imágenes, videos y fondos." },
-  { key: "youtube", label: "Enlaces de YouTube", hint: "Los videos guardados en Multimedia." },
 ] as const;
 
 type Choice = Record<(typeof OPTIONS)[number]["key"], boolean>;
 
-/** Starting over: delete songs, media and YouTube links in one go, behind a typed confirmation. */
 export function ErasePanel() {
-  const [choice, setChoice] = useState<Choice>({ songs: false, media: false, youtube: false });
+  const [choice, setChoice] = useState<Choice>({ songs: false, media: false });
   const [isOpen, setIsOpen] = useState(false);
   const [word, setWord] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isErasing, startErase] = useTransition();
-  const anyChosen = choice.songs || choice.media || choice.youtube;
+  const anyChosen = choice.songs || choice.media;
 
   function close() {
     setIsOpen(false);
@@ -37,11 +35,9 @@ export function ErasePanel() {
         setError(result.error ?? "No pudimos eliminar.");
         return;
       }
-      const { songs, media, youtube } = result.result;
-      toast.success(
-        `Se eliminó todo lo elegido (${songs} canciones, ${media} archivos, ${youtube} videos de YouTube)`,
-      );
-      setChoice({ songs: false, media: false, youtube: false });
+      const { songs, media } = result.result;
+      toast.success(`Se eliminó todo lo elegido (${songs} canciones, ${media} archivos)`);
+      setChoice({ songs: false, media: false });
       close();
     });
   }

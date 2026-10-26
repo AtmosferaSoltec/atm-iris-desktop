@@ -16,7 +16,6 @@ test("changes projected typography, shows and pauses a timer, and retains typogr
         author: "",
         sections: [{ label: "Estrofa", text: "Sublime gracia del Señor" }],
         audioId: null,
-        youtubeId: null,
       }),
     );
     await page.reload();

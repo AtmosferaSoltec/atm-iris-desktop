@@ -31,23 +31,15 @@ export type Playback = {
   fileId: string;
   title: string;
   playing: boolean;
+  error?: string;
   position: number;
   at: number;
   duration: number;
   loop: boolean;
-  /** YouTube's subtitles on the screens; null for anything that is not a YouTube video. */
-  captions: boolean | null;
-  /**
-   * Played by YouTube's player instead of a file: a YouTube video (on the screens, its sound
-   * from EN VIVO) or a song's YouTube track (a visible player in the console; the screens keep
-   * the lyrics).
-   */
-  youTube: boolean;
 };
 
 /** A track from an uploaded file: the room's audio element plays it. */
-const inRoom = (playback: Playback | null): boolean =>
-  playback?.kind === "track" && !playback.youTube;
+const inRoom = (playback: Playback | null): boolean => playback?.kind === "track";
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- The inferred result is the controller contract.
 export function useLiveConsole(data: ConsoleData) {
@@ -74,6 +66,8 @@ export function useLiveConsole(data: ConsoleData) {
     uppercase: data.projection.uppercase ?? false,
   }));
   const [room] = useState(() => new RoomAudio());
+  const [volume, setVolume] = useState(1);
+  useEffect(() => room.setVolume(volume), [room, volume]);
 
   // A passage shown from "Biblia" (V): straight to the screens, never in the service.
   const [quickItemState, setQuickItemState] = useState<ConsoleItem | null>(null);
@@ -142,25 +136,21 @@ export function useLiveConsole(data: ConsoleData) {
     () => ({
       background,
       content:
-        liveContent.kind === "video" || liveContent.kind === "youtube"
-          ? { ...liveContent, muted: isScreenMuted }
+        liveContent.kind === "video"
+          ? { ...liveContent, muted: isScreenMuted, volume }
           : liveContent,
       typography,
     }),
-    [background, liveContent, typography, isScreenMuted],
+    [background, liveContent, typography, isScreenMuted, volume],
   );
 
   // ----- Talking to the screens -----
 
-  /**
-   * A player says where its video really is: its real length, and its end. The one with the
-   * sound (YouTube in this console) is also the clock: when it runs late (it buffered) the
-   * timeline moves to it, and the screens follow, so picture and sound stay together.
-   */
+  /** Local playback follows the console timeline. */
   const followVideo = useCallback(
     (fileId: string, position: number, duration: number, isSound = false) => {
       setPlayback((current) => {
-        if (!current) return current;
+        if (!current || current.error) return current;
         const next = followPlayback(
           current,
           { id: fileId, position, duration },
@@ -221,11 +211,10 @@ export function useLiveConsole(data: ConsoleData) {
 
   const startPlayback = useCallback(
     (item: ConsoleItem) => {
-      const fileId = item.youTubeId ?? item.file?.id;
+      const fileId = item.file?.id;
       if (!fileId) return;
       const current = playbackRef.current;
-      // A YouTube video plays on the screens like a video; its sound comes from EN VIVO here.
-      const kind = item.kind === "video" || item.kind === "youtube" ? "video" : "track";
+      const kind = item.kind === "video" ? "video" : "track";
       // Presenting what is already loaded resumes it, never restarts.
       if (current?.key === item.planItemId) {
         if (current.playing) return;
@@ -245,16 +234,32 @@ export function useLiveConsole(data: ConsoleData) {
         at: Date.now(),
         duration: item.file?.durationSeconds ?? 0,
         loop: false,
-        captions: item.kind === "youtube" ? false : null,
-        youTube: item.youTubeId !== undefined,
       });
+    },
+    [commit, room],
+  );
+
+  const reportPlaybackError = useCallback(
+    (fileId: string, message: string) => {
+      const current = playbackRef.current;
+      if (!current || current.fileId !== fileId || current.error === message) return;
+      room.pause();
+      const now = Date.now();
+      commit({
+        ...current,
+        playing: false,
+        position: elapsedOf(current, now),
+        at: now,
+        error: message,
+      });
+      toast.error(message, { id: "playback-error" });
     },
     [commit, room],
   );
 
   const togglePlay = useCallback(() => {
     const current = playbackRef.current;
-    if (!current) return;
+    if (!current || current.error) return;
     const now = Date.now();
     if (current.playing) {
       if (inRoom(current)) room.pause();
@@ -265,7 +270,6 @@ export function useLiveConsole(data: ConsoleData) {
     // A paused video resumes on the screens.
     if (current.kind === "video") {
       setLive({ key: current.key, slide: 0 });
-      setIsCleared(false);
     }
     commit({ ...current, playing: true, at: now });
   }, [commit, room]);
@@ -287,12 +291,6 @@ export function useLiveConsole(data: ConsoleData) {
     commit({ ...current, loop: !current.loop });
   }, [commit, room]);
 
-  const toggleCaptions = useCallback(() => {
-    const current = playbackRef.current;
-    if (current?.captions === null || !current) return;
-    commit({ ...current, captions: !current.captions });
-  }, [commit]);
-
   // The track's real length and its end come from the room's audio; the video's from the screen.
   useEffect(() => {
     const stop = room.listen({
@@ -303,13 +301,24 @@ export function useLiveConsole(data: ConsoleData) {
       onEnded: () => {
         if (inRoom(playbackRef.current)) commit(null);
       },
-      onError: () => toast.error("No pudimos reproducir la pista."),
+      onRestart: () => {
+        const current = playbackRef.current;
+        if (current && inRoom(current)) commit({ ...current, position: 0, at: Date.now() });
+      },
+      onError: () => {
+        const current = playbackRef.current;
+        if (current)
+          reportPlaybackError(
+            current.fileId,
+            "No pudimos reproducir la pista. Revisa el archivo de audio.",
+          );
+      },
     });
     return () => {
       stop();
       room.pause();
     };
-  }, [room, commit]);
+  }, [room, commit, reportPlaybackError]);
 
   // ----- Presenting (IRIS_SPEC §7.1–7.2) -----
 
@@ -321,7 +330,6 @@ export function useLiveConsole(data: ConsoleData) {
         : current,
     );
     setLive(position);
-    setIsCleared(false);
   }, []);
 
   const presentPassage = useCallback(
@@ -333,15 +341,12 @@ export function useLiveConsole(data: ConsoleData) {
     [show],
   );
 
-  /**
-   * Library "doble clic" on an image, video or YouTube link: straight to the screens, without
-   * adding it to the service (unless it is already there). Videos and YouTube start playing.
-   */
+  /** Local playback follows the console timeline. */
   const presentQuick = useCallback(
     async (entry: LibraryEntry) => {
       let item = items.find((candidate) => candidate.refId === entry.id) ?? null;
       if (!item) {
-        const result = await quickItem(entry.kind === "youtube" ? "youtube" : "media", entry.id);
+        const result = await quickItem("media", entry.id);
         if (!result.item) {
           toast.error(result.error ?? "No pudimos mostrarlo.");
           return;
@@ -355,7 +360,7 @@ export function useLiveConsole(data: ConsoleData) {
       }
       setOpenKey(item.planItemId);
       show({ key: item.planItemId, slide: 0 });
-      if (item.kind === "video" || item.kind === "youtube") startPlayback(item);
+      if (item.kind === "video") startPlayback(item);
     },
     [items, show, startPlayback],
   );
@@ -370,7 +375,7 @@ export function useLiveConsole(data: ConsoleData) {
   const presentMedia = useCallback(() => {
     if (!openItem) return;
     if (openItem.kind === "image") show({ key: openItem.planItemId, slide: 0 });
-    if (openItem.kind === "video" || openItem.kind === "youtube") {
+    if (openItem.kind === "video") {
       show({ key: openItem.planItemId, slide: 0 });
       startPlayback(openItem);
     }
@@ -379,7 +384,7 @@ export function useLiveConsole(data: ConsoleData) {
 
   /** "Pista" of a song with lyrics: plays or pauses it; the screens do not change. */
   const toggleTrack = useCallback(() => {
-    if (!openItem?.file && !openItem?.youTubeId) return;
+    if (!openItem?.file) return;
     if (playback?.key === openItem.planItemId) togglePlay();
     else startPlayback(openItem);
   }, [openItem, playback?.key, startPlayback, togglePlay]);
@@ -406,27 +411,24 @@ export function useLiveConsole(data: ConsoleData) {
   // ----- Editing the service (IRIS_SPEC §7.6); the plan follows -----
 
   /** Adds to the end of the service, or at `index` when dropped between two rows. */
-  const add = useCallback(
-    async (kind: "song" | "media" | "youtube", refId: string, index?: number) => {
-      const result = await addToService(kind, refId);
-      if (!result.item) {
-        toast.error(result.error ?? "No pudimos agregarlo.");
-        return;
-      }
-      const item = result.item;
-      setItems((current) => {
-        const at = Math.min(index ?? current.length, current.length);
-        return [...current.slice(0, at), item, ...current.slice(at)];
-      });
-      setOpenKey(item.planItemId);
-      if (index !== undefined) {
-        void movePlanItem(item.planItemId, index).then(
-          (moved) => moved.error && toast.error(moved.error),
-        );
-      }
-    },
-    [],
-  );
+  const add = useCallback(async (kind: "song" | "media", refId: string, index?: number) => {
+    const result = await addToService(kind, refId);
+    if (!result.item) {
+      toast.error(result.error ?? "No pudimos agregarlo.");
+      return;
+    }
+    const item = result.item;
+    setItems((current) => {
+      const at = Math.min(index ?? current.length, current.length);
+      return [...current.slice(0, at), item, ...current.slice(at)];
+    });
+    setOpenKey(item.planItemId);
+    if (index !== undefined) {
+      void movePlanItem(item.planItemId, index).then(
+        (moved) => moved.error && toast.error(moved.error),
+      );
+    }
+  }, []);
 
   /** Takes rows out of this console: what was open moves on, what was playing stops. */
   const forget = useCallback(
@@ -458,13 +460,23 @@ export function useLiveConsole(data: ConsoleData) {
    * A song or file changed in the library (edited, or its track replaced): every row of it in
    * the service shows the new version.
    */
-  const updateRef = useCallback((refId: string, content: Omit<ConsoleItem, "planItemId">) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.refId === refId ? { ...content, planItemId: item.planItemId } : item,
-      ),
-    );
-  }, []);
+  const updateRef = useCallback(
+    (refId: string, content: Omit<ConsoleItem, "planItemId">) => {
+      const current = playbackRef.current;
+      if (
+        current &&
+        items.some((item) => item.refId === refId && item.planItemId === current.key) &&
+        current.fileId !== content.file?.id
+      )
+        stopPlayback();
+      setItems((current) =>
+        current.map((item) =>
+          item.refId === refId ? { ...content, planItemId: item.planItemId } : item,
+        ),
+      );
+    },
+    [items, stopPlayback],
+  );
 
   /** A song's own background changed: every row of it in the service. */
   const setSongBackground = useCallback((refId: string, backgroundId: string | null) => {
@@ -496,7 +508,6 @@ export function useLiveConsole(data: ConsoleData) {
 
   const startTimer = useCallback((seconds: number, label?: string) => {
     dispatchTimer({ type: "start", seconds, label, now: Date.now() });
-    setIsCleared(false);
   }, []);
   const pauseTimer = useCallback(() => dispatchTimer({ type: "pause", now: Date.now() }), []);
   const resumeTimer = useCallback(() => dispatchTimer({ type: "resume", now: Date.now() }), []);
@@ -524,6 +535,8 @@ export function useLiveConsole(data: ConsoleData) {
   }, []);
 
   return {
+    volume,
+    setVolume,
     isScreenMuted,
     setIsScreenMuted,
     timer,
@@ -559,8 +572,8 @@ export function useLiveConsole(data: ConsoleData) {
     togglePlay,
     seek,
     toggleLoop,
-    toggleCaptions,
     stopPlayback,
+    reportPlaybackError,
     presentSlide,
     presentMedia,
     toggleTrack,

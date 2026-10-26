@@ -37,3 +37,5 @@ Changing live-preview/output layout, projection typography, media-stage cards, d
 - Short excerpts fit compact cards; hovering or opening the editor gives the full text. The live/output frame always receives the complete text.
 
 Verification: `pnpm check` (130 unit tests), `pnpm format:check`, `pnpm build` and `pnpm test:e2e` (22 passed) pass with temporary homes. Inspected the 1440 and 1920 screenshots: four columns with twenty cards visible at 1440×900; five columns with all thirty cards visible at 1920×1080. The test also verifies four columns at 1280×800, 14px text, unchanged projection frames on resize, complete live text, editor contents and keyboard/blank-screen behavior. Physical Windows update/HDMI and remote build completion remain unverified.
+
+Follow-up (0.3.0, user reference): added a numbered List alternative beside Cards in the workspace header, with the choice stored in URL search params. Iris tokens, selection, projection and keyboard behavior remain its own; no code or styling from the reference application is copied.

@@ -80,3 +80,7 @@ The [official IFrame API reference](https://developers.google.com/youtube/iframe
 Final integration spike: the same real video played through Iris's bundled `iris-player://app` page. The last five time reports advanced from `15.0569` to `17.0574` seconds with duration `1344`, and no console errors. The initial opaque sandbox did not receive YouTube readiness; retaining the separate player origin fixed API messaging. This proves macOS video/timeline operation, not audible output, HDMI or Windows behavior.
 
 Automated coverage includes URL forms, oEmbed success/forbidden/offline/timeout, persistence/deduplication/plan cleanup, buffering clock correction/end/repeat, adding a link and offline messages, simulated player duration and the inaccessible parent/IPC boundary.
+
+Follow-up (0.3.0, user screenshot): embed-owner errors pause the affected playback, mark it unavailable, stop clock updates and retain lyrics. Replacing/removing its source after editing clears the prior player. A mocked error-150 Electron test covers this behavior; it does not remove YouTube’s embedding restriction.
+
+Superseded in 0.3.0 by explicit user decision (phase 17): remove all linked playback, saved videos, oEmbed, player entry/scheme and related IPC. Historical spike/results above describe phase 09 only. Schema 12 preserves song lyrics and local data while retiring links; YouTube URLs remain solely in the optional personal downloader.

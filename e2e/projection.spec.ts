@@ -19,7 +19,6 @@ test("projects to a preview window, clears and restores, changes background and 
         author: "",
         sections: [{ label: "Estrofa", text: "Sublime gracia del Señor" }],
         audioId: null,
-        youtubeId: null,
       });
       await window.iris["media:scan"]();
       const assets = await window.iris["media:list"]({

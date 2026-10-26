@@ -17,16 +17,10 @@ test("opens the secure Iris console", async () => {
     expect(
       await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content"),
     ).toContain("script-src 'self';");
-    const playerOrigins = await instance.app.evaluate(async ({ net }) =>
-      Promise.all(
-        [
-          "iris-player://app/index.html",
-          "iris-player://other/youtube-player.html",
-          "iris-player://app/assets/%2e%2e/index.html",
-        ].map(async (url) => (await net.fetch(url)).status),
-      ),
-    );
-    expect(playerOrigins).toEqual([404, 404, 404]);
+    expect(
+      await page.evaluate(() => Object.keys(window.iris).some((key) => key.startsWith("youtube"))),
+    ).toBe(false);
+    await expect(page.locator("iframe")).toHaveCount(0);
     await page.evaluate(() => {
       window.open("https://example.com");
     });

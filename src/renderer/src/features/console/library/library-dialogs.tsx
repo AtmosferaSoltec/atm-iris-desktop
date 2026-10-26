@@ -1,4 +1,3 @@
-import { YouTubeDialog } from "./youtube-dialog";
 import { useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "@renderer/components/ui/dialog";
@@ -16,7 +15,6 @@ import { mediaFile } from "./actions";
 export type LibraryDialog =
   | { kind: "song"; id: string | null }
   | { kind: "media"; id: string }
-  | { kind: "youtube" }
   | { kind: "delete"; entry: LibraryEntry };
 export function LibraryDialogs({
   dialog,
@@ -46,16 +44,6 @@ export function LibraryDialogs({
     );
   if (dialog.kind === "media")
     return <MediaDialog id={dialog.id} onClose={onClose} library={library} />;
-  if (dialog.kind === "youtube")
-    return (
-      <YouTubeDialog
-        onClose={onClose}
-        onSaved={(entry) => {
-          library.savedYouTube(entry);
-          onClose();
-        }}
-      />
-    );
   return <DeleteDialog entry={dialog.entry} onClose={onClose} library={library} />;
 }
 function MediaDialog({
@@ -91,32 +79,15 @@ function DeleteDialog({
 }) {
   const [isPending, startDelete] = useTransition();
   const [error, setError] = useState<string>();
-  const [shouldDeleteAudio, setShouldDeleteAudio] = useState(false);
   return (
     <ConfirmDialog
       open
       onClose={onClose}
       title={`¿Eliminar «${entry.title}»?`}
       description={
-        entry.kind === "song" ? (
-          <div>
-            Se quita de la biblioteca y del servicio.
-            {entry.hasAudio && (
-              <label className="mt-2 flex gap-2">
-                <input
-                  type="checkbox"
-                  checked={shouldDeleteAudio}
-                  onChange={(event) => setShouldDeleteAudio(event.target.checked)}
-                />
-                Eliminar también la pista (se enviará a la papelera).
-              </label>
-            )}
-          </div>
-        ) : entry.kind === "youtube" ? (
-          "Se quita de la biblioteca y del servicio."
-        ) : (
-          "Se enviará el archivo a la papelera y se quitará del servicio."
-        )
+        entry.kind === "song"
+          ? "Se quita de la biblioteca y del servicio. Su audio se enviará a la papelera si no se utiliza."
+          : "Se enviará el archivo a la papelera y se quitará del servicio."
       }
       confirmLabel="Eliminar"
       isPending={isPending}
@@ -124,10 +95,8 @@ function DeleteDialog({
       onConfirm={() =>
         startDelete(async () => {
           try {
-            if (entry.kind === "song")
-              await invoke("songs:delete", { id: entry.id, deleteAudio: shouldDeleteAudio });
+            if (entry.kind === "song") await invoke("songs:delete", { id: entry.id });
             else if (entry.kind === "media") await invoke("media:delete", entry.id);
-            else await invoke("youtube-videos:delete", entry.id);
             library.forget(entry.id);
             toast.success(`Se eliminó «${entry.title}»`);
             onClose();

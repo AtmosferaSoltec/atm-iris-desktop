@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.3.0
+
+- Vista Lista numerada junto a las tarjetas del espacio de trabajo.
+- Se retiran todos los enlaces y reproductores de YouTube; las canciones usan letra y/o audio MP3 local. Migración 12 con respaldo previo, letras, Biblias y archivos conservados.
+- Limpiar pantalla es un botón persistente bajo En vivo; no hay diapositiva final vacía. Volumen con slider vertical, icono/duración de audio y Vaciar servicio como icono.
+- Renombrado seguro del archivo de audio y limpieza de pistas retiradas o borradores descartados, comprobando referencias y usando la papelera.
+- Buscador bíblico con autocompletado de libros, capítulo completo y Enter para proyectar desde el primer versículo.
+- Builds independientes: ramas deploy/windows y deploy/macos, sin activar ambos al cambiar main.
+- Selector «Elegir audio de Iris» para reutilizar pistas existentes sin duplicar archivos.
+- Edición personal opcional con descargas MP4/MP3, preparación de herramientas, SHA-256, actualización semanal, progreso, cancelación y guardado en carpetas Iris. La edición general excluye el módulo.
+
 ## 0.2.1
 
 - Diapositivas del espacio de trabajo compactas, con texto normal, numeración y cuatro/cinco columnas según el espacio disponible. Se mantiene la proyección y la vista En vivo.

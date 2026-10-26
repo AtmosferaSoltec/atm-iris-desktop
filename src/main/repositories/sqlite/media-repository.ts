@@ -54,6 +54,15 @@ function map(row: MediaRow): MediaEntry {
 }
 export class SqliteMediaRepository implements MediaRepository {
   constructor(private readonly db: SqliteDatabase) {}
+  isReferenced(id: string, excludingSongId = ""): boolean {
+    return Boolean(
+      this.db
+        .prepare(
+          `SELECT 1 AS used WHERE EXISTS (SELECT 1 FROM songs WHERE id<>? AND (audio_id=? OR background_id=?)) OR EXISTS (SELECT 1 FROM service_plan_items WHERE kind='media' AND ref_id=?) OR EXISTS (SELECT 1 FROM projection_settings WHERE default_background_id=?)`,
+        )
+        .get(excludingSongId, id, id, id, id),
+    );
+  }
   all(): MediaEntry[] {
     return this.db
       .prepare<MediaRow>("SELECT * FROM media_assets ORDER BY created_at DESC,id")
@@ -95,9 +104,10 @@ export class SqliteMediaRepository implements MediaRepository {
     const a = entry.asset;
     this.db
       .prepare(
-        "UPDATE media_assets SET role=?,title=?,description=?,relative_path=?,size_bytes=?,duration_seconds=?,width=?,height=?,sound_icon=?,is_missing=?,is_import_pending=?,updated_at=?,file_modified_at=? WHERE id=?",
+        "UPDATE media_assets SET file_name=?,role=?,title=?,description=?,relative_path=?,size_bytes=?,duration_seconds=?,width=?,height=?,sound_icon=?,is_missing=?,is_import_pending=?,updated_at=?,file_modified_at=? WHERE id=?",
       )
       .run(
+        a.fileName,
         a.role,
         a.title,
         a.description,

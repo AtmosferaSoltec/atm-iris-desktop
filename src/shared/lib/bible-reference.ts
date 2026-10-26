@@ -86,7 +86,9 @@ export function findBook(text: string): BibleBookInfo | null {
   }
   return (
     KEYED.find((entry) => entry.key === key)?.book ??
-    (key.length >= 2 ? KEYED.find((entry) => entry.key.startsWith(key))?.book : undefined) ??
+    (key.length >= 2 && KEYED.filter((entry) => entry.key.startsWith(key)).length === 1
+      ? KEYED.find((entry) => entry.key.startsWith(key))?.book
+      : undefined) ??
     null
   );
 }
@@ -133,4 +135,22 @@ export function parsePassageId(id: string): Passage | null {
 export function passageLabel({ bookId, chapter, from, to }: Omit<Passage, "code">): string {
   const name = BIBLE_BOOK_BY_ID.get(bookId)?.name ?? bookId;
   return `${name} ${chapter}:${from}${to > from ? `-${to}` : ""}`;
+}
+
+/** Complete only name prefixes; aliases such as `jn` stay usable before a chapter number. */
+export function completeBookName(input: string): { text: string; selectionStart: number } | null {
+  if (!input || input !== input.trim() || /\d/.test(input.replace(/^[123]\s*/, ""))) return null;
+  const book = findBook(input);
+  if (!book) return null;
+  const key = nameKey(input).replace(/\s+/g, "");
+  const fullKey = nameKey(book.name).replace(/\s+/g, "");
+  if (!fullKey.startsWith(key) || fullKey === key) return null;
+  let count = 0;
+  let selectionStart = 0;
+  for (const character of book.name) {
+    selectionStart += character.length;
+    if (/\S/.test(character)) count++;
+    if (count === key.length) break;
+  }
+  return { text: book.name, selectionStart };
 }

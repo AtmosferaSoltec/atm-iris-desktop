@@ -1,6 +1,6 @@
 {
   "name": "atm-iris-desktop",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "description": "Consola local de proyección y tiempos para iglesias",
   "main": "./out/main/index.js",
   "author": "Atmosfera",
@@ -13,7 +13,7 @@
     "typecheck": "pnpm typecheck:node && pnpm typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
-    "build": "pnpm typecheck && electron-vite build",
+    "build": "pnpm typecheck && electron-vite build && node scripts/check-edition.mjs",
     "postinstall": "install-electron",
     "build:win": "pnpm build && electron-builder --win",
     "test": "vitest run",
@@ -21,7 +21,10 @@
     "test:e2e": "pnpm build && playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "build:mac": "pnpm build && electron-builder --mac",
-    "test:packaged": "node scripts/smoke-packaged.mjs"
+    "test:packaged": "node scripts/smoke-packaged.mjs",
+    "dev:personal": "node scripts/personal-build.mjs dev",
+    "build:win:personal": "node scripts/personal-build.mjs win",
+    "build:mac:personal": "node scripts/personal-build.mjs mac"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

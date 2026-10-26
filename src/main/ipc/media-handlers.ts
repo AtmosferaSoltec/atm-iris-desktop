@@ -12,9 +12,11 @@ export function mediaHandlers(
   | "media:import"
   | "media:set-measures"
   | "media:update"
+  | "media:rename"
   | "media:change-role"
   | "media:scan"
   | "media:delete"
+  | "media:discard-track"
   | "media:reveal"
   | "media:open-home"
   | "media:open-folder"
@@ -55,9 +57,11 @@ export function mediaHandlers(
     },
     "media:set-measures": (input) => service.setMeasures(input),
     "media:update": (input) => service.update(input),
+    "media:rename": (input) => service.rename(input),
     "media:change-role": (input) => service.changeRole(input),
     "media:scan": () => service.scan(),
     "media:delete": (id) => service.delete(id),
+    "media:discard-track": (id) => service.deleteUnusedTrack(id),
     "media:reveal": (id) => {
       shell.showItemInFolder(service.home.resolveInside(service.getEntry(id).relativePath));
     },

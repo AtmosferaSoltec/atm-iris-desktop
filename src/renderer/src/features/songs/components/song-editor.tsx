@@ -20,7 +20,6 @@ import type { Song } from "@shared/domain/models";
 import { formatLyrics, parseLyrics } from "@shared/lib/lyrics";
 import { SongBackgroundField } from "@renderer/features/console/backgrounds/song-background-field";
 import type { ProjectionBackground } from "@renderer/features/projection/model";
-import type { YouTubeVideo } from "@shared/lib/youtube";
 import { plural } from "@shared/lib/text";
 import type { SongField } from "@shared/schemas/songs";
 import { TrackField, type Track } from "./track-field";
@@ -36,7 +35,6 @@ const COMFORTABLE_LINES = 6;
  */
 export function SongEditor({
   song,
-  youtubeVideo,
   backgrounds,
   actionsSlot,
   onSaved,
@@ -44,8 +42,6 @@ export function SongEditor({
   onCancel,
 }: {
   song?: Song;
-  /** The song's YouTube track with its title. */
-  youtubeVideo?: YouTubeVideo;
   /** The church's backgrounds: with them, the song can have its own. */
   backgrounds?: ProjectionBackground[];
   /** The dialog's header: Eliminar, Cancelar and Guardar go there, always in sight. */
@@ -68,7 +64,6 @@ export function SongEditor({
         author,
         lyrics,
         audioId: track?.kind === "audio" ? track.audio.id : "",
-        youtubeId: track?.kind === "youtube" ? track.video.videoId : "",
         backgroundId,
       });
       const saved = song
@@ -78,7 +73,7 @@ export function SongEditor({
       if (saved.warning) toast.warning(saved.warning);
       onSaved(saved.song.id);
     } catch (error) {
-      const fields = ["title", "author", "lyrics", "audioId", "youtubeId", "backgroundId"] as const;
+      const fields = ["title", "author", "lyrics", "audioId", "backgroundId"] as const;
       const mapped = toFormErrors(error, fields);
       if (error instanceof AppError && error.fields?.sections) {
         mapped.fields.lyrics = error.fields.sections;
@@ -92,24 +87,10 @@ export function SongEditor({
   const [title, setTitle] = useState(song?.title ?? "");
   const [author, setAuthor] = useState(song?.author ?? "");
   const [lyrics, setLyrics] = useState(song ? formatLyrics(song.sections) : "");
-  const [track, setTrack] = useState<Track | null>(() =>
-    song?.audio
-      ? { kind: "audio", audio: song.audio }
-      : song?.youtubeId
-        ? {
-            kind: "youtube",
-            video: {
-              ...(youtubeVideo ?? {
-                videoId: song.youtubeId,
-                title: "Video de YouTube",
-                author: "",
-              }),
-            },
-          }
-        : null,
+  const [track, setTrack] = useState<Track | null>(
+    song?.audio ? { kind: "audio", audio: song.audio } : null,
   );
-  const trackId =
-    track?.kind === "audio" ? track.audio.id : track?.kind === "youtube" ? track.video.videoId : "";
+  const trackId = track?.audio.id ?? "";
   // A background that was deleted since is not offered (and not sent back).
   const [backgroundId, setBackgroundId] = useState(
     backgrounds?.some((candidate) => candidate.id === song?.backgroundId)
@@ -118,7 +99,6 @@ export function SongEditor({
   );
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, startDelete] = useTransition();
-  const [shouldDeleteAudio, setShouldDeleteAudio] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
 
   const sections = parseLyrics(lyrics);
@@ -129,7 +109,7 @@ export function SongEditor({
     if (!song) return;
     startDelete(async () => {
       try {
-        await invoke("songs:delete", { id: song.id, deleteAudio: shouldDeleteAudio });
+        await invoke("songs:delete", { id: song.id });
       } catch (error) {
         setDeleteError(errorMessage(error));
         return;
@@ -199,14 +179,7 @@ export function SongEditor({
             error={errorFor("author", author)}
           />
         </div>
-        <TrackField
-          track={track}
-          onChange={setTrack}
-          error={
-            errorFor("audioId", track?.kind === "audio" ? trackId : "") ??
-            errorFor("youtubeId", track?.kind === "youtube" ? trackId : "")
-          }
-        />
+        <TrackField track={track} onChange={setTrack} error={errorFor("audioId", trackId)} />
         {backgrounds && (
           <SongBackgroundField
             backgrounds={backgrounds}
@@ -284,20 +257,7 @@ export function SongEditor({
         onConfirm={confirmDelete}
         isPending={isDeleting}
         title={`¿Eliminar «${song?.title}»?`}
-        description={
-          song?.audio ? (
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={shouldDeleteAudio}
-                onChange={(event) => setShouldDeleteAudio(event.target.checked)}
-              />
-              Eliminar también la pista (se enviará a la papelera).
-            </label>
-          ) : (
-            "Se quitará de la biblioteca. Esta acción no se puede deshacer."
-          )
-        }
+        description="Se quitará de la biblioteca y del servicio. El audio que ya no se utilice se enviará a la papelera."
         confirmLabel="Eliminar"
       />
     </form>

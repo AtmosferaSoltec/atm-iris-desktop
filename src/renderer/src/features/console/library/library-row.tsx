@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { Archive, Check, CirclePlay, Music, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Check, Music, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo } from "react";
 import {
   ContextMenu,
@@ -25,7 +25,6 @@ type Props = {
   onArchive?: (entry: LibraryEntry) => void;
 };
 
-/** One song, file or YouTube video: double click or "+" adds it to the service; "⋯" edits or deletes it. */
 export const LibraryRow = memo(function LibraryRow({
   entry,
   isAdded,
@@ -65,7 +64,7 @@ export const LibraryRow = memo(function LibraryRow({
           <Icon aria-hidden className="size-4 shrink-0" style={{ color }} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">{entry.title}</span>
-            {(entry.subtitle || entry.hasYouTube || entry.hasAudio) && (
+            {(entry.subtitle || entry.hasAudio) && (
               <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
                 <span className="truncate">{entry.subtitle}</span>
                 {entry.hasAudio && (
@@ -73,13 +72,6 @@ export const LibraryRow = memo(function LibraryRow({
                     role="img"
                     aria-label="Pista de audio"
                     className="size-3.5 shrink-0 text-ink-2"
-                  />
-                )}
-                {entry.hasYouTube && (
-                  <CirclePlay
-                    role="img"
-                    aria-label="Pista de YouTube"
-                    className="size-3.5 shrink-0 text-danger"
                   />
                 )}
               </span>
@@ -111,12 +103,12 @@ export const LibraryRow = memo(function LibraryRow({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {entry.kind !== "youtube" && (
+        {
           <ContextMenuItem onSelect={() => onEdit(entry)}>
             <Pencil />
             {entry.kind === "song" ? "Editar canción" : "Ver y editar"}
           </ContextMenuItem>
-        )}
+        }
         {entry.kind === "song" && onArchive && !isAdded && (
           <ContextMenuItem onSelect={() => onArchive(entry)}>
             <Archive />

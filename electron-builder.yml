@@ -8,7 +8,14 @@ files:
   - package.json
 asarUnpack:
   - resources/**
+generateUpdatesFilesForAllChannels: false
 win:
+  publish:
+    provider: github
+    owner: AtmosferaSoltec
+    repo: atm-iris-desktop
+    channel: latest
+    releaseType: release
   executableName: Iris
   icon: build/icon.ico
   target:

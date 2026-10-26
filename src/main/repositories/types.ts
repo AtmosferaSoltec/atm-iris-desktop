@@ -15,6 +15,7 @@ export type MediaEntry = {
   isImportPending: boolean;
 };
 export interface MediaRepository {
+  isReferenced(id: string, excludingSongId?: string): boolean;
   all(): MediaEntry[];
   get(id: string): MediaEntry | null;
   insert(entry: MediaEntry): void;

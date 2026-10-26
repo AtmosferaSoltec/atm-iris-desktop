@@ -1,9 +1,8 @@
 import { localAssetUrl } from "@shared/lib/asset-url";
-import type { YoutubeService } from "./youtube-service";
 import type { ConsoleData, ConsoleItem } from "@shared/domain/console";
 import type { PlanItemKind } from "@shared/domain/models";
 import { MEDIA_BACKGROUND_COLORS } from "@shared/domain/projection";
-import { mediaEntry, songEntry, youtubeEntry, sortEntries } from "@shared/domain/library-entries";
+import { mediaEntry, songEntry, sortEntries } from "@shared/domain/library-entries";
 import { songListSchema } from "@shared/schemas/songs";
 import { AppError } from "@shared/errors";
 import { clock } from "@shared/lib/format";
@@ -25,7 +24,6 @@ export class ConsoleService {
     private readonly settings: SettingsRepository,
     private readonly songService: SongsService,
     private readonly timing?: TimingService,
-    private readonly youtube?: YoutubeService,
   ) {}
   item(kind: PlanItemKind, refId: string, planItemId: string): ConsoleItem {
     if (kind === "song") {
@@ -42,26 +40,12 @@ export class ConsoleService {
       return {
         planItemId,
         refId,
-        kind: song.sections.length === 0 && (song.audio || song.youtubeId) ? "track" : "song",
+        kind: song.sections.length === 0 && song.audio ? "track" : "song",
         title: song.title,
         subtitle: song.author || null,
         slides: song.sections,
         file,
-        ...(song.youtubeId ? { youTubeId: song.youtubeId } : {}),
         backgroundId: song.backgroundId,
-      };
-    }
-    if (kind === "youtube" && this.youtube) {
-      const video = this.youtube.get(refId);
-      return {
-        planItemId,
-        refId,
-        kind: "youtube",
-        title: video.title,
-        subtitle: video.author || null,
-        slides: [],
-        youTubeId: video.videoId,
-        file: null,
       };
     }
     const entry = kind === "media" ? this.media.get(refId) : null;
@@ -117,7 +101,6 @@ export class ConsoleService {
       items: this.plan.list().map((row) => this.item(row.kind, row.refId, row.id)),
       library: sortEntries([
         ...songs.map(songEntry),
-        ...(this.youtube?.repository.list().map(youtubeEntry) ?? []),
         ...assets
           .filter((asset) => asset.role === "library" && !asset.isMissing)
           .map((asset) => mediaEntry(asset, asset.isMissing ? null : localAssetUrl(asset))),
@@ -174,7 +157,6 @@ export class ConsoleService {
         ...song.sections.slice(index + 1),
       ],
       audioId: song.audio?.id ?? null,
-      youtubeId: song.youtubeId,
       backgroundId: song.backgroundId,
     });
     return this.item("song", songId, "");

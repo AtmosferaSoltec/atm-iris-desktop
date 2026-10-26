@@ -1,7 +1,12 @@
+import { updateStatusSchema } from "../schemas/updates";
+import {
+  downloaderInputSchema,
+  type DownloaderStatus,
+  type DownloadJob,
+} from "../schemas/downloader";
 import { bibleChapterSchema, bibleTranslationSchema } from "../schemas/bible";
 import type { BibleChapter, BibleStatus } from "../domain/bible";
 import { eraseSchema } from "../schemas/backup";
-import { youtubeLinkSchema, savedYoutubeIdSchema } from "../schemas/youtube";
 import {
   personInputSchema,
   personUpdateSchema,
@@ -25,19 +30,18 @@ import {
 import type { ConsoleData, ConsoleItem } from "../domain/console";
 import { planTargetSchema, planMoveSchema, planIdSchema, slideEditSchema } from "../schemas/plan";
 import type { Song, SongSummary } from "../domain/models";
-import type { YouTubeVideo } from "../lib/youtube";
 import {
   songInputSchema,
   songUpdateSchema,
   songDeleteSchema,
   songIdSchema,
   songListSchema,
-  youtubeIdSchema,
 } from "../schemas/songs";
 import type { EventApi } from "./events";
 import type { LocalMediaAsset, Paginated, StorageUsage } from "../domain/models";
 import {
   mediaDetailsSchema,
+  mediaRenameSchema,
   mediaIdSchema,
   mediaImportSchema,
   mediaListSchema,
@@ -58,6 +62,28 @@ export function defineChannel<I, O>(
 }
 
 export const contract = {
+  "updates:status": defineChannel("updates:status", z.void(), updateStatusSchema),
+  "updates:retry": defineChannel("updates:retry", z.void(), updateStatusSchema),
+  "updates:install": defineChannel("updates:install", z.void(), updateStatusSchema),
+  "downloader:help": defineChannel("downloader:help", z.void(), z.void()),
+  "downloader:status": defineChannel("downloader:status", z.void(), z.custom<DownloaderStatus>()),
+  "downloader:enable": defineChannel(
+    "downloader:enable",
+    z.boolean(),
+    z.custom<DownloaderStatus>(),
+  ),
+  "downloader:install": defineChannel("downloader:install", z.void(), z.custom<DownloaderStatus>()),
+  "downloader:configure": defineChannel(
+    "downloader:configure",
+    z.void(),
+    z.custom<DownloaderStatus>(),
+  ),
+  "downloader:start": defineChannel(
+    "downloader:start",
+    downloaderInputSchema,
+    z.custom<DownloadJob>(),
+  ),
+  "downloader:cancel": defineChannel("downloader:cancel", z.void(), z.void()),
   "bible:select": defineChannel("bible:select", bibleTranslationSchema, z.custom<BibleStatus>()),
   "bible:status": defineChannel("bible:status", z.void(), z.custom<BibleStatus>()),
   "bible:import": defineChannel("bible:import", z.void(), z.custom<BibleStatus | null>()),
@@ -85,22 +111,6 @@ export const contract = {
     }>(),
   ),
   "app:open-folder": defineChannel("app:open-folder", z.enum(["home", "logs"]), z.void()),
-  "youtube-videos:list": defineChannel(
-    "youtube-videos:list",
-    z.void(),
-    z.custom<import("../domain/models").YoutubeVideo[]>(),
-  ),
-  "youtube-videos:get": defineChannel(
-    "youtube-videos:get",
-    savedYoutubeIdSchema,
-    z.custom<import("../domain/models").YoutubeVideo>(),
-  ),
-  "youtube-videos:create": defineChannel(
-    "youtube-videos:create",
-    youtubeLinkSchema,
-    z.custom<import("../domain/models").YoutubeVideo>(),
-  ),
-  "youtube-videos:delete": defineChannel("youtube-videos:delete", savedYoutubeIdSchema, z.void()),
   "people:list": defineChannel("people:list", z.void(), z.custom<Person[]>()),
   "people:create": defineChannel("people:create", personInputSchema, z.custom<Person>()),
   "people:update": defineChannel("people:update", personUpdateSchema, z.custom<Person>()),
@@ -213,11 +223,6 @@ export const contract = {
   "songs:delete": defineChannel("songs:delete", songDeleteSchema, z.void()),
   "songs:archive": defineChannel("songs:archive", songIdSchema, z.custom<Song>()),
   "songs:unarchive": defineChannel("songs:unarchive", songIdSchema, z.custom<Song>()),
-  "youtube:check": defineChannel(
-    "youtube:check",
-    youtubeIdSchema,
-    z.custom<{ video?: YouTubeVideo; error?: string; isOffline?: boolean }>(),
-  ),
   "media:list": defineChannel(
     "media:list",
     mediaListSchema,
@@ -230,6 +235,7 @@ export const contract = {
     mediaMeasuresSchema,
     z.custom<LocalMediaAsset>(),
   ),
+  "media:rename": defineChannel("media:rename", mediaRenameSchema, z.custom<LocalMediaAsset>()),
   "media:update": defineChannel("media:update", mediaDetailsSchema, z.custom<LocalMediaAsset>()),
   "media:change-role": defineChannel(
     "media:change-role",
@@ -237,6 +243,7 @@ export const contract = {
     z.custom<LocalMediaAsset>(),
   ),
   "media:scan": defineChannel("media:scan", z.void(), z.custom<{ changed: number }>()),
+  "media:discard-track": defineChannel("media:discard-track", mediaIdSchema, z.void()),
   "media:delete": defineChannel("media:delete", mediaIdSchema, z.void()),
   "media:reveal": defineChannel("media:reveal", mediaIdSchema, z.void()),
   "media:open-folder": defineChannel(

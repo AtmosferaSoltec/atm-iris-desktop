@@ -45,7 +45,6 @@ it.each([8, 9, 10])(
         "app_settings",
         "songs",
         "song_sections",
-        "youtube_videos",
         "service_plan_items",
         "service_records",
       ];
@@ -60,9 +59,12 @@ it.each([8, 9, 10])(
       expect(db.prepare("SELECT id,title,relative_path FROM media_assets").all()).toEqual(
         mediaBefore,
       );
+      expect(
+        db.prepare("SELECT name FROM sqlite_master WHERE name='youtube_videos'").all(),
+      ).toEqual([]);
       expect(readFileSync(file)).toEqual(bytes);
       const backup = readdirSync(home.backupsDir).find((name) => !backupsBefore.has(name))!;
-      expect(backup).toContain(`pre-migration-${version}-to-11-`);
+      expect(backup).toContain(`pre-migration-${version}-to-12-`);
       expect(readFileSync(join(home.backupsDir, backup))).toEqual(oldBytes);
       if (version >= 9)
         expect(new SqliteBibleRepository(db).chapter("rvr1960", "JHN", 3).verses[0].text).toBe(
@@ -77,3 +79,36 @@ it.each([8, 9, 10])(
     }
   },
 );
+
+it("retires links from schema 11 while preserving songs, sections, plan order and local media", () => {
+  const db = new SqliteDatabase(":memory:");
+  try {
+    migrate(
+      db,
+      undefined,
+      MIGRATIONS.filter((migration) => migration.version <= 11),
+    );
+    db.exec(`
+      INSERT INTO songs(id,title,author,youtube_id,search_text,created_at,updated_at)
+      VALUES('linked-song','Keep my lyrics','Author','M7lc1UVf-VE','keep my lyrics','2026-01-01','2026-01-01');
+      INSERT INTO song_sections VALUES('slide','linked-song',0,'Coro','Keep this text');
+      INSERT INTO youtube_videos VALUES('linked-video','M7lc1UVf-VE','Retired video','Author','2026-01-01','2026-01-01');
+      INSERT INTO service_plan_items VALUES('video-plan','youtube','linked-video',0,'2026-01-01','2026-01-01');
+      INSERT INTO service_plan_items VALUES('song-plan','song','linked-song',1,'2026-01-01','2026-01-01');
+    `);
+    migrate(db);
+    expect(
+      db.prepare("SELECT title,youtube_id FROM songs WHERE id='linked-song'").get(),
+    ).toMatchObject({ title: "Keep my lyrics", youtube_id: null });
+    expect(db.prepare("SELECT text FROM song_sections WHERE id='slide'").get()?.text).toBe(
+      "Keep this text",
+    );
+    expect(db.prepare("SELECT id,position FROM service_plan_items").all()).toEqual([
+      { id: "song-plan", position: 0 },
+    ]);
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    expect(db.prepare("PRAGMA user_version").get()?.user_version).toBe(12);
+  } finally {
+    db.close();
+  }
+});

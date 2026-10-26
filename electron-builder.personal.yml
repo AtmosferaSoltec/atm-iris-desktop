@@ -1,0 +1,12 @@
+extends: ./electron-builder.yml
+win:
+  publish:
+    provider: github
+    owner: AtmosferaSoltec
+    repo: atm-iris-desktop
+    channel: personal
+  artifactName: ${productName}-${version}-win-${arch}-personal.${ext}
+nsis:
+  artifactName: ${name}-${version}-personal-setup.${ext}
+mac:
+  artifactName: ${productName}-${version}-mac-${arch}-personal.${ext}

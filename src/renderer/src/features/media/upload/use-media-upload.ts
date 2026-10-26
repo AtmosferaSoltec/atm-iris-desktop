@@ -89,6 +89,8 @@ export function useMediaUpload(
             previous.map((item) => (item.id === asset.id ? { ...item, status: "done" } : item)),
           );
         } catch (error) {
+          if (role === "track")
+            await invoke("media:discard-track", asset.id).catch(() => undefined);
           setItems((previous) =>
             previous.map((item) =>
               item.id === asset.id

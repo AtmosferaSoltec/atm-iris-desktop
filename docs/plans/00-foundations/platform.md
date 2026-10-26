@@ -3,6 +3,8 @@
 > Product, architecture and conventions shared by every phase. If a phase seems to contradict this document, this
 > document wins; ask the user before changing it.
 
+**Current 0.3.0 override (explicit user request, phase 17):** all linked YouTube playback and saved links are retired. Songs use lyrics and/or local MP3; only the optional personal downloader uses YouTube. Installed data upgrades to schema 12 with a backup. The original phase decisions below remain as historical context; the phase 17 deviations document the conservative migration.
+
 ---
 
 ## 1. Product
@@ -321,3 +323,7 @@ Bible decision update (phase 14, explicit user request): migration 0011 preserve
 Delivery decision update (phase 15, explicit user request): support Windows x64 plus native macOS arm64/x64 DMG/ZIP builds with independent CI workflows. Keep app identity and Iris home unchanged; manual replacement uses existing transactional, backed-up migrations. No automatic update feed or signing/notarization credentials are introduced.
 
 Workspace decision update (phase 16, explicit user request): operator text cards use compact, normal-size excerpts in a four/five-column responsive grid instead of miniature projection canvases. Live preview/output and stored slide text remain unchanged. Version 0.2.1 keeps schema 11 and the existing data location.
+
+Personal-tool decision update (phase 99, explicit user authorization): optional personal builds may install/update verified yt-dlp binaries from official GitHub releases and download individual YouTube media to Iris folders. General builds exclude the implementation; feature activation defaults off. FFmpeg is user-selected, external plugins/remote components are disabled, and the existing importer/relative paths remain authoritative. Version 0.3.0 keeps schema 11. Workspace List mode and blocked-track recovery are follow-ups to phases 16/09.
+
+Local-operation decision update (phase 17, explicit user requests): retire all YouTube playback and saved links; songs use lyrics and/or local MP3 (existing local formats remain readable). Version 0.3.0 migrates schema 11 to 12 with a backup; removes linked-video plan entries but keeps song lyrics, Bible translations and local files. Clear screen becomes a latched control under live preview, volume is adjustable, and song audio supports safe rename/reference-aware cleanup. Delivery branches are deploy/windows and deploy/macos, with no automatic main/PR delivery runs. The optional personal downloader is the only remaining YouTube integration.

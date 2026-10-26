@@ -6,7 +6,6 @@ import { toast } from "@renderer/components/ui/toaster";
 import { plural } from "@shared/lib/text";
 import { exportBackup, importBackup } from "../actions";
 
-/** Save the songs and YouTube links as a file, and bring them into this or another account. */
 export function BackupPanel() {
   const [isExporting, startExport] = useTransition();
   const [isImporting, startImport] = useTransition();
@@ -28,9 +27,9 @@ export function BackupPanel() {
         if (result.error) setError(result.error);
         return;
       }
-      const { songs, youtubeVideos, skipped, withoutLyrics } = result.result;
+      const { songs, skipped, withoutLyrics } = result.result;
       toast.success(
-        `Se importaron ${plural(songs, "canción", "canciones")} y ${plural(youtubeVideos, "video de YouTube", "videos de YouTube")}` +
+        `Se importaron ${plural(songs, "canción", "canciones")}` +
           (skipped ? `; ${skipped} ya estaban` : "") +
           (withoutLyrics ? `; ${withoutLyrics} eran solo pista y no se traen` : ""),
       );

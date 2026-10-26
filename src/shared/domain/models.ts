@@ -68,10 +68,8 @@ export type Song = {
   author: string;
   /** Empty when the song is only a track. */
   sections: SongSection[];
-  /** The track (an audio `MediaAsset`); null when the song is only lyrics or its track is on YouTube. */
+  /** The track (an audio `MediaAsset`); null when the song is only lyrics. */
   audio: MediaAsset | null;
-  /** The track on YouTube the video id. Played by YouTube's player, never downloaded. */
-  youtubeId: string | null;
   /** Its background (a church background media); the console puts it up when the song is presented. */
   backgroundId: string | null;
   /** Explicitly archived: out of the library, with the lyrics and local track kept. */
@@ -88,7 +86,6 @@ export type SongSummary = {
   sectionCount: number;
   firstLine: string | null;
   audio: MediaAsset | null;
-  youtubeId: string | null;
   backgroundId: string | null;
   archivedAt: string | null;
   lastUsedAt: string | null;
@@ -122,21 +119,7 @@ export type MediaAsset = {
 
 /* ------------------------------------------------------------ Plan */
 
-/**
- * `youtube`: a saved `YoutubeVideo`, by its id (contract §15).
- */
-export type PlanItemKind = "song" | "media" | "youtube";
-
-/** A YouTube video saved in Multimedia > YouTube: only the link, it plays in YouTube's player (contract §11b). */
-export type YoutubeVideo = {
-  id: Id;
-  /** The video's 11 characters on YouTube. */
-  videoId: string;
-  title: string;
-  author: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type PlanItemKind = "song" | "media";
 
 /**
  * A song or a media asset staged ahead for the next service, from any

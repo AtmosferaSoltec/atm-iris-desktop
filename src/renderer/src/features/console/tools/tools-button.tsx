@@ -1,5 +1,6 @@
+import { DownloaderDialog, isDownloaderAvailable } from "virtual:iris-downloader-renderer";
 import { TOOL_LABELS } from "../messages";
-import { ArrowLeft, Timer, Type, Volume2, Wrench, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Download, Timer, Type, Volume2, Wrench, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { IconButton } from "@renderer/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@renderer/components/ui/popover";
@@ -23,6 +24,19 @@ type Tool = {
 
 /** The less frequent tools live here, so the top bar keeps only what is needed at once. Add new ones to this list. */
 export const TOOLS: Tool[] = [
+  ...(isDownloaderAvailable
+    ? [
+        {
+          id: "downloader",
+          label: "Descargar",
+          icon: Download,
+          tint: "text-ember",
+          dialog: (_ctrl: LiveConsole, onClose: () => void) => (
+            <DownloaderDialog onClose={onClose} />
+          ),
+        },
+      ]
+    : []),
   {
     id: "text",
     label: TOOL_LABELS.text,

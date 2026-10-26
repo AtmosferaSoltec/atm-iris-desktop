@@ -30,7 +30,6 @@ it("allows duplicate references, reindexes moves/removals and cascades song dele
     author: "",
     sections: [{ label: null, text: "Gracia" }],
     audioId: null,
-    youtubeId: null,
   });
   const first = service.add("song", song.id);
   const second = service.add("song", song.id);
@@ -50,7 +49,6 @@ it("rejects missing targets and atomically clears the plan", async () => {
     author: "",
     sections: [{ label: null, text: "Texto" }],
     audioId: null,
-    youtubeId: null,
   });
   service.add("song", song.id);
   service.clear();

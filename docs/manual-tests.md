@@ -6,7 +6,6 @@ Las siguientes comprobaciones están **pendientes / no verificadas** en este ent
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | Windows                         | Importar imágenes, audio y video; eliminar un archivo desde Iris y comprobar su presencia en la Papelera de reciclaje. | Pendiente           |
 | Windows con TV / proyector HDMI | Elegir monitor, proyectar a pantalla completa, desconectar y reconectar el monitor.                                    | Pendiente (fase 06) |
-| Windows con internet            | Reproducción de YouTube en Electron y ausencia de Error 153.                                                           | Pendiente (fase 09) |
 | Windows                         | Construir, instalar, abrir y desinstalar el instalador; comprobar conservación de la carpeta Iris.                     | Pendiente (fase 11) |
 
 ## Proyección (fase 06)
@@ -26,12 +25,9 @@ No verificadas: requieren Windows y hardware real.
 - Pendiente: en Windows, reproducir varios sonidos reales por los parlantes; repetir un sonido mientras suena y comprobar que reinicia desde el comienzo. Los E2E comprueban la llamada de reproducción y simulan la papelera; no verifican sonido audible ni la Papelera de reciclaje real.
 - Pendiente: cambiar Texto durante una proyección HDMI y verificar legibilidad a distancia en las nueve tipografías; pausar/reanudar el temporizador y comprobar que coincide con la consola.
 
-## YouTube (fase 09)
+## YouTube (fase 09, retirado en 0.3.0)
 
-- No verificado: en Windows con internet, reproducir un video real en HDMI con audio; comprobar ausencia de Error 153 y que la vista previa no duplica el sonido.
-- No verificado: reproducir una pista de YouTube de una canción desde el mini reproductor visible de la consola; la proyección mantiene la letra. Pausar, buscar y repetir.
-- No verificado: activar/desactivar subtítulos, silenciar la salida y probar un video retirado o bloqueado para inserción; Iris muestra mensajes en español y sigue proyectando la letra.
-- No verificado: desconectar internet durante el video y recuperar la conexión; los archivos locales siguen funcionando. Los anuncios de YouTube se conservan.
+Las comprobaciones del reproductor quedaron obsoletas: se retiró toda reproducción por enlace a petición del usuario. Solo permanece el descargador personal (fase 99).
 
 ## Entrega y fallos (fase 11)
 
@@ -65,7 +61,7 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 ## Biblioteca por carpetas (fase 13)
 
 - Pendiente en Windows: en Imágenes, comprobar el orden Buscar → carpeta → actualizar; la carpeta debe abrir Images en el Explorador. Copiar una imagen allí y volver a Iris: debe aparecer sin un diálogo de subida. Repetir con Videos y un MP4, incluida la reproducción en HDMI.
-- Pendiente en Windows: reemplazar una imagen con el mismo nombre, actualizar y comprobar la vista nueva. Eliminarla desde el Explorador y actualizar: desaparece; restaurarla y actualizar: reaparece. Un MP4 colocado en Images no debe listarse en esa pestaña. YouTube solo debe ofrecer agregar un enlace.
+- Pendiente en Windows: reemplazar una imagen con el mismo nombre, actualizar y comprobar la vista nueva. Eliminarla desde el Explorador y actualizar: desaparece; restaurarla y actualizar: reaparece. Un MP4 colocado en Images no debe listarse en esa pestaña. No debe existir pestaña YouTube ni botón para agregar enlaces.
 
 ## Varias Biblias (fase 14)
 
@@ -86,3 +82,18 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 
 - Pendiente en Windows con datos de prueba: actualizar mediante `atm-iris-desktop-0.2.1-setup.exe` sobre la instalación anterior, manteniendo la misma cuenta de Windows y carpeta Iris. Confirmar canciones, Biblias, archivos y ajustes conservados. La entrega 0.2.1 mantiene el esquema 11, sin migración adicional.
 - Pendiente en el equipo real/HDMI: abrir una canción de 20–30 diapositivas; comprobar cuatro/cinco columnas según el espacio disponible, texto normal legible, selección y edición, y que En vivo/proyección mantengan su tipografía. Probar escala de Windows 100 %, 150 % y 200 % según el monitor disponible.
+
+## Herramienta personal (fase 99)
+
+- Pendiente en Windows/macOS con FFmpeg: generar/instalar la edición personal, activar la función, preparar la herramienta, seleccionar FFmpeg/FFprobe, descargar un video público corto como MP4 y MP3 y reproducir ambos. Verificar el destino Videos/Audio/Sounds y asignar el MP3 desde «Elegir audio de Iris» sin duplicar el archivo.
+- Pendiente con descargas reales: progreso, cancelación durante transferencia y conversión, cierre de Iris, pérdida de internet, video retirado/restringido y archivo superior a los límites. No se usan cookies de cuentas ni se promete eliminar restricciones de YouTube.
+- Pendiente: vista Lista/Tarjetas con letras reales en el monitor de operación y proyección HDMI.
+- Spike real macOS con perfil temporal: descarga oficial y SHA-256 de yt-dlp 2026.10.21, ejecución nativa, motor Node de Electron v24.22.0 y metadatos de M7lc1UVf-VE (1344 segundos). No verifica descarga de contenido, conversión ni sonido audible.
+
+## Operación local 0.3.0 (fase 17)
+
+- No verificado en Windows: actualizar con canciones/Biblias/medios reales desde 0.2.1, revisar el respaldo previo a migración 12, las letras conservadas y los enlaces retirados. No debe requerir importar de nuevo los archivos locales.
+- No verificado con HDMI/parlantes: activar Limpiar pantalla, cambiar canciones/diapositivas/temporizador y comprobar que solo vuelve el contenido al desactivarlo. El fondo se conserva; el audio continúa. Comprobar volumen vertical, mute y salida predeterminada del equipo.
+- No verificado en Windows: renombrar un MP3 desde el editor (incluyendo tildes), confirmar referencias tras reiniciar; quitar/reemplazar/eliminar pistas y revisar la Papelera. Probar permisos restringidos y archivo en uso: debe fallar sin perder el original.
+- No verificado con RVR1960 real en Windows: escribir «salm», «Salmos 96» y «Salmos 96:13», comprobar capítulo y versículos completos; Enter sin versículo empieza por el primero.
+- Las pruebas Electron en macOS usan audios y Biblias sintéticos, no verifican sonido audible ni hardware Windows.

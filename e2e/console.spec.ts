@@ -20,7 +20,6 @@ test("adds by double click and drag, presents only on stage click, reorders and 
             { label: "Coro", text: `${title} dos` },
           ],
           audioId: null,
-          youtubeId: null,
         });
     });
     await page.reload();
@@ -75,7 +74,7 @@ test("adds by double click and drag, presents only on stage click, reorders and 
     await expect(
       page.getByRole("region", { name: "Servicio", exact: true }).locator("ol > li"),
     ).toHaveCount(1);
-    await page.getByRole("button", { name: "Vaciar", exact: true }).click();
+    await page.getByRole("button", { name: "Vaciar servicio", exact: true }).click();
     await page.getByRole("button", { name: "Quitar 1 elemento", exact: true }).click();
     await expect(page.getByText("Servicio vacío", { exact: true })).toBeVisible();
   } finally {
@@ -94,7 +93,6 @@ test("deleting a song from the library removes its service entries", async () =>
         author: "",
         sections: [{ label: null, text: "Texto" }],
         audioId: null,
-        youtubeId: null,
       }),
     );
     await page.reload();

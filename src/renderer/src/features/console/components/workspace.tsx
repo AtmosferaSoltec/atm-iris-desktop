@@ -1,4 +1,6 @@
-import { ChevronLeft, ChevronRight, Eraser, MousePointerClick } from "lucide-react";
+import { useSearchParamState, literalParser } from "@renderer/lib/search-params";
+import { SegmentedControl } from "@renderer/components/ui/segmented-control";
+import { ChevronLeft, ChevronRight, MousePointerClick } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button } from "@renderer/components/ui/button";
@@ -18,18 +20,38 @@ import { KIND_NAMES } from "../messages";
 /** Column 2 (IRIS_SPEC §6.2): the open item. Opening never changes the screens; clicking a card does. */
 export function Workspace({ ctrl }: { ctrl: LiveConsole }) {
   const item = ctrl.openItem;
+  const [view, setView] = useSearchParamState(
+    "slides",
+    literalParser(["cards", "list"] as const, "cards"),
+  );
 
   return (
     <Surface className="@container flex min-h-0 flex-1 flex-col gap-4 p-5">
       {item ? (
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <Chip color={ENTRY_ICONS[itemIconKey(item)].color}>{KIND_NAMES[item.kind]}</Chip>
-            <h1 className="min-w-0 truncate font-serif text-xl leading-tight font-medium">
-              {item.title}
-            </h1>
-            {item.subtitle && (
-              <p className="hidden min-w-0 truncate text-sm text-ink-2 xl:block">{item.subtitle}</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <Chip color={ENTRY_ICONS[itemIconKey(item)].color}>{KIND_NAMES[item.kind]}</Chip>
+              <h1 className="min-w-0 truncate font-serif text-xl leading-tight font-medium">
+                {item.title}
+              </h1>
+              {item.subtitle && (
+                <p className="hidden min-w-0 truncate text-sm text-ink-2 xl:block">
+                  {item.subtitle}
+                </p>
+              )}
+            </div>
+            {(item.kind === "song" || item.kind === "bible") && (
+              <SegmentedControl
+                label="Vista de diapositivas"
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: "cards", label: "Tarjetas" },
+                  { value: "list", label: "Lista" },
+                ]}
+                className="shrink-0"
+              />
             )}
           </div>
           {item.kind === "bible" && <VerseSteps ctrl={ctrl} item={item} />}
@@ -42,7 +64,7 @@ export function Workspace({ ctrl }: { ctrl: LiveConsole }) {
         {!item ? (
           <EmptyHint />
         ) : item.kind === "song" || item.kind === "bible" ? (
-          <SlideGrid ctrl={ctrl} item={item} />
+          <SlideGrid ctrl={ctrl} item={item} view={view} />
         ) : (
           <MediaStage ctrl={ctrl} item={item} />
         )}
@@ -64,7 +86,16 @@ function EmptyHint() {
 }
 
 /** Compact operator cards use normal UI text; projection typography belongs to the live preview. */
-function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
+function SlideGrid({
+  ctrl,
+  item,
+  view,
+}: {
+  ctrl: LiveConsole;
+  item: ConsoleItem;
+  view: "cards" | "list";
+}) {
+  const isList = view === "list";
   const liveIndex = ctrl.live?.key === item.planItemId && !ctrl.isCleared ? ctrl.live.slide : -1;
   const liveCard = useRef<HTMLLIElement>(null);
 
@@ -90,14 +121,19 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
     <>
       <ol
         aria-label="Diapositivas"
-        className="grid grid-cols-2 gap-3 p-1 @sm:grid-cols-3 @lg:grid-cols-4 @4xl:grid-cols-5"
+        className={cn(
+          "gap-3 p-1",
+          isList
+            ? "flex flex-col"
+            : "grid grid-cols-2 @sm:grid-cols-3 @lg:grid-cols-4 @4xl:grid-cols-5",
+        )}
       >
         {item.slides.map((slide, index) => (
           <li
             key={slide.id}
             ref={index === liveIndex ? liveCard : index === focus?.first ? focusCard : undefined}
             className={cn(
-              "flex flex-col gap-1.5",
+              isList ? "flex items-center gap-3" : "flex flex-col gap-1.5",
               focus && (index < focus.first || index > focus.last) && "opacity-55",
             )}
           >
@@ -121,16 +157,22 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
               aria-current={index === liveIndex ? "true" : undefined}
               className={cn(
                 "cursor-pointer overflow-hidden rounded-md transition-shadow",
+                isList && "order-2 min-w-0 flex-1",
                 index === liveIndex
                   ? "shadow-[0_0_24px_-4px_rgb(255_122_89/0.55)] ring-[3px] ring-coral"
                   : "ring-1 ring-line hover:ring-line-strong",
               )}
             >
-              <span className="flex h-24 flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-sm leading-snug text-white">
+              <span
+                className={cn(
+                  "flex flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-sm leading-snug text-white",
+                  isList ? "min-h-16" : "h-24",
+                )}
+              >
                 <span
                   className={cn(
                     "break-words whitespace-pre-line",
-                    slide.footnote ? "line-clamp-3" : "line-clamp-4",
+                    isList ? "line-clamp-2" : slide.footnote ? "line-clamp-3" : "line-clamp-4",
                   )}
                 >
                   {slide.text}
@@ -140,29 +182,17 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
                 )}
               </span>
             </button>
-            <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-ink-2">
+            <span
+              className={cn(
+                "flex min-w-0 items-center gap-1.5 text-xs font-medium text-ink-2",
+                isList && "order-1 w-24 shrink-0",
+              )}
+            >
               <span className="shrink-0 tabular-nums">{index + 1}</span>
               {slide.label && <span className="truncate">{slide.label}</span>}
             </span>
           </li>
         ))}
-        <li className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            onClick={ctrl.toggleCleared}
-            aria-label="Pantalla en blanco (B)"
-            aria-current={ctrl.isCleared ? "true" : undefined}
-            className={cn(
-              "grid h-24 w-full cursor-pointer place-items-center rounded-md bg-black text-ink-2 transition-shadow",
-              ctrl.isCleared
-                ? "shadow-[0_0_24px_-4px_rgb(255_122_89/0.55)] ring-[3px] ring-coral"
-                : "ring-1 ring-line hover:ring-line-strong",
-            )}
-          >
-            <Eraser aria-hidden className="size-6" />
-          </button>
-          <span className="truncate text-xs font-medium text-ink-2">En blanco</span>
-        </li>
       </ol>
       {editing !== null && (
         <SlideEditorDialog
@@ -176,7 +206,6 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
   );
 }
 
-/** A track-only song, an image, a video or a YouTube video: one big card and one action (IRIS_SPEC §6.2). */
 function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
   const isActive =
     item.kind === "image"
@@ -205,20 +234,6 @@ function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
         typography: DEFAULT_TYPOGRAPHY,
       };
     }
-    if (item.kind === "youtube" && item.youTubeId) {
-      return {
-        background: null,
-        content: {
-          kind: "youtube",
-          id: item.youTubeId,
-          playing: false,
-          position: 0,
-          at: 0,
-          captions: false,
-        },
-        typography: DEFAULT_TYPOGRAPHY,
-      };
-    }
     return {
       background: null,
       content: {
@@ -239,14 +254,10 @@ function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
 
   const hint =
     item.kind === "track"
-      ? item.youTubeId
-        ? "La pista suena desde YouTube en esta computadora (el reproductor aparece bajo EN VIVO); la pantalla no cambia."
-        : "La pista suena en el salón desde esta computadora; la pantalla no cambia."
+      ? "La pista suena en el salón desde esta computadora; la pantalla no cambia."
       : item.kind === "video"
-        ? "El video se muestra en la pantalla, sin sonido. Contrólalo desde el reproductor bajo EN VIVO."
-        : item.kind === "youtube"
-          ? "Se muestra en la pantalla sin sonido; el sonido sale de esta computadora (EN VIVO). Solo para este servicio."
-          : "La imagen se muestra a pantalla completa.";
+        ? "Controla el video desde el reproductor bajo EN VIVO."
+        : "La imagen se muestra a pantalla completa.";
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6">
@@ -277,15 +288,6 @@ function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
             ? "Reproduciendo"
             : "Reproducir"}
       </Button>
-      {item.kind !== "track" && (
-        <Button
-          variant="secondary"
-          icon={<Eraser className="size-4" />}
-          onClick={ctrl.toggleCleared}
-        >
-          Pantalla en blanco (B)
-        </Button>
-      )}
       <p className="max-w-md text-center text-sm text-ink-2">{hint}</p>
     </div>
   );

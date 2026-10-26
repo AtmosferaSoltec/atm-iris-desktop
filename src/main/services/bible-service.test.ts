@@ -16,7 +16,7 @@ it("imports one local RVR1960, retains attribution and replaces it without dupli
   expect(service.status().isImported).toBe(false);
   expect(() => service.chapter({ bookId: "JHN", chapter: 3 })).toThrow("Importa una Biblia");
   const first = service.importXml(bibleSampleXml());
-  expect(first).toMatchObject({ isImported: true, verseCount: 1224, copyright: "Aviso de prueba" });
+  expect(first).toMatchObject({ isImported: true, verseCount: 1236, copyright: "Aviso de prueba" });
   const chapter = service.chapter({ bookId: "JHN", chapter: 3 });
   expect(chapter.verses).toHaveLength(36);
   expect(chapter.verses[15]).toEqual({ number: 16, text: "Texto de prueba JHN 3:16" });

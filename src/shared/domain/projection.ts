@@ -29,20 +29,10 @@ export type ProjectionContent =
       url: string;
       /** Where the video should be: playing from `position` seconds at `at` (epoch ms), or paused there. */
       muted?: boolean;
+      volume?: number;
       playing: boolean;
       position: number;
       at: number;
-    }
-  /** A YouTube video in YouTube's own player, following the console the same way. */
-  | {
-      kind: "youtube";
-      id: string;
-      muted?: boolean;
-      playing: boolean;
-      position: number;
-      at: number;
-      /** YouTube's subtitles; off unless the console turns them on. */
-      captions: boolean;
     };
 
 export type ProjectionTypography = Pick<
@@ -76,11 +66,7 @@ export const BLACK_FRAME: ProjectionFrame = {
  */
 export function rebaseFrame(frame: ProjectionFrame, shiftMs: number): ProjectionFrame {
   const { content } = frame;
-  if (
-    (content.kind !== "video" && content.kind !== "youtube" && content.kind !== "timer") ||
-    !shiftMs
-  )
-    return frame;
+  if ((content.kind !== "video" && content.kind !== "timer") || !shiftMs) return frame;
   return { ...frame, content: { ...content, at: content.at + shiftMs } };
 }
 

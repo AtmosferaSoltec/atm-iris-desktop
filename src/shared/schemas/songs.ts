@@ -2,14 +2,7 @@ import { z } from "@shared/zod";
 import { LYRICS_LIMITS, parseLyrics } from "@shared/lib/lyrics";
 const idSchema = z.string().uuid("Ese elemento no existe.");
 
-export const SONG_FIELDS = [
-  "title",
-  "author",
-  "lyrics",
-  "audioId",
-  "youtubeId",
-  "backgroundId",
-] as const;
+export const SONG_FIELDS = ["title", "author", "lyrics", "audioId", "backgroundId"] as const;
 export type SongField = (typeof SONG_FIELDS)[number];
 
 const title = z
@@ -38,14 +31,6 @@ const audioId = z
   .optional()
   .transform((value) => value || null);
 
-/** A YouTube video id (contract §10): 11 letters, digits, `-` or `_`. */
-export const youtubeIdSchema = z.string().regex(/^[\w-]{11}$/, "Ese no es un video de YouTube.");
-/** The track on YouTube; empty when the song has none. */
-const youtubeId = z
-  .union([youtubeIdSchema, z.literal("")])
-  .optional()
-  .transform((value) => value || null);
-
 /** The song's background; empty clears it, absent (an editor without backgrounds) keeps it. */
 const backgroundId = z
   .union([idSchema, z.literal("")])
@@ -53,16 +38,9 @@ const backgroundId = z
   .transform((value) => (value === undefined ? undefined : value || null));
 
 const songSchema = z
-  .object({ title, author, lyrics, audioId, youtubeId, backgroundId })
+  .object({ title, author, lyrics, audioId, backgroundId })
   .superRefine((song, ctx) => {
-    if (song.audioId !== null && song.youtubeId !== null) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["youtubeId"],
-        message: "La pista es un audio o un video de YouTube, no los dos.",
-      });
-    }
-    if (song.lyrics.length === 0 && song.audioId === null && song.youtubeId === null) {
+    if (song.lyrics.length === 0 && song.audioId === null) {
       ctx.addIssue({
         code: "custom",
         path: ["lyrics"],
@@ -78,9 +56,6 @@ const songSchema = z
 
 /** Parses the editor form into the contract's `SongInput`. */
 export const songFormSchema = songSchema;
-
-/** What the track picker sends: a pasted link. */
-export const youTubeLinkSchema = z.string().trim().min(1).max(500);
 
 export const songInputSchema = z
   .object({
@@ -99,17 +74,10 @@ export const songInputSchema = z
       )
       .max(80),
     audioId: idSchema.nullable(),
-    youtubeId: youtubeIdSchema.nullable(),
     backgroundId: idSchema.nullable().optional(),
   })
   .superRefine((song, ctx) => {
-    if (song.audioId && song.youtubeId)
-      ctx.addIssue({
-        code: "custom",
-        path: ["youtubeId"],
-        message: "La pista es un audio o un video de YouTube, no los dos.",
-      });
-    if (!song.sections.length && !song.audioId && !song.youtubeId)
+    if (!song.sections.length && !song.audioId)
       ctx.addIssue({ code: "custom", path: ["sections"], message: "Agrega la letra o una pista." });
   });
 export type SongInput = z.infer<typeof songInputSchema>;
@@ -122,4 +90,4 @@ export const songListSchema = z.object({
 });
 export const songIdSchema = idSchema;
 export const songUpdateSchema = z.object({ id: idSchema, input: songInputSchema });
-export const songDeleteSchema = z.object({ id: idSchema, deleteAudio: z.boolean().default(false) });
+export const songDeleteSchema = z.object({ id: idSchema });

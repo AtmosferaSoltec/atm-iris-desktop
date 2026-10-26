@@ -8,7 +8,6 @@ import { createTestDatabase } from "../db/test-database";
 import type { SqliteDatabase } from "../db/sqlite";
 import { SqliteMediaRepository } from "../repositories/sqlite/media-repository";
 import { SqliteSongsRepository } from "../repositories/sqlite/songs-repository";
-import { SqliteYoutubeRepository } from "../repositories/sqlite/youtube-repository";
 import { SqliteMaintenanceRepository } from "../repositories/sqlite/maintenance-repository";
 import { SqliteSettingsRepository } from "../repositories/sqlite/settings-repository";
 import { SqlitePlanRepository } from "../repositories/sqlite/plan-repository";
@@ -20,7 +19,6 @@ import { StorageService } from "./storage-service";
 let db: SqliteDatabase;
 let home: IrisHome;
 let songs: SqliteSongsRepository;
-let videos: SqliteYoutubeRepository;
 let assets: SqliteMediaRepository;
 let maintenance: SqliteMaintenanceRepository;
 let media: MediaService;
@@ -34,14 +32,13 @@ beforeEach(async () => {
   settings.initialize("America/Lima");
   assets = new SqliteMediaRepository(db);
   songs = new SqliteSongsRepository(db, assets);
-  videos = new SqliteYoutubeRepository(db);
   maintenance = new SqliteMaintenanceRepository(db, songs);
   trashed = [];
   media = new MediaService(assets, home, async (path) => {
     trashed.push(path);
     await unlink(path);
   });
-  backup = new BackupService(maintenance, songs, videos, assets, media);
+  backup = new BackupService(maintenance, songs, assets, media);
 });
 afterEach(async () => {
   db.close();
@@ -53,13 +50,11 @@ it("round trips the web backup format, skips normalized duplicates and track-onl
     author: "Autor",
     sections: [{ label: "Coro", text: "Texto" }],
     audioId: null,
-    youtubeId: null,
   });
-  videos.save({ videoId: "M7lc1UVf-VE", title: "Video", author: "Autor" });
   const file = backup.export();
-  expect(backup.import(file)).toEqual({ songs: 0, youtubeVideos: 0, skipped: 2, withoutLyrics: 0 });
-  await backup.erase({ songs: true, media: false, youtube: true, confirm: "ELIMINAR" });
-  expect(backup.import(file)).toEqual({ songs: 1, youtubeVideos: 1, skipped: 0, withoutLyrics: 0 });
+  expect(backup.import(file)).toEqual({ songs: 0, skipped: 1, withoutLyrics: 0 });
+  await backup.erase({ songs: true, media: false, confirm: "ELIMINAR" });
+  expect(backup.import(file)).toEqual({ songs: 1, skipped: 0, withoutLyrics: 0 });
   expect(
     backup.import({
       ...file,
@@ -80,7 +75,7 @@ it("rejects an invalid file before importing any content and requires typed eras
     backup.import({ format: "iris-backup", version: 1, songs: [{ title: "Invalid" }] }),
   ).toThrow("Ese archivo");
   await expect(
-    backup.erase({ songs: true, media: false, youtube: false, confirm: "wrong" as "ELIMINAR" }),
+    backup.erase({ songs: true, media: false, confirm: "wrong" as "ELIMINAR" }),
   ).rejects.toMatchObject({
     code: "VALIDATION_FAILED",
     fields: { confirm: "Escribe ELIMINAR para confirmar." },
@@ -99,7 +94,6 @@ it("detects orphan files, preserves referenced files, trashes erase files and cl
     author: "",
     sections: [],
     audioId: audio.id,
-    youtubeId: null,
   });
   const plan = new SqlitePlanRepository(db);
   plan.add("song", song.id);
@@ -110,9 +104,10 @@ it("detects orphan files, preserves referenced files, trashes erase files and cl
       (folder) => folder.name === "Audio",
     )?.bytes,
   ).toBe(5);
-  expect(
-    await backup.erase({ songs: true, media: true, youtube: false, confirm: "ELIMINAR" }),
-  ).toEqual({ songs: 1, media: 1, youtube: 0 });
+  expect(await backup.erase({ songs: true, media: true, confirm: "ELIMINAR" })).toEqual({
+    songs: 1,
+    media: 1,
+  });
   expect(trashed).toHaveLength(2);
   expect(plan.list()).toEqual([]);
 });

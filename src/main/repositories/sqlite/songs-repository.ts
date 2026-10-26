@@ -12,7 +12,6 @@ type SongRow = SqlRow & {
   title: string;
   author: string;
   audio_id: string | null;
-  youtube_id: string | null;
   background_id: string | null;
   last_used_at: string | null;
   archived_at: string | null;
@@ -38,7 +37,6 @@ export class SqliteSongsRepository implements SongsRepository {
       author: row.author,
       sections,
       audio: row.audio_id ? (this.media.get(row.audio_id)?.asset ?? null) : null,
-      youtubeId: row.youtube_id,
       backgroundId: row.background_id,
       lastUsedAt: row.last_used_at,
       archivedAt: row.archived_at,
@@ -80,7 +78,6 @@ export class SqliteSongsRepository implements SongsRepository {
         sectionCount: song.sections.length,
         firstLine: firstLine(song.sections),
         audio: song.audio,
-        youtubeId: song.youtubeId,
         backgroundId: song.backgroundId,
         archivedAt: song.archivedAt,
         lastUsedAt: song.lastUsedAt,
@@ -104,13 +101,12 @@ export class SqliteSongsRepository implements SongsRepository {
       if (previous)
         this.db
           .prepare(
-            "UPDATE songs SET title=?,author=?,audio_id=?,youtube_id=?,background_id=?,search_text=?,updated_at=? WHERE id=?",
+            "UPDATE songs SET title=?,author=?,audio_id=?,background_id=?,search_text=?,updated_at=? WHERE id=?",
           )
           .run(
             input.title,
             input.author,
             input.audioId,
-            input.youtubeId,
             input.backgroundId === undefined ? previous.backgroundId : input.backgroundId,
             search,
             now,
@@ -119,14 +115,13 @@ export class SqliteSongsRepository implements SongsRepository {
       else
         this.db
           .prepare(
-            "INSERT INTO songs(id,title,author,audio_id,youtube_id,background_id,search_text,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO songs(id,title,author,audio_id,background_id,search_text,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
           )
           .run(
             id,
             input.title,
             input.author,
             input.audioId,
-            input.youtubeId,
             input.backgroundId ?? null,
             search,
             now,

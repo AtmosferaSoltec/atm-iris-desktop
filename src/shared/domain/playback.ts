@@ -11,7 +11,6 @@ export function shouldSeekVideo(current: number, target: number): boolean {
 type Timeline = {
   fileId: string;
   kind: "track" | "video";
-  youTube: boolean;
   playing: boolean;
   position: number;
   at: number;
@@ -21,20 +20,11 @@ type Timeline = {
 export function followPlayback<T extends Timeline>(
   current: T,
   report: { id: string; position: number; duration: number },
-  isSound: boolean,
+  _isSound: boolean,
   now: number,
 ): T | null {
   const { position, duration } = report;
-  if ((current.kind !== "video" && !current.youTube) || current.fileId !== report.id || !duration)
-    return current;
-  if (
-    isSound &&
-    current.youTube &&
-    current.playing &&
-    position < duration - 0.25 &&
-    Math.abs(playbackPosition(current, now) - position) > 0.08
-  )
-    return { ...current, duration, position, at: now };
+  if (current.kind !== "video" || current.fileId !== report.id || !duration) return current;
   if (current.playing && position >= duration - 0.25)
     return current.loop ? { ...current, duration, position: 0, at: now } : null;
   return Math.abs(duration - current.duration) > 0.5 ? { ...current, duration } : current;

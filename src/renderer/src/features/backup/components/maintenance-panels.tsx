@@ -135,7 +135,7 @@ export function MaintenancePanels() {
       </Panel>
       <Panel
         title="Respaldo"
-        description="Guarda tus canciones (letra y enlaces) y tus videos de YouTube en un archivo, e impórtalo en esta o en otra instalación de Iris. Las pistas, imágenes y videos subidos no viajan en el archivo."
+        description="Guarda las letras de tus canciones en un archivo e impórtalo en esta o en otra instalación de Iris. Las pistas, imágenes y videos subidos no viajan en el archivo."
       >
         <div className="flex flex-col gap-5">
           <BackupPanel />

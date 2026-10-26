@@ -1,8 +1,8 @@
 import { createReadStream, existsSync } from "node:fs";
-import { open, readdir, stat, statfs, unlink } from "node:fs/promises";
+import { link, open, readdir, stat, statfs, unlink } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
-import { basename, extname } from "node:path";
+import { basename, dirname, extname } from "node:path";
 import type { z } from "@shared/zod";
 import type {
   LocalMediaAsset,
@@ -18,6 +18,7 @@ import { createId } from "@shared/id";
 import { nameKey } from "@shared/lib/text";
 import type {
   mediaDetailsSchema,
+  mediaRenameSchema,
   mediaListSchema,
   mediaMeasuresSchema,
   mediaRoleChangeSchema,
@@ -57,6 +58,7 @@ export class MediaService {
         (asset) =>
           (input.kind === "all" || asset.kind === input.kind) &&
           (!input.role || asset.role === input.role) &&
+          (!input.mp3Only || (asset.kind === "audio" && /\.mp3$/i.test(asset.fileName))) &&
           (!key || nameKey(`${asset.title} ${asset.description ?? ""}`).includes(key)),
       );
     return {
@@ -232,6 +234,62 @@ export class MediaService {
     this.changed();
     return this.get(input.id);
   }
+  async rename(input: z.infer<typeof mediaRenameSchema>): Promise<LocalMediaAsset> {
+    await this.scanPromise;
+    const entry = this.getEntry(input.id);
+    if (entry.asset.kind !== "audio" || entry.asset.role !== "track")
+      throw new AppError("VALIDATION_FAILED", "Solo puedes renombrar pistas de audio.");
+    const extension = extname(entry.asset.fileName);
+    const name = input.name.toLowerCase().endsWith(extension.toLowerCase())
+      ? input.name.slice(0, -extension.length)
+      : input.name;
+    if (!name || name === "." || name === "..")
+      throw new AppError("VALIDATION_FAILED", "Escribe un nombre de archivo válido.");
+    const fileName = `${name}${extension}`;
+    if (entry.asset.fileName === fileName) return entry.asset;
+    const directory = dirname(entry.relativePath);
+    const nextPath = `${directory}/${fileName}`;
+    const source = this.home.resolveInside(entry.relativePath);
+    const destination = this.home.resolveInside(nextPath);
+    const siblings = await readdir(this.home.resolveInside(directory));
+    if (siblings.some((candidate) => candidate.toLowerCase() === fileName.toLowerCase()))
+      throw new AppError("CONFLICT", "Ya existe un archivo con ese nombre. Elige otro.");
+    this.activeImports.add(entry.relativePath);
+    this.activeImports.add(nextPath);
+    let hasLinked = false;
+    let hasUpdated = false;
+    try {
+      // Exclusive linking refuses collisions without ever overwriting another audio file.
+      await link(source, destination);
+      hasLinked = true;
+      this.repository.update({
+        ...entry,
+        relativePath: nextPath,
+        asset: { ...entry.asset, fileName, title: name, updatedAt: new Date().toISOString() },
+      });
+      hasUpdated = true;
+      await unlink(source);
+      this.changed();
+      return this.get(input.id);
+    } catch (error) {
+      if (hasUpdated) this.repository.update(entry);
+      if (hasLinked) await unlink(destination).catch(() => {});
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        "INTERNAL",
+        "No pudimos cambiar el nombre. Cierra el audio e inténtalo de nuevo.",
+      );
+    } finally {
+      this.activeImports.delete(entry.relativePath);
+      this.activeImports.delete(nextPath);
+    }
+  }
+  async deleteUnusedTrack(id: string, excludingSongId?: string): Promise<void> {
+    const entry = this.repository.get(id);
+    if (!entry || entry.asset.role !== "track" || this.repository.isReferenced(id, excludingSongId))
+      return;
+    await this.delete(id);
+  }
   async delete(id: string): Promise<void> {
     const entry = this.getEntry(id);
     const path = this.home.resolveInside(entry.relativePath);
@@ -310,7 +368,12 @@ export class MediaService {
     ] as const)
       await walk(folder, role, kind);
     for (const [path, entry] of existing)
-      if (!seen.has(path) && !entry.asset.isMissing) {
+      if (
+        !seen.has(path) &&
+        !entry.asset.isMissing &&
+        !this.activeImports.has(path) &&
+        this.repository.get(entry.asset.id)?.relativePath === path
+      ) {
         this.repository.update({ ...entry, asset: { ...entry.asset, isMissing: true } });
         count++;
       }

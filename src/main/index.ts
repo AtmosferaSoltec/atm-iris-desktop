@@ -1,6 +1,4 @@
 import { installMenu } from "./windows/menu";
-import { registerYoutubePlayer } from "./windows/youtube-player-protocol";
-import { configureYouTubeSession } from "./windows/youtube-session";
 import { app, BrowserWindow, dialog, session, protocol } from "electron";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
@@ -11,10 +9,6 @@ import { initializeLogging, logError } from "./app/logging";
 import { createConsoleWindow } from "./windows/console-window";
 
 protocol.registerSchemesAsPrivileged([
-  {
-    scheme: "iris-player",
-    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
-  },
   {
     scheme: "iris-media",
     privileges: {
@@ -62,8 +56,6 @@ if (!app.requestSingleInstanceLock()) {
       callback(false),
     );
     session.defaultSession.setPermissionCheckHandler(() => false);
-    configureYouTubeSession(session.defaultSession);
-    registerYoutubePlayer();
     const { db, settings } = boot();
     app.once("will-quit", () => db.close());
     createConsoleWindow(settings);

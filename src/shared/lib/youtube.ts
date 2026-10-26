@@ -1,12 +1,4 @@
-// YouTube without its API: links and thumbnails. A music.youtube.com link is read as the same
-// video (it is not told apart). Videos play in YouTube's own player; nothing is ever downloaded.
-
-/** A video as Iris shows it (from oEmbed). */
-export type YouTubeVideo = {
-  videoId: string;
-  title: string;
-  author: string;
-};
+// URL parsing for the optional personal downloader; no player or oEmbed integration.
 
 /**
  * The video id of a YouTube link (music.youtube.com too): watch?v=, youtu.be/, shorts/, embed/, live/ or the bare
@@ -31,9 +23,4 @@ export function youTubeVideoId(input: string): string | null {
       null;
   }
   return id && /^[\w-]{11}$/.test(id) ? id : null;
-}
-
-/** The video's thumbnail (no API key needed). */
-export function youTubeThumbnail(videoId: string): string {
-  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }

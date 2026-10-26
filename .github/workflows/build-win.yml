@@ -1,12 +1,16 @@
 name: Build Iris for Windows
 on:
   workflow_dispatch:
+    inputs:
+      personal:
+        description: "Edición personal con descargador (no distribuir)"
+        type: boolean
+        default: false
   push:
-    branches: [main]
-  pull_request:
+    branches: [deploy/windows]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows:
@@ -14,6 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      IRIS_PERSONAL_BUILD: ${{ inputs.personal && '1' || '0' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -27,15 +32,24 @@ jobs:
       - run: pnpm check
       - run: pnpm format:check
       - run: pnpm test:e2e
-      - run: pnpm build:win --publish never
+      - if: ${{ !inputs.personal }}
+        run: pnpm build:win --publish never
+      - if: ${{ inputs.personal }}
+        run: pnpm build:win:personal --publish never
       - run: pnpm test:packaged dist/win-unpacked/Iris.exe
+      # Only a push to deploy/windows publishes: the installer clients look for (latest.yml + .exe).
+      - name: Publish GitHub release for automatic updates
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm exec electron-builder --win --prepackaged dist/win-unpacked --publish always
       - name: Read app version
         id: version
         shell: bash
         run: node -e "require('node:fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
       - uses: actions/upload-artifact@v7
         with:
-          name: iris-windows-${{ steps.version.outputs.version }}
+          name: iris-windows-${{ steps.version.outputs.version }}${{ inputs.personal && '-personal' || '' }}
           path: |
             dist/*.exe
             dist/*.zip

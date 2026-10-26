@@ -1,11 +1,10 @@
 import { expect, it } from "vitest";
 import { playbackPosition, shouldSeekVideo, ownBackgroundOnPresent } from "./playback";
 import { followPlayback } from "./playback";
-it("uses the audible YouTube player as clock, learns duration and handles end/repeat", () => {
+it("learns local video duration and handles end/repeat", () => {
   const current = {
     fileId: "video",
     kind: "video" as const,
-    youTube: true,
     playing: true,
     position: 0,
     at: 1000,
@@ -14,8 +13,8 @@ it("uses the audible YouTube player as clock, learns duration and handles end/re
   };
   const report = { id: "video", position: 2, duration: 120 };
   expect(followPlayback(current, report, true, 10000)).toMatchObject({
-    position: 2,
-    at: 10000,
+    position: 0,
+    at: 1000,
     duration: 120,
   });
   expect(followPlayback(current, report, false, 10000)).toMatchObject({

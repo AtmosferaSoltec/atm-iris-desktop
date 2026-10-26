@@ -1,6 +1,6 @@
 # Arquitectura implementada
 
-Iris Desktop 0.2.1 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
+Iris Desktop 0.3.0 usa Electron, React, TypeScript, React Compiler, Vite, Radix y SQLite integrado en Node. El renderer es local y no requiere cuenta ni servidor.
 
 ## Procesos y límites
 
@@ -15,19 +15,19 @@ Todas las ventanas mantienen aislamiento de contexto, sandbox y `webSecurity`; n
 
 La carpeta `<home>/Iris` contiene `Audio`, `Videos`, `Images`, `Backgrounds`, `Sounds`, `Database` y `Backups`. `IRIS_HOME` sustituye esa ubicación; también se reconoce `userData/config.json` con `homeDir` absoluto. No hay selector de ubicación en la interfaz.
 
-SQLite usa foreign keys, journal DELETE y synchronous FULL. Once migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, videos de YouTube y Biblia RVR1960; la décima registra modificaciones de archivos multimedia y la undécima conserva varias traducciones bíblicas sin perder la RVR1960 existente. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
+SQLite usa foreign keys, journal DELETE y synchronous FULL. Las primeras once migraciones crean ajustes, medios, canciones/diapositivas, plan, personas, tipos/bloques, registros, los datos históricos de YouTube y Biblia RVR1960; la décima registra modificaciones de archivos multimedia y la undécima conserva varias traducciones bíblicas sin perder la RVR1960 existente. La migración 12 retira enlaces y videos guardados sin borrar canciones, letras ni archivos locales. Se copia la base antes de migrar; una versión futura se rechaza. Las rutas de medios son relativas y `resolveInside` comprueba segmentos, prefijos y symlinks. Las importaciones copian sin sobrescribir y las eliminaciones explícitas pasan por la papelera del sistema.
 
 El registro en curso se guarda en cada cambio de bloque y se reanuda desde sus timestamps UTC. Los nombres históricos permanecen aunque se elimine la persona o el tipo. «Hoy», horarios, periodos y snapshots diarios usan la zona de la iglesia.
 
 El respaldo JSON conserva la forma del importador web y excluye los archivos multimedia. La importación valida todo antes de una transacción y omite duplicados. `VACUUM INTO` genera snapshots diarios y manuales; se conservan siete, además de las copias previas a migraciones. La restauración de SQLite es manual con Iris cerrado.
 
-## Proyección y YouTube
+## Proyección y audio local
 
 La consola publica frames completos. Main los conserva y los envía a la salida al cargar. La salida reproduce video con audio; la vista previa permanece silenciada. Los fondos de video siempre van silenciados. Al perder un monitor se cierra la salida y se avisa; se impide el apagado de pantalla mientras se proyecta.
 
-El renderer principal conserva CSP sin scripts remotos. La excepción de YouTube se limita a una página empaquetada en `iris-player://app`, dentro de un iframe con origen diferente y sin preload. La API oficial solo se carga allí; comandos, tiempo y errores pasan por postMessage validado y comprobación del emisor. El protocolo sirve únicamente HTML y assets empaquetados en producción; durante desarrollo remite al servidor Vite. El header Referer identifica `com.atmosfera.iris` solo ante YouTube. El spike real reprodujo video en macOS; Windows y HDMI siguen pendientes. No se descargan contenidos ni se bloquean anuncios.
+El renderer tiene CSP local y `frame-src 'none'`. No existe reproductor de YouTube, oEmbed, protocolo iris-player ni IPC para guardar enlaces. Las canciones usan letra y/o MP3 local; la migración conserva las letras de canciones antes vinculadas. El botón de limpiar es un latch independiente que no se desactiva al cambiar de canción. El volumen se aplica al audio del salón y a los frames de video; la vista previa sigue silenciada.
 
-La única red de producto es YouTube. Las letras se escriben o pegan manualmente; no hay consulta de letras en línea. No hay telemetría ni actualización automática. Los logs rotan en `userData/logs`.
+La edición general no usa red. Solo la edición personal, con la función activada, permite el descargador y actualizaciones verificadas de yt-dlp. Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
 
 ## Verificación y distribución
 
@@ -42,3 +42,7 @@ El selector y las referencias portan la consola web. Configuración permite impo
 ## Biblioteca por carpetas (fase 13)
 
 Multimedia muestra los archivos presentes en Images/Videos con búsqueda, carpeta y actualizar. El escaneo conserva ids por ruta relativa, respeta los tipos de cada carpeta y detecta modificaciones por tamaño y fecha del archivo. Las URLs de assets admiten únicamente un parámetro numérico de versión para renovar previews; se mantienen los controles de ruta y Range. Los archivos faltantes se ocultan en esa biblioteca, conservando sus referencias para avisos en el plan y mantenimiento. SQLite almacena solo metadatos, nunca los bytes de imágenes, videos o audios. La importación de las otras herramientas sigue separada del nuevo flujo de biblioteca.
+
+## Módulo personal (fase 99)
+
+`IRIS_PERSONAL_BUILD=1` resuelve módulos virtuales hacia los directorios opcionales de main/renderer; la edición general resuelve implementaciones vacías/IPC no disponible. El build inspecciona bundles para comprobar inclusión/exclusión. La preferencia `features.downloader` arranca desactivada. Main mantiene un trabajo a la vez, verifica el ejecutable oficial, usa `spawn` sin shell, valida metadatos/límites, mide el resultado con FFprobe e importa el archivo terminado con el servicio existente. FFmpeg/FFprobe se seleccionan nativamente; ningún renderer recibe sus rutas. Los temporales y herramientas están en `userData/tools`, los medios finales en Iris. El esquema SQLite sigue en 11. Véase [edición personal](downloader-personal.md).

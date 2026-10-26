@@ -11,7 +11,6 @@ import {
 } from "@shared/schemas/backup";
 import { songInputSchema } from "@shared/schemas/songs";
 import type { SqliteMaintenanceRepository } from "../repositories/sqlite/maintenance-repository";
-import type { YoutubeRepository } from "../repositories/sqlite/youtube-repository";
 import type { SongsRepository, MediaRepository } from "../repositories/types";
 import type { MediaService } from "./media-service";
 
@@ -19,7 +18,6 @@ export class BackupService {
   constructor(
     private readonly repository: SqliteMaintenanceRepository,
     private readonly songs: SongsRepository,
-    private readonly videos: YoutubeRepository,
     private readonly assets: MediaRepository,
     private readonly media: MediaService,
   ) {}
@@ -32,11 +30,7 @@ export class BackupService {
         title: song.title,
         author: song.author,
         sections: song.sections.map(({ label, text }) => ({ label, text })),
-        youtubeId: song.youtubeId,
       })),
-      youtubeVideos: this.videos
-        .list()
-        .map(({ videoId, title, author }) => ({ videoId, title, author })),
     };
   }
   import(raw: unknown): ImportResult {
@@ -48,10 +42,9 @@ export class BackupService {
       const key = (title: string, author: string): string =>
         `${nameKey(title)}\u0000${nameKey(author)}`;
       const seen = new Set(this.repository.songs().map((song) => key(song.title, song.author)));
-      const videoIds = new Set(this.videos.list().map((video) => video.videoId));
-      const result: ImportResult = { songs: 0, youtubeVideos: 0, skipped: 0, withoutLyrics: 0 };
+      const result: ImportResult = { songs: 0, skipped: 0, withoutLyrics: 0 };
       for (const song of file.songs) {
-        if (!song.sections.length && !song.youtubeId) {
+        if (!song.sections.length) {
           result.withoutLyrics++;
           continue;
         }
@@ -67,21 +60,12 @@ export class BackupService {
         seen.add(songKey);
         result.songs++;
       }
-      for (const video of file.youtubeVideos) {
-        if (videoIds.has(video.videoId)) {
-          result.skipped++;
-          continue;
-        }
-        this.videos.save(video);
-        videoIds.add(video.videoId);
-        result.youtubeVideos++;
-      }
       return result;
     });
   }
   async erase(raw: z.infer<typeof eraseSchema>): Promise<EraseResult> {
     const input = parseInput(eraseSchema, raw);
-    const result: EraseResult = { songs: 0, media: 0, youtube: 0 };
+    const result: EraseResult = { songs: 0, media: 0 };
     if (input.songs) {
       for (const song of this.repository.songs()) {
         // Trash first: a failed filesystem action leaves that song available for retry.
@@ -94,11 +78,6 @@ export class BackupService {
       for (const { asset } of this.assets.all().filter(({ asset }) => asset.kind !== "audio")) {
         await this.media.delete(asset.id);
         result.media++;
-      }
-    if (input.youtube)
-      for (const video of this.videos.list()) {
-        this.videos.delete(video.id);
-        result.youtube++;
       }
     return result;
   }

@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -34,6 +36,22 @@ try {
   const result = await page.evaluate(() => window.iris["bible:status"](undefined));
   assert.equal(result.ok, true);
   assert.deepEqual(result.data.translations, []);
+  const downloader = await page.evaluate(() => window.iris["downloader:status"](undefined));
+  assert.equal(downloader.ok, true);
+  if (["0", "1"].includes(process.env.IRIS_PERSONAL_BUILD))
+    assert.equal(downloader.data.isAvailable, process.env.IRIS_PERSONAL_BUILD === "1");
+  if (downloader.data.isAvailable) {
+    const runtime = await promisify(execFile)(
+      resolve(executablePath),
+      ["-p", "process.versions.node"],
+      { env: { ...environment, ELECTRON_RUN_AS_NODE: "1" }, timeout: 15000 },
+    );
+    assert.match(runtime.stdout.trim(), /^\d+\.\d+\.\d+$/);
+    assert.ok(
+      Number(runtime.stdout.trim().split(".")[0]) >= 22,
+      "El descargador necesita un motor JavaScript compatible.",
+    );
+  }
   console.log(
     `Iris ${version}: aplicación empaquetada, consola e IPC verificados con un perfil temporal.`,
   );

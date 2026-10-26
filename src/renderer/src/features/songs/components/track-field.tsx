@@ -1,26 +1,23 @@
-import { youTubeThumbnail } from "@shared/lib/youtube";
-import { Link2, Pause, Play, RotateCw, X } from "lucide-react";
-import { useRef, useState, useTransition, type DragEvent } from "react";
+import { AudioPickerDialog } from "./audio-picker-dialog";
+import { Pause, Play, RotateCw, X } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Button, IconButton } from "@renderer/components/ui/button";
 import { Field } from "@renderer/components/ui/field";
 import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
 import { toast } from "@renderer/components/ui/toaster";
-import { SECTION_KINDS } from "@shared/domain/media-rules";
 import type { MediaAsset } from "@shared/domain/models";
-import { acceptedTypes, fileFacts } from "@renderer/features/media/media-format";
+import { fileFacts } from "@renderer/features/media/media-format";
 import { useMediaUpload } from "@renderer/features/media/upload/use-media-upload";
 import { cn } from "@renderer/lib/cn";
 import { clock } from "@shared/lib/format";
-import { youTubeVideoId, type YouTubeVideo } from "@shared/lib/youtube";
-import { findYouTubeTrack } from "../actions";
+import { invoke } from "@renderer/lib/ipc";
+import { errorMessage } from "@shared/errors";
 import { useTrackPlayer } from "../use-track-player";
-import { YouTubeBadge } from "./youtube-badge";
 
 import { IMPORT_STATUS_TEXT as STATUS_TEXT } from "@renderer/features/media/messages";
 
-/** The song's track: an uploaded file or a YouTube (Music) video, never both (contract §10). */
-export type Track = { kind: "audio"; audio: MediaAsset } | { kind: "youtube"; video: YouTubeVideo };
+export type Track = { kind: "audio"; audio: MediaAsset };
 
 type Props = {
   track: Track | null;
@@ -28,21 +25,42 @@ type Props = {
   error?: string;
 };
 
-/**
- * The song's track (contract §10). Mainly a YouTube video, pasted as a
- * link: it plays in YouTube's player and takes no space. An uploaded file is the
- * fallback for a church without internet. An upload goes up right away and stays with the song
- * when it is saved; a replaced or removed one is deleted by the API on save, and one never
- * saved is cleaned up a day later.
- */
 export function TrackField({ track, onChange, error }: Props) {
   const player = useTrackPlayer();
+  const importedTracks = useRef(new Set<string>());
+  const isOpen = useRef(true);
+  useEffect(() => {
+    isOpen.current = true;
+    const ids = importedTracks.current;
+    return () => {
+      isOpen.current = false;
+      for (const id of ids)
+        void invoke("media:discard-track", id).catch((error) => toast.error(errorMessage(error)));
+    };
+  }, []);
+  function replaceTrack(next: Track | null) {
+    const previousId = track?.audio.id;
+    if (previousId && previousId !== next?.audio.id && importedTracks.current.has(previousId))
+      void invoke("media:discard-track", previousId).catch((error) =>
+        toast.error(errorMessage(error)),
+      );
+    setAudioName("");
+    onChange(next);
+  }
   const fileInput = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isChoosingAudio, setIsChoosingAudio] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [audioName, setAudioName] = useState("");
   const upload = useMediaUpload("track", {
-    onUploaded: (asset) => {
+    onUploaded: async (asset) => {
+      if (!isOpen.current) {
+        await invoke("media:discard-track", asset.id);
+        return;
+      }
       player.stop();
-      onChange({ kind: "audio", audio: asset });
+      importedTracks.current.add(asset.id);
+      replaceTrack({ kind: "audio", audio: asset });
       toast.success("Pista lista. Guarda la canción para conservarla.");
     },
   });
@@ -53,6 +71,10 @@ export function TrackField({ track, onChange, error }: Props) {
   function choose(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
+    if (!/\.mp3$/i.test(file.name)) {
+      toast.error("Elige un archivo MP3.");
+      return;
+    }
     for (const previous of upload.items) upload.onDismiss(previous.id);
     void upload.importFiles([file]);
   }
@@ -67,7 +89,7 @@ export function TrackField({ track, onChange, error }: Props) {
     <input
       ref={fileInput}
       type="file"
-      accept={acceptedTypes(SECTION_KINDS.music)}
+      accept=".mp3,audio/mpeg"
       className="sr-only"
       tabIndex={-1}
       aria-hidden
@@ -80,12 +102,24 @@ export function TrackField({ track, onChange, error }: Props) {
 
   return (
     <Field id="track" label="Pista" error={error}>
+      {isChoosingAudio && (
+        <AudioPickerDialog
+          onClose={() => setIsChoosingAudio(false)}
+          onPick={(asset) => {
+            player.stop();
+            replaceTrack({ kind: "audio", audio: asset });
+          }}
+        />
+      )}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={isUploading}
+        onClick={() => setIsChoosingAudio(true)}
+      >
+        Elegir audio de Iris
+      </Button>
       <input type="hidden" name="audioId" value={audio?.id ?? ""} />
-      <input
-        type="hidden"
-        name="youtubeId"
-        value={track?.kind === "youtube" ? track.video.videoId : ""}
-      />
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -113,8 +147,6 @@ export function TrackField({ track, onChange, error }: Props) {
               </p>
             </div>
           </div>
-        ) : track?.kind === "youtube" ? (
-          <YouTubeTrackCard video={track.video} onRemove={() => onChange(null)} />
         ) : audio ? (
           <div className="flex items-center gap-3 p-3">
             <IconButton
@@ -145,19 +177,52 @@ export function TrackField({ track, onChange, error }: Props) {
               label="Quitar la pista"
               onClick={() => {
                 player.stop();
-                onChange(null);
+                replaceTrack(null);
               }}
             >
               <X />
             </IconButton>
           </div>
         ) : (
-          <YouTubePicker
-            onPick={(video) => onChange({ kind: "youtube", video })}
-            onUpload={() => fileInput.current?.click()}
-          />
+          <Button variant="secondary" onClick={() => fileInput.current?.click()}>
+            Elegir archivo MP3
+          </Button>
         )}
       </div>
+      {audio && (
+        <div className="flex items-end gap-2">
+          <TextField
+            id="audio-name"
+            label="Nombre del archivo de audio"
+            placeholder={audio.fileName.replace(/\.[^.]+$/, "")}
+            value={audioName}
+            onChange={(event) => setAudioName(event.target.value)}
+            containerClassName="min-w-0 flex-1"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!audioName.trim()}
+            isLoading={isRenaming}
+            onClick={async () => {
+              setIsRenaming(true);
+              player.stop();
+              try {
+                const renamed = await invoke("media:rename", { id: audio.id, name: audioName });
+                onChange({ kind: "audio", audio: renamed });
+                setAudioName("");
+                toast.success("Nombre del audio actualizado");
+              } catch (error) {
+                toast.error(errorMessage(error));
+              } finally {
+                setIsRenaming(false);
+              }
+            }}
+          >
+            Renombrar
+          </Button>
+        </div>
+      )}
       {item?.status === "error" && (
         <p role="alert" className="flex items-center gap-2 text-xs font-medium text-danger">
           {item.error}
@@ -175,127 +240,5 @@ export function TrackField({ track, onChange, error }: Props) {
       )}
       {picker}
     </Field>
-  );
-}
-
-/** Takes a pasted YouTube link and checks it can play outside YouTube. */
-function YouTubePicker({
-  onPick,
-  onUpload,
-}: {
-  onPick: (video: YouTubeVideo) => void;
-  onUpload: () => void;
-}) {
-  const [link, setLink] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, startLoad] = useTransition();
-  const request = useRef(0);
-
-  function check(text: string) {
-    setError(null);
-    if (!text.trim()) return;
-    if (!youTubeVideoId(text)) {
-      setError("Ese enlace no es de YouTube.");
-      return;
-    }
-    const id = ++request.current;
-    startLoad(async () => {
-      const result = await findYouTubeTrack(text);
-      if (id !== request.current) return;
-      if (result.video) onPick(result.video);
-      else setError(result.error ?? "No pudimos usar ese enlace.");
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-3 p-3">
-      <TextField
-        id="track-link"
-        name=""
-        aria-label="Enlace de YouTube"
-        placeholder="Pega el enlace de YouTube"
-        icon={<Link2 />}
-        value={link}
-        autoComplete="off"
-        onChange={(event) => {
-          setLink(event.target.value);
-          // A paste is a whole link: checked right away. Typing waits for Enter.
-          if (
-            event.nativeEvent instanceof InputEvent &&
-            event.nativeEvent.inputType === "insertFromPaste"
-          ) {
-            check(event.target.value);
-          } else {
-            setError(null);
-          }
-        }}
-        onKeyDown={(event) => {
-          // Enter checks the link instead of saving the song.
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          check(link);
-        }}
-        onBlur={() => check(link)}
-        accessory={isLoading ? <Spinner className="size-4 text-ink-2" /> : undefined}
-      />
-      {error && (
-        <p role="alert" className="text-xs font-medium text-danger">
-          {error}
-        </p>
-      )}
-      <p className="text-xs text-ink-2">
-        Suena con el reproductor de YouTube y no ocupa espacio; necesita internet.{" "}
-        <button
-          type="button"
-          onClick={onUpload}
-          className="cursor-pointer font-semibold text-ink underline-offset-2 hover:underline"
-        >
-          O sube un MP3
-        </button>{" "}
-        para usarla sin internet.
-      </p>
-    </div>
-  );
-}
-
-/** The chosen YouTube track, with YouTube's own player to listen to it here. */
-function YouTubeTrackCard({ video, onRemove }: { video: YouTubeVideo; onRemove: () => void }) {
-  const [isListening, setIsListening] = useState(false);
-  return (
-    <div className="flex flex-col gap-3 p-3">
-      <div className="flex items-center gap-3">
-        <img
-          src={youTubeThumbnail(video.videoId)}
-          alt=""
-          className="aspect-video w-24 shrink-0 rounded-sm object-cover"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold">{video.title}</p>
-          <p className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
-            <YouTubeBadge />
-            {video.author && <span className="truncate">· {video.author}</span>}
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={isListening ? <X className="size-4" /> : <Play className="size-4" />}
-          onClick={() => setIsListening((value) => !value)}
-        >
-          {isListening ? "Cerrar" : "Escuchar"}
-        </Button>
-        <IconButton label="Quitar la pista" onClick={onRemove}>
-          <X />
-        </IconButton>
-      </div>
-      {isListening && (
-        <iframe
-          src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&rel=0`}
-          title={video.title}
-          allow="autoplay; encrypted-media"
-          className="aspect-video w-full rounded-sm"
-        />
-      )}
-    </div>
   );
 }

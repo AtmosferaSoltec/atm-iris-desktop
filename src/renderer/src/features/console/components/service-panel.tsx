@@ -1,9 +1,12 @@
+import { Banner } from "@renderer/components/ui/banner";
 import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  Captions,
-  CirclePlay,
+  Eraser,
+  Trash2,
+  Volume2,
+  VolumeX,
   GripVertical,
   ListMusic,
   Music,
@@ -14,13 +17,12 @@ import {
   Square,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { IconButton } from "@renderer/components/ui/button";
 import { ConfirmDialog } from "@renderer/components/ui/dialog";
 import { Surface } from "@renderer/components/ui/surface";
-import { toast } from "@renderer/components/ui/toaster";
 import { ProjectionCanvas } from "@renderer/components/projection/projection-canvas";
-import { DEFAULT_TYPOGRAPHY, type ProjectionFrame } from "@renderer/features/projection/model";
+import { Popover, PopoverTrigger, PopoverContent } from "@renderer/components/ui/popover";
 import { cn } from "@renderer/lib/cn";
 import { clock } from "@shared/lib/format";
 import { plural } from "@shared/lib/text";
@@ -50,13 +52,13 @@ export function ServicePanel({ ctrl }: { ctrl: LiveConsole }) {
             Servicio <span className="ml-1 font-mono tabular-nums">{ctrl.items.length}</span>
           </h2>
           {ctrl.items.length > 0 && (
-            <button
-              type="button"
+            <IconButton
+              label="Vaciar servicio"
               onClick={() => setIsConfirmingClear(true)}
-              className="cursor-pointer text-xs font-medium text-ink-2 hover:text-danger"
+              className="hover:text-danger"
             >
-              Vaciar
-            </button>
+              <Trash2 />
+            </IconButton>
           )}
         </div>
 
@@ -108,13 +110,17 @@ export function ServicePanel({ ctrl }: { ctrl: LiveConsole }) {
             transitions
             playsVideo
             onVideoTime={(time) => ctrl.followVideo(time.id, time.position, time.duration)}
-            onVideoError={(message) => toast.error(message)}
+            onVideoError={(message) => {
+              if (ctrl.liveFrame.content.kind === "video")
+                ctrl.reportPlaybackError(ctrl.liveFrame.content.id, message);
+            }}
           />
           <span className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-white uppercase backdrop-blur">
             <span className="size-1.5 animate-pulse-live rounded-full bg-live" />
             En vivo
           </span>
         </div>
+        <PreviewControls ctrl={ctrl} />
         {ctrl.playback && <NowPlaying ctrl={ctrl} />}
         <OpenTrack ctrl={ctrl} />
       </Surface>
@@ -205,15 +211,18 @@ function ServiceRow({
               <span aria-label="En vivo" className="size-1.5 shrink-0 rounded-full bg-live" />
             )}
           </span>
-          {(item.subtitle || (item.youTubeId && item.kind !== "youtube")) && (
+          {(item.subtitle || ((item.kind === "song" || item.kind === "track") && item.file)) && (
             <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
               <span className="truncate">{item.subtitle}</span>
-              {item.youTubeId && item.kind !== "youtube" && (
-                <CirclePlay
-                  role="img"
-                  aria-label="Pista de YouTube"
-                  className="size-3.5 shrink-0 text-danger"
-                />
+              {(item.kind === "song" || item.kind === "track") && item.file && (
+                <>
+                  <Music role="img" aria-label="Audio MP3" className="size-3.5 shrink-0" />
+                  {item.file.durationSeconds !== null && (
+                    <span className="shrink-0 font-mono tabular-nums">
+                      {clock(item.file.durationSeconds)}
+                    </span>
+                  )}
+                </>
               )}
             </span>
           )}
@@ -250,7 +259,7 @@ function ServiceRow({
  */
 function OpenTrack({ ctrl }: { ctrl: LiveConsole }) {
   const item = ctrl.openItem;
-  if (!item || item.kind !== "song" || !(item.file || item.youTubeId)) return null;
+  if (!item || item.kind !== "song" || !item.file) return null;
   if (ctrl.playback?.key === item.planItemId) return null;
   const duration = item.file?.durationSeconds;
 
@@ -307,24 +316,32 @@ function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
         <span
           className={cn(
             "size-2 shrink-0 rounded-full",
-            isTrack ? "bg-success" : "bg-rose",
-            playback.playing && "animate-pulse-live",
+            playback.error ? "bg-danger" : isTrack ? "bg-success" : "bg-rose",
+            playback.playing && !playback.error && "animate-pulse-live",
           )}
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{playback.title}</span>
           <span className="block text-xs text-ink-2">
-            {!playback.playing
-              ? "En pausa"
-              : isTrack
-                ? "Sonando en el salón"
-                : "Reproduciendo en la pantalla"}
+            {playback.error
+              ? "Reproducción no disponible"
+              : !playback.playing
+                ? "En pausa"
+                : isTrack
+                  ? "Sonando en el salón"
+                  : "Reproduciendo en la pantalla"}
           </span>
         </span>
       </div>
-      {playback.youTube && isTrack && <YouTubeTrack ctrl={ctrl} />}
+      {playback.error && (
+        <Banner tone="error">
+          La pista no está disponible. Puedes seguir proyectando la letra. Edita la canción para
+          elegir otra pista o un archivo local.
+        </Banner>
+      )}
       <input
         type="range"
+        disabled={Boolean(playback.error)}
         aria-label="Posición"
         min={0}
         max={Math.max(playback.duration, 1)}
@@ -346,8 +363,9 @@ function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
           type="button"
           aria-label={playback.playing ? "Pausar" : "Reproducir"}
           title={playback.playing ? "Pausar (Espacio)" : "Reproducir (Espacio)"}
+          disabled={Boolean(playback.error)}
           onClick={ctrl.togglePlay}
-          className="grid size-11 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95"
+          className="grid size-11 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {playback.playing ? (
             <Pause aria-hidden className="size-5" fill="currentColor" />
@@ -375,44 +393,48 @@ function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
         >
           <Repeat />
         </IconButton>
-        {playback.captions !== null && (
-          <IconButton
-            label="Subtítulos"
-            aria-pressed={playback.captions}
-            onClick={ctrl.toggleCaptions}
-            className={playback.captions ? "bg-coral/15 text-coral ring-coral/40" : undefined}
-          >
-            <Captions />
-          </IconButton>
-        )}
       </div>
     </div>
   );
 }
 
-/**
- * A song's track on YouTube: YouTube's player, visible here with its sound (their terms do not
- * allow playing the sound alone), while the screens keep the lyrics. It follows the controls
- * below like the screens follow a video.
- */
-function YouTubeTrack({ ctrl }: { ctrl: LiveConsole }) {
-  const { fileId, playing, position, at } = ctrl.playback!;
-  const frame = useMemo<ProjectionFrame>(
-    () => ({
-      background: null,
-      content: { kind: "youtube", id: fileId, playing, position, at, captions: false },
-      typography: DEFAULT_TYPOGRAPHY,
-    }),
-    [fileId, playing, position, at],
-  );
+function PreviewControls({ ctrl }: { ctrl: LiveConsole }) {
   return (
-    <ProjectionCanvas
-      frame={frame}
-      playsVideo
-      audible
-      onVideoTime={(time) => ctrl.followVideo(time.id, time.position, time.duration, true)}
-      onVideoError={(message) => toast.error(message)}
-      className="rounded-md"
-    />
+    <div className="flex items-center justify-end gap-2">
+      <IconButton
+        label="Limpiar pantalla (B)"
+        aria-pressed={ctrl.isCleared}
+        isActive={ctrl.isCleared}
+        onClick={ctrl.toggleCleared}
+      >
+        <Eraser />
+      </IconButton>
+      <Popover>
+        <PopoverTrigger asChild>
+          <IconButton label="Volumen">{ctrl.volume === 0 ? <VolumeX /> : <Volume2 />}</IconButton>
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          align="end"
+          className="flex w-24 min-w-0 flex-col items-center gap-3"
+        >
+          <label htmlFor="playback-volume" className="text-xs font-medium text-ink-2">
+            Volumen
+          </label>
+          <input
+            id="playback-volume"
+            aria-label="Volumen"
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(ctrl.volume * 100)}
+            onChange={(event) => ctrl.setVolume(Number(event.target.value) / 100)}
+            className="h-32 w-6 accent-coral [direction:rtl] [writing-mode:vertical-lr]"
+          />
+          <span className="text-xs text-ink-2 tabular-nums">{Math.round(ctrl.volume * 100)} %</span>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

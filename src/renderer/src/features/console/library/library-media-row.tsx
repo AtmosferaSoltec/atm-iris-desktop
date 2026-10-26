@@ -115,12 +115,12 @@ export const LibraryMediaRow = memo(function LibraryMediaRow({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {entry.kind !== "youtube" && (
+        {
           <ContextMenuItem onSelect={() => onEdit(entry)}>
             <Pencil />
             Ver y editar
           </ContextMenuItem>
-        )}
+        }
         <ContextMenuItem tone="danger" onSelect={() => onDelete(entry)}>
           <Trash2 />
           Eliminar

@@ -48,13 +48,7 @@ export const projectionContentSchema = z.discriminatedUnion("kind", [
     url: assetUrl,
     ...position,
     muted: z.boolean().optional(),
-  }),
-  z.object({
-    kind: z.literal("youtube"),
-    id: z.string().regex(/^[\w-]{11}$/),
-    ...position,
-    captions: z.boolean(),
-    muted: z.boolean().optional(),
+    volume: z.number().min(0).max(1).optional(),
   }),
 ]);
 export const projectionFrameSchema: z.ZodType<ProjectionFrame> = z.object({

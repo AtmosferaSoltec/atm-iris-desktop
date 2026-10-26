@@ -138,3 +138,43 @@ describe("media imports and scanning", () => {
     expect(await readFile(join(home.backgroundsDir, "user.mp4"), "utf8")).toBe("video");
   });
 });
+
+it("renames an audio file without breaking its asset identity or overwriting another file", async () => {
+  await writeFile(join(home.audioDir, "pista.mp3"), "audio bytes");
+  await service.scan();
+  const original = repository.all()[0].asset;
+  const renamed = await service.rename({ id: original.id, name: "Nueva pista" });
+  expect(renamed).toMatchObject({
+    id: original.id,
+    fileName: "Nueva pista.mp3",
+    title: "Nueva pista",
+  });
+  expect(await readFile(join(home.audioDir, "Nueva pista.mp3"), "utf8")).toBe("audio bytes");
+  await expect(readFile(join(home.audioDir, "pista.mp3"))).rejects.toMatchObject({
+    code: "ENOENT",
+  });
+  await service.scan();
+  expect(repository.all()).toHaveLength(1);
+  expect(service.get(original.id).isMissing).toBe(false);
+  await writeFile(join(home.audioDir, "existing.mp3"), "other bytes");
+  await expect(service.rename({ id: original.id, name: "EXISTING" })).rejects.toMatchObject({
+    code: "CONFLICT",
+  });
+  expect(await readFile(join(home.audioDir, "existing.mp3"), "utf8")).toBe("other bytes");
+});
+
+it("rolls back an audio rename if the database update fails", async () => {
+  const { vi } = await import("vitest");
+  await writeFile(join(home.audioDir, "pista.mp3"), "audio bytes");
+  await service.scan();
+  const original = repository.all()[0];
+  const update = vi.spyOn(repository, "update").mockImplementationOnce(() => {
+    throw new Error("database unavailable");
+  });
+  await expect(service.rename({ id: original.asset.id, name: "Changed" })).rejects.toThrow(
+    "No pudimos cambiar",
+  );
+  update.mockRestore();
+  expect(repository.get(original.asset.id)?.relativePath).toBe(original.relativePath);
+  expect(await readdir(home.audioDir)).toEqual(["pista.mp3"]);
+});

@@ -1,7 +1,6 @@
-# 99 · Optional downloader (deferred)
+# 99 · Optional personal downloader
 
-> **Do not start this phase without the user's explicit go-ahead.** It is not part of the main plan and nothing else
-> depends on it.
+> **Explicitly authorized by the user on 2026-10-25 for personal use.** It remains separate from general distribution builds.
 
 ## Goal
 
@@ -41,4 +40,10 @@ An optional module for the user's own installation: paste a YouTube URL and choo
 
 ## Deviations
 
-_Not started._
+- Personal builds require `IRIS_PERSONAL_BUILD=1` and a manual workflow checkbox. Automatic deploy-branch builds remain general; main/PRs do not trigger delivery workflows; their bundles are checked to exclude downloader implementation/UI. Disabled IPC stubs remain in core for explicit errors. Optional module folders are removable.
+- FFmpeg/FFprobe are selected once through a native folder dialog and copied into `userData/tools`. FFmpeg upstream distributes source, with third-party binary links; Iris does not silently install an unverified third-party converter. The app provides a fixed link to the official download page and validates the chosen programs.
+- yt-dlp updates use a pinned official release and published SHA-256, replacing the executable only after verification, rather than delegating verification to `-U`. An unchanged verified version only refreshes its check date. The weekly check runs only for an enabled personal installation, skips active operations and never runs in E2E.
+- The existing Electron executable supplies Node for yt-dlp's bundled EJS support; no additional runtime or remote script/plugin download is enabled.
+- Limits are 30 minutes and 200 MB. MP4 uses H264 up to 720p for playback compatibility; MP3 uses 192 kbps. Staging, process-tree cancellation and importer handoff are main-only. The final importer step completes before quitting and cannot be interrupted from the panel.
+- Added a core «Elegir audio de Iris» picker so a downloaded track can be assigned without copying its file again. Existing service validation still owns song/track rules.
+- A real macOS spike installed/verified/executed the official tool and read demonstration-video metadata. Real MP4/MP3 download/conversion/playback remains a manual acceptance item; it is not claimed as tested.

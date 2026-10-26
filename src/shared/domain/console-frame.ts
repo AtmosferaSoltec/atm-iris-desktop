@@ -6,7 +6,6 @@ export type FramePlayback = {
   playing: boolean;
   position: number;
   at: number;
-  captions: boolean | null;
 };
 export function consoleContent(
   item: ConsoleItem | null,
@@ -35,15 +34,6 @@ export function consoleContent(
       playing: state?.playing ?? false,
       position: state?.position ?? 0,
       at: state?.at ?? 0,
-    };
-  if (item.kind === "youtube" && item.youTubeId)
-    return {
-      kind: "youtube",
-      id: item.youTubeId,
-      playing: state?.playing ?? false,
-      position: state?.position ?? 0,
-      at: state?.at ?? 0,
-      captions: state?.captions ?? false,
     };
   return { kind: "blank" };
 }

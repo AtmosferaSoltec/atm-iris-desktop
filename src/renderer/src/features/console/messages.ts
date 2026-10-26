@@ -5,12 +5,10 @@ export const KIND_NAMES: Record<ConsoleItem["kind"], string> = {
   track: "Pista",
   image: "Imagen",
   video: "Video",
-  youtube: "YouTube",
 };
 export const MEDIA_EMPTY = {
   image: "Aún no hay imágenes. Abre su carpeta, coloca tus archivos y actualiza la biblioteca.",
   video: "Aún no hay videos. Abre su carpeta, coloca tus archivos y actualiza la biblioteca.",
-  youtube: "Aún no hay enlaces de YouTube. Agrega el primero con el botón.",
 };
 export const FOLDER_LABELS = {
   image: "Abrir carpeta de imágenes",

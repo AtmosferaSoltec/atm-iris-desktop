@@ -67,15 +67,7 @@ export function useLibrary(
     [forget, upsert, updateRef],
   );
 
-  const savedYouTube = useCallback(
-    (entry: LibraryEntry) => {
-      upsert(entry);
-      toast.success(`Se guardó «${entry.title}»`);
-    },
-    [upsert],
-  );
-
-  return { entries, refresh, forget, archived, restored, savedYouTube };
+  return { entries, refresh, forget, archived, restored };
 }
 
 export type Library = ReturnType<typeof useLibrary>;

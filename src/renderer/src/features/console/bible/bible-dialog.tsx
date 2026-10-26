@@ -10,7 +10,7 @@ import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
 import { type BibleBookInfo } from "@shared/domain/bible-books";
 import { cn } from "@renderer/lib/cn";
-import { parseReference, passageId } from "@shared/lib/bible-reference";
+import { completeBookName, parseReference, passageId } from "@shared/lib/bible-reference";
 import type { LiveConsole } from "../use-live-console";
 import { BookList, type BookOrder } from "./book-list";
 import { ChapterGrid } from "./chapter-grid";
@@ -99,7 +99,7 @@ export function BibleDialog({
     setQuery("");
   }
 
-  const ready = book && chapterNumber && verse;
+  const ready = book && chapterNumber;
 
   if (!status.data?.isImported)
     return (
@@ -126,7 +126,7 @@ export function BibleDialog({
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (ready) project(book.id, chapterNumber, verse.from, verse.to);
+            if (ready) project(book.id, chapterNumber, verse?.from ?? 1, verse?.to ?? 1);
           }}
         >
           <TextField
@@ -136,7 +136,19 @@ export function BibleDialog({
             placeholder="Juan 3:16"
             icon={<Search />}
             value={query}
-            onChange={(event) => search(event.target.value)}
+            onChange={(event) => {
+              const text = event.target.value;
+              const isDeleting = (event.nativeEvent as InputEvent).inputType?.startsWith("delete");
+              const completion = isDeleting ? null : completeBookName(text);
+              search(completion?.text ?? text);
+              if (completion) {
+                event.currentTarget.value = completion.text;
+                event.currentTarget.setSelectionRange(
+                  completion.selectionStart,
+                  completion.text.length,
+                );
+              }
+            }}
             error={error ?? undefined}
             autoComplete="off"
             autoFocus

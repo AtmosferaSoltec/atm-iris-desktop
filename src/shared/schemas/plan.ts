@@ -1,6 +1,6 @@
 import { z } from "@shared/zod";
 export const planTargetSchema = z.object({
-  kind: z.enum(["song", "media", "youtube"]),
+  kind: z.enum(["song", "media"]),
   refId: z.string().uuid(),
 });
 export const planMoveSchema = z.object({

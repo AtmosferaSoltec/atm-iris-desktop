@@ -1,4 +1,3 @@
-import { YouTubeVideo } from "@renderer/features/projection/youtube-video";
 import { playbackPosition, shouldSeekVideo } from "@shared/domain/playback";
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@renderer/lib/cn";
@@ -23,9 +22,7 @@ type Props = {
   playsVideo?: boolean;
   /** The screen reports where its video is, so the console's player follows it. */
   onVideoTime?: (time: VideoTime) => void;
-  /** A YouTube video plays with sound here (the console, towards the speakers); muted elsewhere. */
   audible?: boolean;
-  /** YouTube refused the video (embedding not allowed, removed…). */
   onVideoError?: (message: string) => void;
   className?: string;
   children?: ReactNode;
@@ -92,7 +89,6 @@ function contentKey(content: ProjectionContent): string {
       return "timer";
     case "image":
     case "video":
-    case "youtube":
       return `${content.kind}:${content.id}`;
   }
 }
@@ -275,16 +271,6 @@ function Content({
   onVideoError?: (message: string) => void;
 }) {
   switch (content.kind) {
-    case "youtube":
-      return playsVideo ? (
-        <YouTubeVideo
-          key={content.id}
-          content={content}
-          audible={audible}
-          onVideoTime={onVideoTime}
-          onVideoError={onVideoError}
-        />
-      ) : null;
     case "blank":
       return null;
     case "timer":
@@ -435,6 +421,7 @@ function Video({
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
+    video.volume = content.volume ?? 1;
     const target = playbackPosition(content, Date.now());
     if (shouldSeekVideo(video.currentTime, target)) video.currentTime = target;
     if (content.playing) void video.play().catch(() => undefined);

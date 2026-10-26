@@ -35,7 +35,6 @@ it("builds song, image, video and cleared frames without changing open-item stat
       playing: true,
       position: 4,
       at: 1000,
-      captions: null,
     }),
   ).toMatchObject({ kind: "video", playing: true, position: 4, at: 1000 });
 });
@@ -46,11 +45,25 @@ it("keeps the web's lyrics-only, track-only and combined library icons", () => {
     author: "Autor",
     sectionCount: 2,
     audio: null,
-    youtubeId: null,
   };
   expect(songEntry(song).icon).toBe("song");
-  expect(songEntry({ ...song, youtubeId: "dQw4w9WgXcQ" }).icon).toBe("songTrack");
-  expect(songEntry({ ...song, sectionCount: 0, youtubeId: "dQw4w9WgXcQ" }).icon).toBe("track");
+  expect(
+    songEntry({
+      ...song,
+      audio: { id: "audio", durationSeconds: 30 } as NonNullable<
+        Parameters<typeof songEntry>[0]["audio"]
+      >,
+    }).icon,
+  ).toBe("songTrack");
+  expect(
+    songEntry({
+      ...song,
+      sectionCount: 0,
+      audio: { id: "audio", durationSeconds: 30 } as NonNullable<
+        Parameters<typeof songEntry>[0]["audio"]
+      >,
+    }).icon,
+  ).toBe("track");
   expect(
     mediaEntry({ id: "image", title: "Imagen", kind: "image", durationSeconds: null } as Parameters<
       typeof mediaEntry

@@ -1,3 +1,4 @@
+import { optionalDownloader } from "./scripts/optional-downloader";
 import { resolve } from "node:path";
 import { defineConfig } from "electron-vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
@@ -11,19 +12,22 @@ const alias = {
 };
 
 export default defineConfig({
-  main: { resolve: { alias } },
+  main: {
+    resolve: { alias },
+    plugins: [optionalDownloader(process.env.IRIS_PERSONAL_BUILD === "1", "main")],
+  },
   preload: { resolve: { alias }, build: { externalizeDeps: false } },
   renderer: {
     build: {
       rollupOptions: {
         input: {
           index: resolve("src/renderer/index.html"),
-          "youtube-player": resolve("src/renderer/youtube-player.html"),
         },
       },
     },
     resolve: { alias },
     plugins: [
+      optionalDownloader(process.env.IRIS_PERSONAL_BUILD === "1", "renderer"),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),

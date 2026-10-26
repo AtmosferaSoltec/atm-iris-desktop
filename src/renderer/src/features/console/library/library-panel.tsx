@@ -29,10 +29,6 @@ import type { Library } from "./use-library";
 
 import { MEDIA_EMPTY } from "../messages";
 
-/**
- * Local media is discovered in Iris folders. Songs and YouTube links are created in dialogs;
- * dragging existing entries still builds the service, while media double-click projects directly.
- */
 export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Library }) {
   const [tab, setTab] = useSearchParamState(
     "library",
@@ -40,7 +36,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
   );
   const [mediaTab, setMediaTab] = useSearchParamState(
     "kind",
-    literalParser(["image", "video", "youtube"] as const, "image"),
+    literalParser(["image", "video"] as const, "image"),
   );
   const [query, setQuery] = useSearchParamState("search", searchParser);
   const [dialog, setDialog] = useState<LibraryDialog | null>(null);
@@ -135,16 +131,14 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           options={[
             { value: "image", label: "Imágenes" },
             { value: "video", label: "Videos" },
-            { value: "youtube", label: "YouTube" },
           ]}
         />
       )}
 
-      {(tab === "song" || mediaTab === "youtube") && (
+      {tab === "song" && (
         <LibraryToolbar
           tab={tab === "song" ? "song" : mediaTab}
           onNewSong={() => setDialog({ kind: "song", id: null })}
-          onYouTube={() => setDialog({ kind: "youtube" })}
         />
       )}
       <div role="group" aria-label="Controles de biblioteca" className="flex items-center gap-2">
@@ -159,7 +153,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           onChange={(event) => setQuery(event.target.value)}
           containerClassName="min-w-0 flex-1"
         />
-        {tab === "media" && mediaTab !== "youtube" && <LibraryFolderActions kind={mediaTab} />}
+        {tab === "media" && <LibraryFolderActions kind={mediaTab} />}
         {tab === "song" && artists.length > 0 && !showArchived && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

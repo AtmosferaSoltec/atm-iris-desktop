@@ -7,6 +7,7 @@ export const mediaListSchema = z
   .object({
     kind: z.enum(["all", "image", "video", "audio"]).default("all"),
     role: mediaRoleSchema.optional(),
+    mp3Only: z.boolean().optional(),
     search: z.string().max(200).default(""),
     page: z.number().int().min(1).default(1),
     limit: z.number().int().min(1).max(100).default(50),
@@ -31,4 +32,21 @@ export const mediaRoleChangeSchema = z.object({
   id: mediaIdSchema,
   role: mediaRoleSchema,
   soundIcon: z.enum(SOUND_ICON_KEYS).nullable().optional(),
+});
+
+export const mediaRenameSchema = z.object({
+  id: mediaIdSchema,
+  name: z
+    .string()
+    .trim()
+    .min(1, "Escribe un nombre de archivo.")
+    .max(120, "Usa un nombre más corto.")
+    .refine(
+      (value) =>
+        !/[<>:"/\\|?*]/.test(value) &&
+        Array.from(value).every((character) => character.charCodeAt(0) >= 32) &&
+        !/[. ]$/.test(value) &&
+        !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(value),
+      "Ese nombre no es válido en Windows.",
+    ),
 });

@@ -18,7 +18,6 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
         author: "Autor",
         sections: [{ label: "Coro", text: "Letra de prueba" }],
         audioId: null,
-        youtubeId: null,
       });
       if (!result.ok) throw new Error(result.error.message);
     });
@@ -34,9 +33,7 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
       })
       .toBe(1);
     await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
-    await expect(
-      page.getByText(/Se importaron 0 canciones y 0 videos de YouTube; 1 ya estaban/),
-    ).toBeVisible();
+    await expect(page.getByText(/Se importaron 0 canciones; 1 ya estaban/)).toBeVisible();
     await page.getByRole("button", { name: "Crear respaldo ahora", exact: true }).click();
     await expect(page.getByText("Respaldo creado", { exact: true })).toBeVisible();
     expect(
@@ -49,7 +46,7 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
     await page.getByRole("button", { name: "Eliminar todo", exact: true }).click();
     await expect(page.getByText(/Se eliminó todo lo elegido \(1 canciones/)).toBeVisible();
     await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
-    await expect(page.getByText(/Se importaron 1 canción y 0 videos de YouTube/)).toBeVisible();
+    await expect(page.getByText(/Se importaron 1 canción/)).toBeVisible();
     await writeFile(path, "not a backup");
     await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
     await expect(

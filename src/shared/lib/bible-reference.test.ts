@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  completeBookName,
   findBook,
   parsePassageId,
   parseReference,
@@ -55,4 +56,15 @@ describe("passages", () => {
     expect(passageLabel(passage)).toBe("Juan 3:16-18");
     expect(parsePassageId("Juan 3:16")).toBeNull();
   });
+});
+
+it("completes unambiguous book names while preserving aliases and full chapter numbers", () => {
+  expect(completeBookName("salm")).toEqual({ text: "Salmos", selectionStart: 4 });
+  expect(completeBookName("1co")).toEqual({ text: "1 Corintios", selectionStart: 4 });
+  expect(completeBookName("jn")).toBeNull();
+  expect(completeBookName("Salmos ")).toBeNull();
+  expect(findBook("ju")).toBeNull();
+  for (const input of ["salmos 96", "salm96", "sal 96"])
+    expect(parseReference(input)).toMatchObject({ book: { id: "PSA" }, chapter: 96, from: null });
+  expect(parseReference("salm 96:13")).toMatchObject({ chapter: 96, from: 13, to: 13 });
 });

@@ -1,6 +1,6 @@
 # Iris Desktop · 0.1.0
 
-Consola local de proyección y tiempos para iglesias, para Windows y macOS. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. Incluye proyección de Biblias importadas localmente. El descargador opcional no está incluido.
+Consola local de proyección y tiempos para iglesias, para Windows y macOS. Electron, React y TypeScript; sin servidor, cuentas ni inicio de sesión. Porta el diseño y los flujos de Iris Web. Incluye proyección de Biblias importadas localmente. La edición personal añade un descargador opcional separado; la edición general lo excluye.
 
 ## Desarrollo
 
@@ -33,13 +33,13 @@ pnpm build
 pnpm test:e2e
 ```
 
-`check` ejecuta ESLint, TypeScript estricto y Vitest. Los E2E usan Electron real con perfiles y carpetas temporales; la red externa se bloquea y YouTube se simula. No usan tu carpeta Iris. El spike de video real está documentado por separado en [fase 09](docs/plans/09-youtube/README.md).
+`check` ejecuta ESLint, TypeScript estricto y Vitest. Los E2E usan Electron real con perfiles y carpetas temporales; la red externa se bloquea y las herramientas del descargador se simulan. No usan tu carpeta Iris. El spike de video real está documentado por separado en [fase 09](docs/plans/09-youtube/README.md).
 
 ## Primer uso y archivos
 
 Al iniciar se crea `<carpeta de usuario>/Iris/`, con `Audio`, `Videos`, `Images`, `Backgrounds`, `Sounds`, `Database` y `Backups`. La base local es `Database/iris.db`. Puedes cambiar el nombre de la iglesia y su zona horaria en Configuración. «Acerca de» muestra la ubicación y abre las carpetas de Iris y registros.
 
-Agrega canciones en la biblioteca. Para multimedia, coloca tus imágenes directamente en `Iris/Images` y tus videos en `Iris/Videos`, también dentro de subcarpetas. La fila **Buscar → carpeta → actualizar** abre la carpeta de la pestaña elegida y vuelve a leer sus archivos. Iris también revisa las carpetas al iniciar y al volver a la aplicación. YouTube se agrega únicamente mediante enlaces.
+Agrega canciones en la biblioteca. Para multimedia, coloca tus imágenes directamente en `Iris/Images` y tus videos en `Iris/Videos`, también dentro de subcarpetas. La fila **Buscar → carpeta → actualizar** abre la carpeta de la pestaña elegida y vuelve a leer sus archivos. Iris también revisa las carpetas al iniciar y al volver a la aplicación. No hay pestaña ni reproducción de YouTube por enlaces.
 
 Los archivos permanecen en el disco; **SQLite no guarda imágenes, videos ni audios como contenido binario**. Solo mantiene un índice con nombres, rutas relativas, medidas y referencias del servicio. El escaneo no copia ni mueve los archivos. Al actualizar, los reemplazos se vuelven a leer y los archivos eliminados desaparecen de la biblioteca; sus registros faltantes siguen disponibles en Almacenamiento. Las pistas de canciones residen en `Audio`, los fondos en `Backgrounds` y los sonidos en `Sounds`, dentro de la misma carpeta Iris. Sus editores conservan sus propios controles. Los cambios de título no renombran los archivos y una eliminación confirmada en Iris envía el archivo a la papelera del sistema.
 
@@ -47,7 +47,7 @@ Arma el servicio arrastrando elementos. Selecciona una diapositiva para enviarla
 
 «Seleccionar servicio» permite crear sus bloques y llevar los tiempos. Cada cambio se guarda; cerrar y abrir recupera el bloque en curso. «Tiempos» reúne los registros y resúmenes. El temporizador de pantalla es independiente del cronómetro del servicio.
 
-Las letras se escriben o pegan manualmente. Todo lo local funciona sin internet; solo YouTube necesita conexión. YouTube conserva su reproductor y anuncios; Iris no descarga videos. Las letras siguen disponibles si la pista de YouTube falla.
+Las canciones usan letra y/o un audio MP3 local. Las letras se escriben o pegan manualmente; pueden faltar la letra o el audio. La edición general funciona sin conexión. YouTube solo se utiliza en el descargador opcional de la edición personal.
 
 ## Biblias
 
@@ -57,11 +57,11 @@ Abre **Biblia** en la consola (atajo **V**). **Tradicional** agrupa los libros p
 
 Escribe `Juan 3:16` o `Juan 3:16-18` y pulsa Enter para proyectar, o elige libro, capítulo y versículo. Anterior/Siguiente y las flechas cambian el versículo, con la referencia y la traducción al pie. El pasaje es temporal y no se agrega al plan del servicio. Se mantienen el fondo y la tipografía elegidos.
 
-El instalador no incluye texto bíblico. La importación es local y luego funciona sin internet, aunque muevas el XML original. Se admite XML con elementos `bible` (atributo `translation`), `testament` (`Old`/`New`), `book`, `chapter` y `verse` numerados, con los 66 libros completos. Otros esquemas XML y archivos binarios `.bib` no se importan. Una importación inválida conserva las Biblias anteriores. Los snapshots de SQLite incluyen todas las Biblias; el respaldo JSON de canciones y YouTube no las incluye.
+El instalador no incluye texto bíblico. La importación es local y luego funciona sin internet, aunque muevas el XML original. Se admite XML con elementos `bible` (atributo `translation`), `testament` (`Old`/`New`), `book`, `chapter` y `verse` numerados, con los 66 libros completos. Otros esquemas XML y archivos binarios `.bib` no se importan. Una importación inválida conserva las Biblias anteriores. Los snapshots de SQLite incluyen todas las Biblias; el respaldo JSON de canciones no las incluye.
 
 ## Respaldos y recuperación
 
-En Configuración → Respaldo, «Descargar respaldo» guarda un JSON compatible con Iris Web. Incluye letras, secciones, enlaces de pistas y videos guardados de YouTube. **No incluye los archivos multimedia**. Importar omite canciones con el mismo título/autor normalizados y videos ya guardados. Las canciones de solo pista local no se pueden reconstruir desde el JSON; el importador lo informa.
+En Configuración → Respaldo, «Descargar respaldo» guarda un JSON compatible con Iris Web. Incluye títulos, autores, letras y secciones. **No incluye los archivos multimedia**. Importar omite canciones con el mismo título/autor normalizados . Las canciones de solo pista local no se pueden reconstruir desde el JSON; el importador lo informa.
 
 La base tiene un snapshot automático por día de la iglesia y un botón «Crear respaldo ahora». Se conservan los últimos siete archivos `Backups/iris-*.db`; las copias previas a migraciones se guardan aparte. Para una copia completa, respalda toda la carpeta Iris, con la aplicación cerrada.
 
@@ -84,11 +84,17 @@ pnpm build:mac --arm64 --publish never
 pnpm build:mac --x64 --publish never
 ```
 
-La versión 0.2.1 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema: los workflows independientes de [Windows](.github/workflows/build-win.yml) y [macOS](.github/workflows/build-mac.yml) se activan al subir a `main` y publican artifacts con la versión de `package.json`. También pueden ejecutarse manualmente. Cada build abre su app empaquetada con datos temporales antes de subir los archivos.
+La versión 0.3.0 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema: los workflows independientes de [Windows](.github/workflows/build-win.yml) y [macOS](.github/workflows/build-mac.yml) se activan al subir a `deploy/windows` y `deploy/macos`, respectivamente y publican artifacts con la versión de `package.json`. También pueden ejecutarse manualmente. Cada build abre su app empaquetada con datos temporales antes de subir los archivos.
 
 **Actualizar conserva los datos:** cierra Iris y ejecuta el instalador nuevo en Windows, o reemplaza Iris.app en Aplicaciones en Mac. Se reutilizan la carpeta Iris y la base existente; las migraciones crean antes una copia de seguridad y se aplican en una transacción. No hay actualización automática ni feed. Consulta [la guía de instalación, actualización y recuperación](docs/updating.md).
 
 Windows no está firmado; macOS usa firma ad-hoc y no está notarizado. Los avisos de descarga, la instalación/actualización en los equipos finales y HDMI requieren las pruebas manuales indicadas en la guía.
+
+## Descargas personales
+
+La edición personal añade **Herramientas → Descargar**, con MP4/MP3, progreso y cancelación. Primero se prepara la herramienta y se selecciona FFmpeg/FFprobe una vez. Los resultados se guardan como archivos normales de Iris; las pistas pueden seleccionarse con «Elegir audio de Iris» al editar una canción, sin copiarlas otra vez. Para generar esta edición en Actions marca la casilla personal; los builds automáticos generales la excluyen. Consulta [la preparación y uso](docs/downloader-personal.md).
+
+El espacio de trabajo permite elegir **Tarjetas / Lista**. Bajo En vivo, **Limpiar pantalla (B)** oculta el contenido hasta desactivarlo, aunque cambies de canción. El botón **Volumen** abre un slider vertical. Las pistas se renombran desde el editor y las que dejan de usarse se envían a la papelera. La búsqueda bíblica completa libros como «salm» y acepta «Salmos 96» o «Salmos 96:13».
 
 ## Solución de problemas
 
@@ -97,7 +103,7 @@ Windows no está firmado; macOS usa firma ad-hoc y no está notarizado. Los avis
 - Falta un archivo: vuelve a ponerlo en la carpeta original y ejecuta «Buscar archivos», o quita su registro e impórtalo de nuevo.
 - No hay espacio: libera espacio en el disco de Iris y vuelve a importar; el origen no se sobrescribe.
 - Desaparece el monitor: Iris cierra la salida y avisa; reconecta, elige la pantalla y vuelve a proyectar.
-- YouTube falla o no hay conexión: la biblioteca local y las letras siguen funcionando. La verificación con Windows e internet está pendiente.
+- Las descargas personales pueden fallar por cambios de YouTube; actualizar la herramienta no garantiza disponibilidad. La reproducción de archivos locales sigue funcionando.
 - Registros: Configuración → Acerca de → «Abrir carpeta de registros»; `iris.log` rota localmente. No hay telemetría.
 
 La arquitectura está en [docs/architecture.md](docs/architecture.md), las comprobaciones físicas pendientes en [docs/manual-tests.md](docs/manual-tests.md) y el plan con sus desviaciones en [docs/plans/README.md](docs/plans/README.md). Los repositorios de referencia no se modificaron.

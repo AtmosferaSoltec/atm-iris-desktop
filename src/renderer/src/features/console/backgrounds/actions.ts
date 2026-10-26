@@ -37,7 +37,6 @@ export async function setSongBackground(
         author: song.author,
         sections: song.sections,
         audioId: song.audio?.id ?? null,
-        youtubeId: song.youtubeId,
         backgroundId,
       },
     });

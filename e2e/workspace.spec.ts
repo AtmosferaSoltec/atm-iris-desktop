@@ -17,7 +17,6 @@ test("shows thirty compact slides in four or five columns while keeping full liv
         author: "",
         sections: texts.map((text, index) => ({ label: `Estrofa ${index + 1}`, text })),
         audioId: null,
-        youtubeId: null,
       });
       if (!result.ok) throw new Error(result.error.message);
     }, texts);
@@ -56,6 +55,20 @@ test("shows thirty compact slides in four or five columns while keeping full liv
       expect(visible).toBeGreaterThanOrEqual(columns * 3);
       await page.screenshot({ path: test.info().outputPath(`workspace-${width}.png`) });
     }
+    await page.getByRole("radio", { name: "Lista", exact: true }).click();
+    await expect(grid).toHaveCSS("display", "flex");
+    await expect(cards).toHaveCount(30);
+    await expect(page).toHaveURL(/slides=list/);
+    await expect(page.getByRole("radio", { name: "Lista", exact: true })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await page.screenshot({
+      path: test.info().outputPath("workspace-list.png"),
+      animations: "disabled",
+    });
+    await page.getByRole("radio", { name: "Tarjetas", exact: true }).click();
+    await expect(grid).toHaveCSS("display", "grid");
     await first.click({ button: "right" });
     const editor = page.getByRole("dialog", {
       name: "Canción de treinta diapositivas · Estrofa 1",
@@ -80,10 +93,10 @@ test("shows thirty compact slides in four or five columns while keeping full liv
     await page.keyboard.press("ArrowLeft");
     await expect(live.getByText(texts[28], { exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath("workspace-live.png") });
-    await grid.getByRole("button", { name: "Pantalla en blanco (B)", exact: true }).click();
+    await page.getByRole("button", { name: "Limpiar pantalla (B)", exact: true }).click();
     await expect(
-      grid.getByRole("button", { name: "Pantalla en blanco (B)", exact: true }),
-    ).toHaveAttribute("aria-current", "true");
+      page.getByRole("button", { name: "Limpiar pantalla (B)", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
   } finally {
     await instance.close();
   }

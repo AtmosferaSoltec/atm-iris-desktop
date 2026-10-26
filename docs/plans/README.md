@@ -38,26 +38,27 @@ timing), rebuilt as an Electron desktop app that needs no server:
 
 ## Phases
 
-| #   | Phase                                                                                                              | Status                   |
-| --- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| 00  | [Foundations](00-foundations/README.md): project skeleton, tooling, security baseline, quality gates               | [x]                      |
-| 01  | [Design system and shell](01-design-system/README.md): tokens, `ui` components, fonts, router, app layout          | [x]                      |
-| 02  | [Local data](02-local-data/README.md): Iris folder, SQLite and migrations, repositories, IPC contract, errors      | [x]                      |
-| 03  | [Media library](03-media-library/README.md): import, scan, `iris-media://`, storage usage                          | [x]                      |
-| 04  | [Songs](04-songs/README.md): songs, sections, tracks, archive, search, manual lyrics entry                         | [x]                      |
-| 05  | [Console](05-console/README.md): toolbar, Library, Service, Stage, drag and drop, live state                       | [x]                      |
-| 06  | [Projection](06-projection/README.md): monitors, projection windows, frames, backgrounds, playback sync            | [x]                      |
-| 07  | [Tools](07-tools/README.md): typography, timer, sounds, the Tools menu                                             | [x]                      |
-| 08  | [Service timing](08-service-timing/README.md): people, service types, block timer, records, summaries              | [x]                      |
-| 09  | [YouTube](09-youtube/README.md): saved videos, song tracks, embed workaround, offline behaviour                    | [x]                      |
-| 10  | [Settings and maintenance](10-settings/README.md): church settings, storage, backups, start over                   | [x]                      |
-| 11  | [Quality and delivery](11-quality-delivery/README.md): test sweep, manual checklist, Windows build, report         | [x] ⚠️ Windows pendiente |
-| 12  | [Bible RVR1960](12-bible/README.md): local XML import, picker and verse projection (requested after phase 11)      | [x]                      |
-| 13  | [Folder library](13-folder-library/README.md): filesystem-based images/videos, folder and refresh controls         | [x]                      |
-| 14  | [Bible translations](14-bible-translations/README.md): Settings import, multiple translations and picker selection | [x]                      |
-| 15  | [Cross-platform delivery](15-cross-platform-delivery/README.md): Windows/macOS workflows and safe manual upgrades  | [x]                      |
-| 16  | [Compact workspace](16-compact-workspace/README.md): four/five-column slides with normal text, release 0.2.1       | [x]                      |
-| 99  | [Optional downloader](99-optional-downloader/README.md): **deferred; do not start without the user's go-ahead**    | —                        |
+| #   | Phase                                                                                                                            | Status                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 00  | [Foundations](00-foundations/README.md): project skeleton, tooling, security baseline, quality gates                             | [x]                      |
+| 01  | [Design system and shell](01-design-system/README.md): tokens, `ui` components, fonts, router, app layout                        | [x]                      |
+| 02  | [Local data](02-local-data/README.md): Iris folder, SQLite and migrations, repositories, IPC contract, errors                    | [x]                      |
+| 03  | [Media library](03-media-library/README.md): import, scan, `iris-media://`, storage usage                                        | [x]                      |
+| 04  | [Songs](04-songs/README.md): songs, sections, tracks, archive, search, manual lyrics entry                                       | [x]                      |
+| 05  | [Console](05-console/README.md): toolbar, Library, Service, Stage, drag and drop, live state                                     | [x]                      |
+| 06  | [Projection](06-projection/README.md): monitors, projection windows, frames, backgrounds, playback sync                          | [x]                      |
+| 07  | [Tools](07-tools/README.md): typography, timer, sounds, the Tools menu                                                           | [x]                      |
+| 08  | [Service timing](08-service-timing/README.md): people, service types, block timer, records, summaries                            | [x]                      |
+| 09  | [YouTube](09-youtube/README.md): saved videos, song tracks, embed workaround, offline behaviour                                  | [x]                      |
+| 10  | [Settings and maintenance](10-settings/README.md): church settings, storage, backups, start over                                 | [x]                      |
+| 11  | [Quality and delivery](11-quality-delivery/README.md): test sweep, manual checklist, Windows build, report                       | [x] ⚠️ Windows pendiente |
+| 12  | [Bible RVR1960](12-bible/README.md): local XML import, picker and verse projection (requested after phase 11)                    | [x]                      |
+| 13  | [Folder library](13-folder-library/README.md): filesystem-based images/videos, folder and refresh controls                       | [x]                      |
+| 14  | [Bible translations](14-bible-translations/README.md): Settings import, multiple translations and picker selection               | [x]                      |
+| 15  | [Cross-platform delivery](15-cross-platform-delivery/README.md): Windows/macOS workflows and safe manual upgrades                | [x]                      |
+| 16  | [Compact workspace](16-compact-workspace/README.md): four/five-column slides with normal text, release 0.2.1                     | [x]                      |
+| 17  | [Local operation](17-local-operation/README.md): local MP3, latched clear, audio lifecycle, Bible search and deployment branches | [x]                      |
+| 99  | [Optional downloader](99-optional-downloader/README.md): personal edition, explicitly authorized; real download check pending    | [ ]                      |
 
 Tick the box when a phase is done and fill its _Deviations_ section ("None" if there are none).
 

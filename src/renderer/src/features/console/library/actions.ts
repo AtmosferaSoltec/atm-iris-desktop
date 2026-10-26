@@ -2,7 +2,7 @@ import { localAssetUrl } from "@shared/lib/asset-url";
 import { measureMediaUrl } from "@renderer/features/media/upload/measure";
 import type { ConsoleItem, LibraryEntry } from "@shared/domain/console";
 import type { LocalMediaAsset } from "@shared/domain/models";
-import { mediaEntry, songEntry, youtubeEntry } from "@shared/domain/library-entries";
+import { mediaEntry, songEntry } from "@shared/domain/library-entries";
 import { errorMessage } from "@shared/errors";
 import { invoke } from "@renderer/lib/ipc";
 
@@ -81,16 +81,6 @@ export async function mediaFile(
       asset = await invoke("media:set-measures", { id, ...measures });
     }
     return { asset, url };
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-}
-
-export async function saveYouTubeVideo(
-  link: string,
-): Promise<{ entry?: LibraryEntry; error?: string }> {
-  try {
-    return { entry: youtubeEntry(await invoke("youtube-videos:create", link)) };
   } catch (error) {
     return { error: errorMessage(error) };
   }

@@ -53,6 +53,17 @@ test("imports RVR1960, projects a reference, navigates verses, rejects bad input
     await page.keyboard.press("v");
     picker = page.getByRole("dialog", { name: "Biblia", exact: true });
     const input = picker.getByRole("searchbox", { name: "Versículo", exact: true });
+    await input.fill("salm");
+    await expect(input).toHaveValue("Salmos");
+    await expect(picker.getByRole("button", { name: "Salmos 96", exact: true })).toBeVisible();
+    await input.fill("");
+    await input.pressSequentially("salmos 96");
+    await expect(picker.getByText("Capítulo 96", { exact: true })).toBeVisible();
+    await expect(picker.getByRole("button", { name: "13", exact: true })).toBeVisible();
+    await input.press("Enter");
+    await expect(live.getByText("Salmos 96:1 · RVR1960", { exact: true })).toBeVisible();
+    await page.keyboard.press("v");
+    picker = page.getByRole("dialog", { name: "Biblia", exact: true });
     await input.fill("Juan 3:999");
     await input.press("Enter");
     await expect(picker.getByText("Ese versículo no existe.", { exact: true })).toBeVisible();
