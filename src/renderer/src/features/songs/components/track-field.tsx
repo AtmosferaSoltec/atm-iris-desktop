@@ -111,14 +111,24 @@ export function TrackField({ track, onChange, error }: Props) {
           }}
         />
       )}
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={isUploading}
-        onClick={() => setIsChoosingAudio(true)}
-      >
-        Elegir audio de Iris
-      </Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isUploading}
+          onClick={() => setIsChoosingAudio(true)}
+        >
+          Elegir audio de Iris
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isUploading}
+          onClick={() => fileInput.current?.click()}
+        >
+          Elegir archivo MP3
+        </Button>
+      </div>
       <input type="hidden" name="audioId" value={audio?.id ?? ""} />
       <div
         onDragOver={(event) => {
@@ -184,9 +194,7 @@ export function TrackField({ track, onChange, error }: Props) {
             </IconButton>
           </div>
         ) : (
-          <Button variant="secondary" onClick={() => fileInput.current?.click()}>
-            Elegir archivo MP3
-          </Button>
+          <p className="p-3 text-center text-xs text-ink-2">Arrastra un MP3 aquí</p>
         )}
       </div>
       {audio && (

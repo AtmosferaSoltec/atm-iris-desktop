@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.1
+
+- Actualizaciones automáticas obligatorias en Windows: al abrir, si hay una versión nueva se descarga y se debe instalar antes de continuar. Las releases se publican desde deploy/windows.
+- Al repetir una pista, la barra de tiempo vuelve a 0 en cada vuelta.
+- Tarjetas de diapositivas con texto más pequeño; la tipografía del panel de textos solo afecta a la pantalla proyectada.
+- Selector de pista con «Elegir audio de Iris» y «Elegir archivo MP3» lado a lado.
+- macOS: el workflow queda solo manual.
+
 ## 0.3.0
 
 - Vista Lista numerada junto a las tarjetas del espacio de trabajo.

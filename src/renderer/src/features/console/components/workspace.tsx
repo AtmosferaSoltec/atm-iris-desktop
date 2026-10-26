@@ -165,7 +165,7 @@ function SlideGrid({
             >
               <span
                 className={cn(
-                  "flex flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-sm leading-snug text-white",
+                  "flex flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-xs leading-snug text-white",
                   isList ? "min-h-16" : "h-24",
                 )}
               >

@@ -44,7 +44,7 @@ test("shows thirty compact slides in four or five columns while keeping full liv
         .toBe(columns);
       const bounds = await first.boundingBox();
       expect(bounds!.height).toBeLessThanOrEqual(100);
-      await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "14px");
+      await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "12px");
       const visible = await cards.evaluateAll((buttons) => {
         const container = buttons[0].closest("ol")!.parentElement!.getBoundingClientRect();
         return buttons.filter((button) => {
