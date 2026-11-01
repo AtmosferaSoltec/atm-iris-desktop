@@ -6,6 +6,7 @@ import { TextField } from "@renderer/components/ui/text-field";
 import { Banner } from "@renderer/components/ui/banner";
 import { Spinner } from "@renderer/components/ui/spinner";
 import { Pagination } from "@renderer/components/ui/pagination";
+import { AudioFolderActions } from "./audio-folder-actions";
 import { invoke } from "@renderer/lib/ipc";
 import { useSearchParamState, searchParser, pageParser } from "@renderer/lib/search-params";
 import type { MediaAsset } from "@shared/domain/models";
@@ -49,6 +50,7 @@ export function AudioPickerDialog({
       description="Elige una pista que ya está en Iris/Audio. Se usa el archivo existente, sin copiarlo otra vez."
     >
       <div className="flex flex-col gap-4 pb-5">
+        <AudioFolderActions />
         <TextField
           id="track-search"
           type="search"
@@ -89,7 +91,8 @@ export function AudioPickerDialog({
             </ul>
             {query.data.meta.total === 0 && (
               <p className="text-sm text-ink-2">
-                No hay pistas en Iris/Audio que coincidan con la búsqueda.
+                No hay pistas en Iris/Audio que coincidan. Copia tus MP3 en la carpeta y pulsa
+                «Buscar archivos nuevos».
               </p>
             )}
             <Pagination meta={query.data.meta} onPageChange={setPage} />

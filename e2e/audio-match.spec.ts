@@ -26,6 +26,7 @@ test("assigns the MP3s dropped in Iris/Audio to the songs with the same name", a
       return created;
     });
     await page.getByRole("link", { name: "Configuración" }).click();
+    await expect(page.getByRole("button", { name: "Abrir carpeta de audios" })).toBeVisible();
     await page.getByRole("button", { name: "Buscar coincidencias" }).click();
     const dialog = page.getByRole("dialog", { name: "Asignar audios" });
     await expect(dialog.getByText("01 - HOSANNA.mp3")).toBeVisible();

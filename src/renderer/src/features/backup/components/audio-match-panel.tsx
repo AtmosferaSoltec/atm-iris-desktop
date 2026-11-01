@@ -7,6 +7,7 @@ import { Dialog } from "@renderer/components/ui/dialog";
 import { toast } from "@renderer/components/ui/toaster";
 import { plural } from "@shared/lib/text";
 import type { AudioMatchPreview } from "@shared/schemas/audio-match";
+import { AudioFolderActions } from "@renderer/features/songs/components/audio-folder-actions";
 import { confirmAudioMatch, previewAudioMatch } from "../actions";
 
 const NONE = "none";
@@ -64,6 +65,7 @@ export function AudioMatchPanel() {
   return (
     <div className="flex flex-col gap-4">
       {error && <Banner tone="error">{error}</Banner>}
+      <AudioFolderActions />
       <div>
         <Button
           variant="secondary"
