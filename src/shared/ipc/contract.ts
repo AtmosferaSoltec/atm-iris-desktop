@@ -297,7 +297,11 @@ export const contract = {
     z.void(),
     z.custom<RemoteStatus>(),
   ),
-  "remote:publish-state": defineChannel("remote:publish-state", remoteStateSchema, z.void()),
+  "remote:publish-state": defineChannel(
+    "remote:publish-state",
+    remoteStateSchema.nullable(),
+    z.void(),
+  ),
 } as const;
 
 export type ChannelName = keyof typeof contract;

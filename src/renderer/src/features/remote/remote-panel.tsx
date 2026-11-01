@@ -57,7 +57,8 @@ export function RemotePanel() {
               {status.code?.slice(0, 3)} {status.code?.slice(3)}
             </p>
             <p className="mt-2 text-xs text-ink-2">
-              Sirve una sola vez y cambia solo después de unos minutos.
+              Sirve una sola vez y cambia solo después de unos minutos. El iPad controla la pantalla
+              del servicio: vuelve a ella después de conectar.
             </p>
           </div>
           <p className="text-sm text-ink-2" aria-live="polite">

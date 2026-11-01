@@ -140,7 +140,8 @@ export type RemoteErrorCode = (typeof REMOTE_ERROR_CODES)[number];
 
 export type ServerMessage =
   | { type: "paired"; protocol: number; token: string; computerName: string }
-  | { type: "state"; state: RemoteState }
+  /** `null`: the console is not on screen (Settings, Times…), so there is nothing to control right now. */
+  | { type: "state"; state: RemoteState | null }
   | { type: "error"; code: RemoteErrorCode; message: string }
   | { type: "bye"; reason: "disconnected" | "disabled" };
 

@@ -74,6 +74,14 @@ export function useRemoteBridge(
     serviceTimer,
   ]);
 
+  // Leaving the console (Settings, Times…) takes its live state away: the iPad must know.
+  useEffect(
+    () => () => {
+      void invoke("remote:publish-state", null).catch(() => {});
+    },
+    [],
+  );
+
   // Commands are carried out against the newest controllers, not the ones of the render that subscribed.
   const latest = useRef({ ctrl, service });
   useEffect(() => {

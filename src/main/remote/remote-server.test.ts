@@ -85,6 +85,20 @@ describe("RemoteServer", () => {
     expect(client.received[2]).toMatchObject({ type: "error", code: "BAD_MESSAGE" });
   });
 
+  it("tells a paired iPad when the console is not on screen", async () => {
+    const url = await start();
+    const client = connect(url);
+    await client.opened;
+    client.socket.send(pair("123456"));
+    await client.waitFor(2);
+    expect(client.received[1]).toEqual({ type: "state", state: null });
+    server!.publish(STATE);
+    server!.publish(null);
+    await client.waitFor(4);
+    expect(client.received[2]).toMatchObject({ type: "state", state: { churchName: "Iglesia" } });
+    expect(client.received[3]).toEqual({ type: "state", state: null });
+  });
+
   it("refuses a wrong code and a command before pairing", async () => {
     const commands: unknown[] = [];
     const url = await start(commands);

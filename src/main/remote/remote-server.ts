@@ -138,8 +138,11 @@ export class RemoteServer {
     this.deps.changed(this.status());
   }
 
-  /** The console's newest state: kept for the next iPad and sent to the ones connected. */
-  publish(state: RemoteState): void {
+  /**
+   * The console's newest state: kept for the next iPad and sent to the ones connected. `null` while
+   * the console is not on screen, so a paired iPad says so instead of waiting forever.
+   */
+  publish(state: RemoteState | null): void {
     this.latest = state;
     this.say([...this.paired], { type: "state", state });
   }
@@ -189,7 +192,7 @@ export class RemoteServer {
       token,
       computerName: this.deps.computerName,
     });
-    if (this.latest) this.say([socket], { type: "state", state: this.latest });
+    this.say([socket], { type: "state", state: this.latest });
     this.deps.changed(this.status());
   }
 
