@@ -2,9 +2,17 @@
 
 ## Unreleased
 
+## 0.5.1
+
+## Unreleased
+
+- Importar canciones acepta solo JSON (se quitó el TXT).
+- Almacenamiento: «Archivos sin uso» y «no encontrados» muestran los primeros 5; «Mostrar todos» abre la lista completa con búsqueda y páginas.
+- Respaldo: «Descargar canciones (letras)» y «Copiar archivos a una carpeta» para copiar por separado pistas, fondos, imágenes, videos y sonidos, cada tipo en su subcarpeta.
+
 ## 0.5.0
 
-- Configuración → Respaldo → «Importar canciones»: un solo botón que acepta JSON o TXT (exportación de Holyrics o respaldo de Iris), con vista previa y sin duplicar las canciones que ya existen; conserva los nombres de sección (//CORO, //PUENTE).
+- Configuración → Respaldo → «Importar canciones»: un solo botón que acepta un archivo JSON (exportación de Holyrics o respaldo de Iris), con vista previa y sin duplicar las canciones que ya existen; conserva los nombres de sección (//CORO, //PUENTE).
 - Configuración → «Asignar audios a las canciones»: empareja por nombre los MP3 de Iris/Audio con las canciones sin audio, con vista previa para revisar y desmarcar antes de asignar.
 - Al cerrar la consola se cierra también la pantalla de proyección (antes el televisor quedaba congelado con la última imagen).
 - La barra de la ventana muestra la versión de Iris (por ejemplo «Iris 0.4.1»).

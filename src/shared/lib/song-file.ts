@@ -1,10 +1,8 @@
-// Song files → Iris songs. Pure: the file is read in main, parsed here. Accepts a Holyrics export
-// (JSON or TXT) and Iris's own backup.
+// Song files → Iris songs. Pure: the file is read in main, parsed here. Accepts a Holyrics JSON
+// export and Iris's own backup (also JSON).
 //
 // JSON (preferred): an array of songs; `lyrics.paragraphs` are the slides and a paragraph's
 // `text_with_comment` starts with "//LABEL" when Holyrics named it (CORO, PUENTE…).
-// TXT: songs separated by a line of "=", each with "Título:" / "Artista:" and the lyrics, where
-// a "//LABEL" line names the slide that follows.
 
 import { LYRICS_LIMITS, parseLyrics, type ParsedSection } from "./lyrics";
 
@@ -13,8 +11,6 @@ export type ImportedSong = { title: string; author: string; sections: ParsedSect
 function stripBom(value: string): string {
   return value.charCodeAt(0) === 0xfeff ? value.slice(1) : value;
 }
-
-const SEPARATOR = /^\s*={10,}\s*$/m;
 
 function cleanLines(text: string): string {
   return text
@@ -82,39 +78,14 @@ function fromPlainText(raw: string): ParsedSection[] {
   return parseLyrics(withLabels);
 }
 
-function fromTxtBlock(block: string): ImportedSong | null {
-  const lines = stripBom(block).replace(/\r\n?/g, "\n").split("\n");
-  let title = "";
-  let author = "";
-  let start = 0;
-  for (; start < lines.length; start++) {
-    const line = lines[start]!.trim();
-    const header = /^(t[ií]tulo|titulo|artista|autor)\s*:\s*(.*)$/i.exec(line);
-    if (header) {
-      if (/^t/i.test(header[1]!)) title = header[2]!.trim();
-      else author ||= header[2]!.trim();
-    } else if (line) break;
-  }
-  if (!title && start >= lines.length) return null;
-  return { title, author, sections: fromPlainText(lines.slice(start).join("\n")) };
-}
-
-/** Parses a Holyrics export (JSON or TXT). Throws when it is neither. */
+/** Parses a song file (Holyrics JSON export or Iris backup). Throws when it is neither. */
 export function parseSongFile(raw: string): ImportedSong[] {
-  const source = stripBom(raw).trim();
-  if (source.startsWith("[") || source.startsWith("{")) {
-    const data: unknown = JSON.parse(source);
-    const backup = data as { format?: unknown; songs?: unknown };
-    if (backup.format === "iris-backup" && Array.isArray(backup.songs))
-      return backup.songs.map(fromBackupSong);
-    const list = Array.isArray(data) ? data : [data];
-    if (!list.every((entry) => typeof entry === "object" && entry !== null))
-      throw new Error("Not a song file");
-    return list.map(fromJsonSong);
-  }
-  if (!/^\s*t[ií]tulo\s*:/im.test(source)) throw new Error("Not a song file");
-  return source
-    .split(SEPARATOR)
-    .map(fromTxtBlock)
-    .filter((song): song is ImportedSong => song !== null);
+  const data: unknown = JSON.parse(stripBom(raw).trim());
+  const backup = (data ?? {}) as { format?: unknown; songs?: unknown };
+  if (backup.format === "iris-backup" && Array.isArray(backup.songs))
+    return backup.songs.map(fromBackupSong);
+  const list = Array.isArray(data) ? data : [data];
+  if (!list.every((entry) => typeof entry === "object" && entry !== null))
+    throw new Error("Not a song file");
+  return list.map(fromJsonSong);
 }

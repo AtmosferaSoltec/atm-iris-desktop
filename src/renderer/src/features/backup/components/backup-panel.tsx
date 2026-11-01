@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button } from "@renderer/components/ui/button";
 import { exportBackup } from "../actions";
+import { ExportFilesButton } from "./export-files-button";
 import { SongImportButton } from "./song-import-button";
 
 export function BackupPanel() {
@@ -27,9 +28,10 @@ export function BackupPanel() {
           onClick={download}
           isLoading={isExporting}
         >
-          Descargar respaldo
+          Descargar canciones (letras)
         </Button>
         <SongImportButton onError={setError} />
+        <ExportFilesButton onError={setError} />
       </div>
     </div>
   );

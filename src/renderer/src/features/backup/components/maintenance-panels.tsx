@@ -11,6 +11,7 @@ import { errorMessage } from "@shared/errors";
 import { BackupPanel } from "./backup-panel";
 import { AudioMatchPanel } from "./audio-match-panel";
 import { ErasePanel } from "./erase-panel";
+import { FileList } from "./file-list";
 
 const FOLDER_LABELS: Record<string, string> = {
   Audio: "Pistas",
@@ -52,6 +53,10 @@ export function MaintenancePanels() {
     mutationFn: () => invoke("backup:snapshot", undefined),
     onSuccess: () => toast.success("Respaldo creado"),
   });
+  const askRemove = (asset: LocalMediaAsset): void => {
+    setDeleteError(undefined);
+    setRemoving(asset);
+  };
   const folder = useMutation({
     mutationFn: (name: "home" | "logs") => invoke("app:open-folder", name),
   });
@@ -77,23 +82,11 @@ export function MaintenancePanels() {
               {storage.data.unused.length === 0 ? (
                 <p className="text-sm text-ink-2">No hay archivos sin uso.</p>
               ) : (
-                <ul className="divide-y divide-line">
-                  {storage.data.unused.map((asset) => (
-                    <li key={asset.id} className="flex items-center justify-between gap-3 py-2">
-                      <span className="text-sm">{asset.title}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setDeleteError(undefined);
-                          setRemoving(asset);
-                        }}
-                      >
-                        Quitar
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <FileList
+                  assets={storage.data.unused}
+                  title="Archivos sin uso"
+                  onRemove={askRemove}
+                />
               )}
             </div>
             {storage.data.missing.length > 0 && (
@@ -102,23 +95,12 @@ export function MaintenancePanels() {
                 <p className="text-sm text-ink-2">
                   Vuelve a colocar el archivo en su carpeta o quita su registro.
                 </p>
-                <ul>
-                  {storage.data.missing.map((asset) => (
-                    <li key={asset.id} className="flex items-center justify-between gap-3 py-2">
-                      <span className="text-sm">{asset.title} · Archivo no encontrado</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setDeleteError(undefined);
-                          setRemoving(asset);
-                        }}
-                      >
-                        Quitar
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <FileList
+                  assets={storage.data.missing}
+                  title="Archivos no encontrados"
+                  suffix=" · Archivo no encontrado"
+                  onRemove={askRemove}
+                />
               </div>
             )}
             <Button
@@ -136,7 +118,7 @@ export function MaintenancePanels() {
       </Panel>
       <Panel
         title="Respaldo"
-        description="Guarda las letras de tus canciones en un archivo, o trae canciones de un archivo (JSON o TXT, también el de Holyrics). Verás una vista previa antes de guardar y las canciones que ya existen no se duplican. Las pistas, imágenes y videos subidos no viajan en el archivo."
+        description="Descarga las letras de tus canciones en un archivo JSON, trae canciones desde un archivo (también el de Holyrics) y copia por separado tus pistas, fondos, imágenes, videos y sonidos a una carpeta. Al importar verás una vista previa y las canciones que ya existen no se duplican."
       >
         <div className="flex flex-col gap-5">
           <BackupPanel />

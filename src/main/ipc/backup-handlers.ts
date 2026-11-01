@@ -1,5 +1,6 @@
 import { app, dialog, shell } from "electron";
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { AppError } from "@shared/errors";
 import type { IpcHandlers } from "./dispatch";
 import type { BackupService } from "../services/backup-service";
@@ -7,6 +8,14 @@ import type { SnapshotService } from "../services/snapshot-service";
 import type { StorageService } from "../services/storage-service";
 import type { SongImportService } from "../services/song-import-service";
 import { basename } from "node:path";
+
+const EXPORT_NAMES = {
+  Audio: "Pistas",
+  Backgrounds: "Fondos",
+  Images: "Imágenes",
+  Videos: "Videos",
+  Sounds: "Sonidos",
+} as const;
 
 export function backupHandlers(
   backup: BackupService,
@@ -18,6 +27,7 @@ export function backupHandlers(
   IpcHandlers,
   | "backup:export"
   | "backup:import"
+  | "backup:export-files"
   | "songs:import-preview"
   | "songs:import-confirm"
   | "backup:erase"
@@ -35,6 +45,34 @@ export function backupHandlers(
       if (result.canceled || !result.filePath) return { isCanceled: true };
       await writeFile(result.filePath, JSON.stringify(backup.export(), null, 2), "utf8");
       return { isCanceled: false };
+    },
+    "backup:export-files": async ({ folders }) => {
+      const result = await dialog.showOpenDialog({
+        title: "Elegir la carpeta donde copiar los archivos",
+        properties: ["openDirectory", "createDirectory"],
+        buttonLabel: "Copiar aquí",
+      });
+      if (result.canceled || !result.filePaths[0]) return { isCanceled: true, files: 0 };
+      const target = resolve(result.filePaths[0]);
+      const inside = relative(resolve(homePath), target);
+      // Copying into the Iris folder itself would mix the copy with the originals.
+      if (inside === "" || (!inside.startsWith("..") && !isAbsolute(inside)))
+        throw new AppError("VALIDATION_FAILED", "Elige una carpeta fuera de la carpeta de Iris.");
+      let files = 0;
+      for (const folder of folders) {
+        const source = join(homePath, folder);
+        const entries = await readdir(source, { recursive: true, withFileTypes: true }).catch(
+          () => [],
+        );
+        const count = entries.filter((entry) => entry.isFile()).length;
+        if (!count) continue;
+        const destination = join(target, EXPORT_NAMES[folder]);
+        await mkdir(destination, { recursive: true });
+        // Never overwrite what is already there: a second copy only adds the new files.
+        await cp(source, destination, { recursive: true, force: false, errorOnExist: false });
+        files += count;
+      }
+      return { isCanceled: false, files };
     },
     "backup:import": async () => {
       const result = await dialog.showOpenDialog({
@@ -58,7 +96,7 @@ export function backupHandlers(
       const result = await dialog.showOpenDialog({
         title: "Importar canciones",
         properties: ["openFile"],
-        filters: [{ name: "Canciones (JSON o TXT)", extensions: ["json", "txt"] }],
+        filters: [{ name: "Canciones (JSON)", extensions: ["json"] }],
       });
       if (result.canceled || !result.filePaths[0]) return null;
       const path = result.filePaths[0];

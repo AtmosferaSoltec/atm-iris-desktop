@@ -2,7 +2,12 @@ import { invoke } from "@renderer/lib/ipc";
 import { queryClient } from "@renderer/lib/query-client";
 import { errorMessage } from "@shared/errors";
 import type { z } from "@shared/zod";
-import type { eraseSchema, EraseResult } from "@shared/schemas/backup";
+import type {
+  eraseSchema,
+  EraseResult,
+  ExportFilesResult,
+  ExportFolder,
+} from "@shared/schemas/backup";
 import type { SongImportPreview, SongImportResult } from "@shared/schemas/song-import";
 import type { AudioMatchPreview, AudioMatchResult } from "@shared/schemas/audio-match";
 
@@ -67,6 +72,16 @@ export async function confirmAudioMatch(
     const result = await invoke("songs:match-audio-confirm", { token, songIds });
     await queryClient.invalidateQueries();
     return { result };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+}
+
+export async function exportFiles(
+  folders: ExportFolder[],
+): Promise<{ result?: ExportFilesResult; error?: string }> {
+  try {
+    return { result: await invoke("backup:export-files", { folders }) };
   } catch (error) {
     return { error: errorMessage(error) };
   }

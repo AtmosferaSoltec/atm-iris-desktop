@@ -22,24 +22,6 @@ const json = JSON.stringify([
   { title: "Solo texto", artist: "", author: "Alguien", lyrics: { full_text: "Uno\nDos\n\nTres" } },
 ]);
 
-const txt = `Título: A ti me rindo
-Artista: Hillsong
-
-ANTE TI POSTRADO 
-ESTOY AQUÍ
-
-//CORO
-A TI ME RINDO
-A TI ME RINDO
-
-================================================================================================================================
-
-Título: Asi como David danzaba
-
-CUANDO EL SEÑOR 
-HICIERE VOLVER LA CAUTIVIDAD
-`;
-
 it("reads the slides and labels of a Holyrics JSON export", () => {
   const [first, second] = parseSongFile(json);
   expect(first).toEqual({
@@ -60,22 +42,9 @@ it("reads the slides and labels of a Holyrics JSON export", () => {
   });
 });
 
-it("reads a Holyrics TXT export with songs without artist", () => {
-  const songs = parseSongFile(txt);
-  expect(songs).toHaveLength(2);
-  expect(songs[0]).toEqual({
-    title: "A ti me rindo",
-    author: "Hillsong",
-    sections: [
-      { label: null, text: "ANTE TI POSTRADO\nESTOY AQUÍ" },
-      { label: "CORO", text: "A TI ME RINDO\nA TI ME RINDO" },
-    ],
-  });
-  expect(songs[1]).toMatchObject({ title: "Asi como David danzaba", author: "" });
-});
-
 it("rejects files that are not Holyrics exports", () => {
   expect(() => parseSongFile("hola mundo")).toThrow();
   expect(() => parseSongFile("[1, 2]")).toThrow();
+  expect(() => parseSongFile("Título: A ti me rindo\n\nLetra")).toThrow();
   expect(() => parseSongFile("{roto")).toThrow();
 });

@@ -22,7 +22,7 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
       if (!result.ok) throw new Error(result.error.message);
     });
     await page.getByRole("link", { name: "Configuración" }).click();
-    await page.getByRole("button", { name: "Descargar respaldo", exact: true }).click();
+    await page.getByRole("button", { name: "Descargar canciones (letras)", exact: true }).click();
     await expect
       .poll(async () => {
         try {
@@ -57,7 +57,7 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
     await writeFile(path, "not a backup");
     await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
     await expect(
-      page.getByText("Ese archivo no parece un archivo de canciones (JSON o TXT).", {
+      page.getByText("Ese archivo no parece un archivo de canciones (JSON).", {
         exact: true,
       }),
     ).toBeVisible();

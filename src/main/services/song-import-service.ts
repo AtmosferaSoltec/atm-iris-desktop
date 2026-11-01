@@ -14,7 +14,7 @@ import type { SqliteMaintenanceRepository } from "../repositories/sqlite/mainten
 
 type Pending = { token: string; songs: ImportedSong[] };
 
-/** Songs from a file (Holyrics JSON/TXT or an Iris backup): a preview first, nothing is saved until the operator confirms. */
+/** Songs from a file (Holyrics JSON or an Iris backup): a preview first, nothing is saved until the operator confirms. */
 export class SongImportService {
   private pending: Pending | null = null;
   constructor(
@@ -47,7 +47,7 @@ export class SongImportService {
     } catch {
       throw new AppError(
         "VALIDATION_FAILED",
-        "Ese archivo no parece un archivo de canciones (JSON o TXT).",
+        "Ese archivo no parece un archivo de canciones (JSON).",
       );
     }
     if (!songs.length) throw new AppError("VALIDATION_FAILED", "El archivo no contiene canciones.");

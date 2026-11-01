@@ -29,3 +29,10 @@ export type ImportResult = {
   withoutLyrics: number;
 };
 export type EraseResult = { songs: number; media: number };
+
+export const EXPORT_FOLDERS = ["Audio", "Backgrounds", "Images", "Videos", "Sounds"] as const;
+export type ExportFolder = (typeof EXPORT_FOLDERS)[number];
+export const exportFilesSchema = z.object({
+  folders: z.array(z.enum(EXPORT_FOLDERS)).min(1, "Elige qué copiar.").max(EXPORT_FOLDERS.length),
+});
+export type ExportFilesResult = { isCanceled: boolean; files: number };
