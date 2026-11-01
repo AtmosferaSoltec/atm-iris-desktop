@@ -133,6 +133,42 @@ export function skipNext(timer: ServiceTimer): ServiceTimer {
   };
 }
 
+/** A service record holds at most this many blocks (`recordInputSchema`). */
+export const MAX_RECORD_BLOCKS = 60;
+
+/** Where an extra block can go: never before the running one or one already done. */
+export function firstInsertIndex(timer: ServiceTimer): number {
+  return timer.current === null ? 0 : timer.current + 1;
+}
+
+/**
+ * Adds a block for this service only (the service type keeps its blocks): it is timed and saved
+ * in Tiempos like the others. `at` is clamped to the blocks still to come.
+ */
+export function insertBlock(
+  timer: ServiceTimer,
+  block: { name: string; plannedSeconds: number },
+  at: number,
+  newId: () => string,
+): ServiceTimer {
+  if (timer.phase === "finished" || timer.blocks.length >= MAX_RECORD_BLOCKS) return timer;
+  const index = Math.min(Math.max(at, firstInsertIndex(timer)), timer.blocks.length);
+  const added: TimerBlock = {
+    id: newId(),
+    name: block.name,
+    plannedSeconds: block.plannedSeconds,
+    personId: null,
+    personName: null,
+    startedAt: null,
+    endedAt: null,
+    isSkipped: false,
+  };
+  return {
+    ...timer,
+    blocks: [...timer.blocks.slice(0, index), added, ...timer.blocks.slice(index)],
+  };
+}
+
 /** Changes the leader of a block (a correction, not a template change). */
 export function setLeader(
   timer: ServiceTimer,

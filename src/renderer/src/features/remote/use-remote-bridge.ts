@@ -1,4 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Person } from "@shared/domain/models";
+import { passageId } from "@shared/lib/bible-reference";
+import { findOrAddPerson } from "@renderer/features/people/actions";
+import { passageItem } from "../console/bible/passage-item";
+import type { LibraryEntry } from "../console/model";
 import { errorMessage } from "@shared/errors";
 import type { RemoteCommand, RemoteState } from "@shared/remote/protocol";
 import { nextIndex } from "@shared/domain/block-timer";
@@ -18,9 +24,21 @@ import { useRemoteStatus } from "./use-remote-status";
 export function useRemoteBridge(
   ctrl: LiveConsole,
   service: ServiceTimerControls,
-  churchName: string,
+  {
+    churchName,
+    library,
+    people: initialPeople,
+  }: { churchName: string; library: LibraryEntry[]; people: Person[] },
 ): void {
   const status = useRemoteStatus();
+  // People added from the iPad join this list; the computer's own dialog picks them up on reload.
+  const [people, setPeople] = useState(initialPeople);
+  const bible = useQuery({
+    queryKey: ["bible", "status"],
+    queryFn: () => invoke("bible:status", undefined),
+  });
+  const bibles = bible.data?.translations;
+  const selectedBible = bible.data?.selectedTranslation ?? null;
   const isEnabled = status?.isEnabled ?? false;
   const deviceCount = status?.deviceCount ?? 0;
   const last = useRef<{ state: RemoteState; at: number } | null>(null);
@@ -30,6 +48,8 @@ export function useRemoteBridge(
   const countdown = ctrl.timer;
   const serviceName = service.serviceType?.name ?? null;
   const serviceTimer = service.timer;
+  const serviceTypes = service.types;
+  const selectedServiceTypeId = service.serviceType?.id ?? null;
 
   useEffect(() => {
     if (!isEnabled) {
@@ -50,6 +70,15 @@ export function useRemoteBridge(
       sounds,
       countdown,
       service: serviceName && serviceTimer ? { name: serviceName, timer: serviceTimer } : null,
+      serviceTypes,
+      selectedServiceTypeId,
+      people,
+      library,
+      bibles: (bibles ?? []).map((translation) => ({
+        code: translation.code,
+        name: translation.name,
+      })),
+      selectedBible,
       now,
     });
     if (!shouldPublish(last.current, state, now)) return;
@@ -72,6 +101,12 @@ export function useRemoteBridge(
     countdown,
     serviceName,
     serviceTimer,
+    serviceTypes,
+    selectedServiceTypeId,
+    people,
+    library,
+    bibles,
+    selectedBible,
   ]);
 
   // Leaving the console (Settings, Times…) takes its live state away: the iPad must know.
@@ -83,20 +118,26 @@ export function useRemoteBridge(
   );
 
   // Commands are carried out against the newest controllers, not the ones of the render that subscribed.
-  const latest = useRef({ ctrl, service });
+  const latest = useRef({ ctrl, service, library, people, setPeople });
   useEffect(() => {
-    latest.current = { ctrl, service };
-  }, [ctrl, service]);
+    latest.current = { ctrl, service, library, people, setPeople };
+  }, [ctrl, service, library, people]);
   useEffect(
-    () =>
-      window.iris.onEvent("remote:command", (command) =>
-        apply(command, latest.current.ctrl, latest.current.service),
-      ),
+    () => window.iris.onEvent("remote:command", (command) => apply(command, latest.current)),
     [],
   );
 }
 
-function apply(command: RemoteCommand, ctrl: LiveConsole, service: ServiceTimerControls): void {
+type Context = {
+  ctrl: LiveConsole;
+  service: ServiceTimerControls;
+  library: LibraryEntry[];
+  people: Person[];
+  setPeople: (update: (current: Person[]) => Person[]) => void;
+};
+
+function apply(command: RemoteCommand, context: Context): void {
+  const { ctrl, service } = context;
   switch (command.type) {
     case "select":
       if (ctrl.items.some((item) => item.planItemId === command.id)) ctrl.setOpenKey(command.id);
@@ -137,6 +178,89 @@ function apply(command: RemoteCommand, ctrl: LiveConsole, service: ServiceTimerC
       if (service.timer && service.timer.phase !== "finished" && nextIndex(service.timer) !== null)
         service.startNext();
       return;
+    case "finish-service":
+      if (service.timer?.phase === "running") service.finish();
+      return;
+    case "choose-service": {
+      const type = service.types.find((candidate) => candidate.id === command.id);
+      // Only before it starts, like the computer's "Seleccionar servicio".
+      if (type && service.timer?.phase !== "running") service.choose(type);
+      return;
+    }
+    case "add-block":
+      if (service.timer && service.timer.phase !== "finished")
+        service.addBlock({ name: command.name, plannedSeconds: command.minutes * 60 }, command.at);
+      return;
+    case "set-leader":
+      void setLeader(command, context);
+      return;
+    case "present-media": {
+      const entry = context.library.find(
+        (candidate) => candidate.kind === "media" && candidate.id === command.id,
+      );
+      if (entry) void ctrl.presentQuick(entry);
+      return;
+    }
+    case "present-bible":
+      void presentBible(command, ctrl);
+      return;
+  }
+}
+
+async function setLeader(
+  command: Extract<RemoteCommand, { type: "set-leader" }>,
+  { service, people, setPeople }: Context,
+): Promise<void> {
+  if (!service.timer?.blocks[command.block]) return;
+  let person = command.personId
+    ? people.find((candidate) => candidate.id === command.personId)
+    : null;
+  if (!person && command.name) {
+    const result = await findOrAddPerson(command.name);
+    if (!result.person) {
+      toast.error(result.error ?? "No pudimos agregar a esa persona.");
+      return;
+    }
+    person = result.person;
+    const added = result.person;
+    setPeople((current) =>
+      current.some((candidate) => candidate.id === added.id)
+        ? current
+        : [...current, added].sort((a, b) => a.name.localeCompare(b.name, "es")),
+    );
+  }
+  service.setLeader(
+    command.block,
+    person ? { id: person.id, name: person.name } : { id: null, name: null },
+  );
+}
+
+/** The same passage the computer's "Biblia" projects: shown once, never added to the service. */
+async function presentBible(
+  command: Extract<RemoteCommand, { type: "present-bible" }>,
+  ctrl: LiveConsole,
+): Promise<void> {
+  try {
+    const chapter = await invoke("bible:chapter", {
+      translation: command.translation,
+      bookId: command.bookId,
+      chapter: command.chapter,
+    });
+    const passage = {
+      code: command.translation,
+      bookId: command.bookId,
+      chapter: command.chapter,
+      from: command.from,
+      to: Math.max(command.to, command.from),
+    };
+    if (!chapter.verses.some((verse) => verse.number === passage.from)) return;
+    const item = passageItem(chapter, passage, {
+      planItemId: "bible-live",
+      refId: passageId(passage),
+    });
+    ctrl.presentPassage(item, item.focus?.first ?? 0);
+  } catch (error) {
+    toast.error(errorMessage(error));
   }
 }
 

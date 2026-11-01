@@ -2,7 +2,7 @@ import { timerRemaining } from "@shared/domain/projection";
 import type { Countdown } from "@shared/domain/countdown";
 import { elapsedSeconds, nextIndex, type ServiceTimer } from "@shared/domain/block-timer";
 import type { RemoteState } from "@shared/remote/protocol";
-import type { ConsoleItem, SoundEntry } from "../console/model";
+import type { ConsoleItem, LibraryEntry, SoundEntry } from "../console/model";
 import type { Playback } from "../console/use-live-console";
 import type { ProjectionBackground } from "../projection/model";
 
@@ -20,6 +20,12 @@ export type RemoteStateInput = {
   sounds: SoundEntry[];
   countdown: Countdown;
   service: { name: string; timer: ServiceTimer } | null;
+  serviceTypes: { id: string; name: string }[];
+  selectedServiceTypeId: string | null;
+  people: { id: string; name: string }[];
+  library: LibraryEntry[];
+  bibles: { code: string; name: string }[];
+  selectedBible: string | null;
   now: number;
 };
 
@@ -77,6 +83,24 @@ export function buildRemoteState(input: RemoteStateInput): RemoteState {
         }
       : null,
     service: service ? serviceState(service.name, service.timer, now) : null,
+    serviceTypes: input.serviceTypes.map((type) => ({ id: type.id, name: type.name })),
+    selectedServiceTypeId: input.selectedServiceTypeId,
+    canChooseService: service?.timer.phase !== "running",
+    people: input.people.map((person) => ({ id: person.id, name: person.name })),
+    library: input.library.flatMap((entry) =>
+      entry.kind === "media" && (entry.icon === "image" || entry.icon === "video")
+        ? [
+            {
+              id: entry.id,
+              kind: entry.icon,
+              title: entry.title,
+              durationSeconds: entry.durationSeconds,
+            },
+          ]
+        : [],
+    ),
+    bibles: input.bibles,
+    selectedBible: input.selectedBible,
   };
 }
 
@@ -89,6 +113,7 @@ function serviceState(name: string, timer: ServiceTimer, now: number): RemoteSta
       name: block.name,
       plannedSeconds: block.plannedSeconds,
       leader: block.personName,
+      leaderId: block.personId,
       status: block.isSkipped
         ? "skipped"
         : index === current && timer.phase === "running"

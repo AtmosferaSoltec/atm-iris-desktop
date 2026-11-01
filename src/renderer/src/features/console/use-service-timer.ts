@@ -7,6 +7,7 @@ import type { ServiceRecord, ServiceType } from "@shared/domain/models";
 import { saveServiceRecord } from "./actions";
 import {
   finish,
+  insertBlock,
   recordInput,
   resumeTimer,
   setLeader,
@@ -64,8 +65,15 @@ export function useServiceTimer({
     if (initial.timer && initial.timer.phase === "running") persist(initial.timer);
   }, [initial.timer, persist]);
 
+  /**
+   * Changes start from the newest timer, not the one this render saw: a leader set after awaiting
+   * a new person (from the iPad) must not undo a block added in between.
+   */
   const apply = useCallback(
-    (next: ServiceTimer) => {
+    (change: (current: ServiceTimer) => ServiceTimer) => {
+      const current = latest.current;
+      if (!current) return;
+      const next = change(current);
       setTimer(next);
       setNow(Date.now());
       persist(next);
@@ -75,8 +83,10 @@ export function useServiceTimer({
 
   /** Chooses the service to lead (only before it starts); it is remembered until it ends. */
   const choose = useCallback((type: ServiceType) => {
+    const next = type.blocks.length > 0 ? timerFor(type, newId) : null;
     setServiceType(type);
-    setTimer(type.blocks.length > 0 ? timerFor(type, newId) : null);
+    setTimer(next);
+    latest.current = next;
     setSaveError(null);
     void invoke("service-types:select", type.id).catch((error) => toast.error(errorMessage(error)));
   }, []);
@@ -114,11 +124,15 @@ export function useServiceTimer({
     choose,
     clear,
     /** Closes the current block (if any) and starts the next one right away; the leader is set after. */
-    startNext: () => timer && apply(startNext(timer, NO_LEADER, Date.now())),
-    setLeader: (index: number, leader: Leader) => timer && apply(setLeader(timer, index, leader)),
+    startNext: () => apply((current) => startNext(current, NO_LEADER, Date.now())),
+    setLeader: (index: number, leader: Leader) =>
+      apply((current) => setLeader(current, index, leader)),
+    /** An extra block for this service only; the service type keeps its blocks. */
+    addBlock: (block: { name: string; plannedSeconds: number }, at: number) =>
+      apply((current) => insertBlock(current, block, at, newId)),
     finish: () => {
-      if (!timer) return;
-      apply(finish(timer, Date.now()));
+      if (!latest.current) return;
+      apply((current) => finish(current, Date.now()));
       void invoke("service-types:select", null).catch((error) => toast.error(errorMessage(error)));
     },
     retrySave: () => latest.current && persist(latest.current),

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- «Agregar bloque» durante el servicio (en la barra de bloques): un bloque extra solo para ese servicio, en el lugar que elijas. Se cronometra y queda en Tiempos, pero el servicio conserva sus bloques de siempre.
+- Control desde iPad: Biblia (todas las versiones de la computadora; se proyecta una sola vez, sin entrar al servicio), imágenes y videos de la biblioteca (se presentan con un toque), elegir el servicio antes de empezar, quién dirige cada bloque, agregar un bloque y terminar el servicio.
+
 ## 1.1.1
 
 - Control desde iPad: si la computadora está en Configuración o Tiempos, el iPad ya no se queda cargando; avisa que hay que volver a la pantalla del servicio.

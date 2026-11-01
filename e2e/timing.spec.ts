@@ -62,3 +62,64 @@ test("times a service, resumes it, and preserves a deleted leader in history", a
     await rm(home, { recursive: true, force: true });
   }
 });
+
+test("adds a block during the service: saved in Tiempos, not in the service", async () => {
+  const running = await launchApp();
+  try {
+    const page = await running.app.firstWindow();
+    await page.evaluate(async () => {
+      const result = await window.iris["service-types:create"]({
+        name: "Culto de domingo",
+        color: "amber",
+        schedule: null,
+        blocks: [
+          { name: "Bienvenida", plannedMinutes: 5 },
+          { name: "Mensaje", plannedMinutes: 30 },
+        ],
+      });
+      if (!result.ok) throw new Error(result.error.message);
+      const selected = await window.iris["service-types:select"](result.data.id);
+      if (!selected.ok) throw new Error(selected.error.message);
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Comenzar", exact: true }).click();
+    await page.getByRole("button", { name: "Agregar bloque", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Agregar bloque" });
+    await dialog.getByRole("button", { name: "Agregar", exact: true }).click();
+    await expect(dialog.getByText("Escribe el nombre del bloque.")).toBeVisible();
+    await dialog.getByLabel("Nombre", { exact: true }).fill("Santa cena");
+    await dialog.getByLabel("Minutos", { exact: true }).fill("15");
+    // Right after the running block by default.
+    await expect(dialog.getByRole("combobox", { name: "Ubicación" })).toHaveText(
+      "Antes de Mensaje",
+    );
+    await dialog.getByRole("button", { name: "Agregar", exact: true }).click();
+    await page.getByRole("button", { name: "Siguiente: Santa cena →" }).click();
+    await expect(page.getByRole("button", { name: "Siguiente: Mensaje →" })).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const result = await window.iris["times:load"](undefined);
+          if (!result.ok) return null;
+          return {
+            record: result.data.records[0]?.blocks.map((block) => [
+              block.name,
+              block.plannedSeconds,
+            ]),
+            template: result.data.types[0]?.blocks.length,
+          };
+        }),
+      )
+      .toEqual({
+        record: [
+          ["Bienvenida", 300],
+          ["Santa cena", 900],
+          ["Mensaje", 1800],
+        ],
+        template: 2,
+      });
+  } finally {
+    await running.close();
+  }
+});

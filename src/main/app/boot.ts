@@ -19,6 +19,7 @@ import { app, BrowserWindow, protocol, shell } from "electron";
 import { RemoteServer } from "../remote/remote-server";
 import { advertiseOnNetwork } from "../remote/discovery";
 import { remoteHandlers } from "../ipc/remote-handlers";
+import { BIBLE_BOOKS } from "@shared/domain/bible-books";
 import { createProjection } from "../windows/projection";
 import { ConsoleService } from "../services/console-service";
 import { SqlitePlanRepository } from "../repositories/sqlite/plan-repository";
@@ -119,6 +120,16 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       onCommand: (command) => broadcast("remote:command", command),
       changed: (status) => broadcast("remote:changed", status),
       log: logMessage,
+      onRequest: async (request) =>
+        request.kind === "bible-books"
+          ? { books: [...BIBLE_BOOKS] }
+          : {
+              verses: bible.chapter({
+                translation: request.translation,
+                bookId: request.bookId,
+                chapter: request.chapter,
+              }).verses,
+            },
     });
     if (!env.isE2e && repository.getPreference("remoteEnabled", false))
       void remote.start().catch(logError);

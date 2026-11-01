@@ -26,6 +26,7 @@ export const remoteItemSchema = z.object({
 
 const remoteBlockSchema = z.object({
   name: z.string().max(120),
+  leaderId: z.string().max(80).nullable(),
   plannedSeconds: z.number().min(0),
   status: z.enum(["done", "current", "pending", "skipped"]),
   leader: z.string().max(120).nullable(),
@@ -81,6 +82,26 @@ export const remoteStateSchema = z.object({
       canAdvance: z.boolean(),
     })
     .nullable(),
+  /** The church's services, to choose one before it starts (creating them is done on the computer). */
+  serviceTypes: z.array(z.object({ id: z.string().max(80), name: z.string().max(120) })).max(100),
+  selectedServiceTypeId: z.string().max(80).nullable(),
+  /** False once a service is running: it is finished on the computer or from the last block. */
+  canChooseService: z.boolean(),
+  people: z.array(z.object({ id: z.string().max(80), name: z.string().max(120) })).max(500),
+  /** Images and videos of the computer's library: shown on the screens without joining the service. */
+  library: z
+    .array(
+      z.object({
+        id: z.string().max(80),
+        kind: z.enum(["image", "video"]),
+        title: z.string().max(200),
+        durationSeconds: z.number().min(0).nullable(),
+      }),
+    )
+    .max(2000),
+  /** The Bibles imported on the computer; the iPad only reads them. */
+  bibles: z.array(z.object({ code: z.string().max(40), name: z.string().max(120) })).max(20),
+  selectedBible: z.string().max(40).nullable(),
 });
 export type RemoteState = z.infer<typeof remoteStateSchema>;
 export type RemoteItem = z.infer<typeof remoteItemSchema>;
@@ -110,7 +131,48 @@ export const remoteCommandSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("play-sound"), id: z.string().max(80) }),
   z.object({ type: z.literal("next-block") }),
+  z.object({ type: z.literal("finish-service") }),
+  z.object({ type: z.literal("choose-service"), id: z.string().max(80) }),
+  /** An extra block for this service only, placed at `at` (never before the running block). */
+  z.object({
+    type: z.literal("add-block"),
+    name: z.string().trim().min(1).max(60),
+    minutes: z.number().int().min(1).max(240),
+    at: z.number().int().min(0).max(60),
+  }),
+  /** Who leads a block: someone listed, or a new name (added to the people, like on the computer). */
+  z.object({
+    type: z.literal("set-leader"),
+    block: z.number().int().min(0).max(60),
+    personId: z.string().max(80).optional(),
+    name: z.string().trim().min(1).max(120).optional(),
+  }),
+  z.object({ type: z.literal("present-media"), id: z.string().max(80) }),
+  /** A passage straight to the screens, once: it never joins the service. */
+  z.object({
+    type: z.literal("present-bible"),
+    translation: z.string().max(40),
+    bookId: z.string().max(8),
+    chapter: z.number().int().min(1).max(150),
+    from: z.number().int().min(1).max(200),
+    to: z.number().int().min(1).max(200),
+  }),
 ]);
+
+/** Questions the iPad asks to browse what only the computer has (main answers them). */
+export const remoteRequestSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("bible-books") }),
+  z.object({
+    kind: z.literal("bible-chapter"),
+    translation: z.string().max(40),
+    bookId: z.string().max(8),
+    chapter: z.number().int().min(1).max(150),
+  }),
+]);
+export type RemoteRequest = z.infer<typeof remoteRequestSchema>;
+export type RemoteResponse =
+  | { books: { id: string; name: string; testament: "old" | "new"; chapterCount: number }[] }
+  | { verses: { number: number; text: string }[] };
 export type RemoteCommand = z.infer<typeof remoteCommandSchema>;
 
 // ----- Messages on the wire -----
@@ -125,6 +187,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("resume"), protocol: z.number().int(), token: z.string().max(100) }),
   z.object({ type: z.literal("command"), command: remoteCommandSchema }),
+  z.object({ type: z.literal("request"), id: z.string().max(40), request: remoteRequestSchema }),
 ]);
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
 
@@ -143,6 +206,7 @@ export type ServerMessage =
   /** `null`: the console is not on screen (Settings, Times…), so there is nothing to control right now. */
   | { type: "state"; state: RemoteState | null }
   | { type: "error"; code: RemoteErrorCode; message: string }
+  | ({ type: "response"; id: string } & (RemoteResponse | { error: string }))
   | { type: "bye"; reason: "disconnected" | "disabled" };
 
 // ----- What the console's own window shows about the remote control -----

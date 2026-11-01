@@ -3,6 +3,7 @@ import type { ServiceType } from "@shared/domain/models";
 import {
   clockState,
   finish,
+  insertBlock,
   recordInput,
   resumeTimer,
   skipNext,
@@ -59,6 +60,46 @@ describe("block timer", () => {
       ["skipped", 0],
     ]);
     expect(totals(timer, T0 + minutes(40))).toEqual({ actual: 1920, planned: 1800, overtime: 120 });
+  });
+
+  it("adds a block for this service only, after the running one, and times it like the rest", () => {
+    let timer = startNext(timerFor(culto, newId), ana, T0);
+    timer = startNext(timer, ana, T0 + minutes(10));
+    // Asked to go before the running block: it lands right after it.
+    timer = insertBlock(timer, { name: "Santa cena", plannedSeconds: 900 }, 0, newId);
+    expect(timer.blocks.map((block) => block.name)).toEqual([
+      "Bienvenida",
+      "Alabanzas",
+      "Santa cena",
+      "Prédica",
+    ]);
+    expect(timer.current).toBe(1);
+    expect(culto.blocks).toHaveLength(3);
+
+    timer = startNext(timer, ana, T0 + minutes(30));
+    expect(timer.blocks[timer.current!].name).toBe("Santa cena");
+    timer = finish(timer, T0 + minutes(45));
+    const saved = recordInput(timer)!;
+    expect(saved.blocks.map((block) => [block.name, block.status, block.actualSeconds])).toEqual([
+      ["Bienvenida", "completed", 600],
+      ["Alabanzas", "completed", 1200],
+      ["Santa cena", "completed", 900],
+      ["Prédica", "skipped", 0],
+    ]);
+    expect(insertBlock(timer, { name: "Tarde", plannedSeconds: 60 }, 4, newId)).toBe(timer);
+  });
+
+  it("adds a block anywhere before the service starts, and at the end past the last one", () => {
+    let timer = timerFor(culto, newId);
+    timer = insertBlock(timer, { name: "Oración", plannedSeconds: 300 }, 0, newId);
+    timer = insertBlock(timer, { name: "Avisos", plannedSeconds: 300 }, 99, newId);
+    expect(timer.blocks.map((block) => block.name)).toEqual([
+      "Oración",
+      "Bienvenida",
+      "Alabanzas",
+      "Prédica",
+      "Avisos",
+    ]);
   });
 
   it("skips the next block and goes past it", () => {

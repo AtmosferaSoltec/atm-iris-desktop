@@ -31,6 +31,12 @@ nothing and cannot add, remove or edit content.
 3. Console bridge (`features/remote`): state builder with a "publish only when it matters" filter (a playing track
    moves on its own on the iPad), command executor.
 4. E2E (`e2e/remote.spec.ts`): a WebSocket client pairs, receives the service and drives a slide.
+5. Service and one-off presentation from the iPad (1.2.0): choose the service before it starts, set or create a block's
+   leader, finish the service, add an extra block for this service only (`add-block`, same rule as the console's
+   «Agregar bloque»: saved in Tiempos, never in the service type), present library images and videos
+   (`present-media`) and a Bible passage (`present-bible`). Neither joins the service: they are shown once, like the
+   console's library and Bible. Books and verses come through request/response messages (`bible-books`,
+   `bible-chapter`) that only a paired socket gets answered.
 
 ## Acceptance
 
@@ -39,7 +45,6 @@ nothing and cannot add, remove or edit content.
 
 ## Out of scope / pending
 
-- Bible search and projection from the iPad (needs request/response messages for books, chapters and verses).
 - Image and video background thumbnails (the iPad shows the gradient colors only).
 - Windows firewall: the first run prompts the user; the panel explains it.
 

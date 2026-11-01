@@ -7,6 +7,8 @@ import {
   PROTOCOL_VERSION,
   type RemoteCommand,
   type RemoteErrorCode,
+  type RemoteRequest,
+  type RemoteResponse,
   type RemoteState,
   type RemoteStatus,
   type ServerMessage,
@@ -32,6 +34,8 @@ type Dependencies = {
   /** Makes the computer findable on the network; returns what stops it. */
   advertise: (port: number) => () => void;
   onCommand: (command: RemoteCommand) => void;
+  /** Answers what the iPad asks to browse (the Bible's books and verses). */
+  onRequest?: (request: RemoteRequest) => Promise<RemoteResponse>;
   /** The status the console's window shows changed (code, devices, on/off). */
   changed: (status: RemoteStatus) => void;
   gate?: PairingGate;
@@ -159,6 +163,11 @@ export class RemoteServer {
     socket.on("message", (raw) => {
       const message = parse(raw.toString());
       if (!message) return this.refuse(socket, "BAD_MESSAGE");
+      if (message.type === "request") {
+        if (!this.paired.has(socket)) return this.refuse(socket, "BAD_TOKEN");
+        void this.answer(socket, message.id, message.request);
+        return;
+      }
       if (message.type === "command") {
         if (this.paired.has(socket)) this.deps.onCommand(message.command);
         else this.refuse(socket, "BAD_TOKEN");
@@ -182,6 +191,17 @@ export class RemoteServer {
       }
       this.welcome(socket, result.token);
     });
+  }
+
+  private async answer(socket: WebSocket, id: string, request: RemoteRequest): Promise<void> {
+    try {
+      if (!this.deps.onRequest) throw new Error("Sin respuesta");
+      const result = await this.deps.onRequest(request);
+      this.say([socket], { type: "response", id, ...result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No pudimos responder.";
+      this.say([socket], { type: "response", id, error: message });
+    }
   }
 
   private welcome(socket: WebSocket, token: string): void {

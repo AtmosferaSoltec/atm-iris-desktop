@@ -44,7 +44,11 @@ export function LiveConsole({ data }: { data: ConsoleData }) {
   const service = useServiceTimer(data);
   const library = useLibrary(data.library, ctrl);
   useShortcuts(ctrl);
-  useRemoteBridge(ctrl, service, data.churchName);
+  useRemoteBridge(ctrl, service, {
+    churchName: data.churchName,
+    library: library.entries,
+    people: data.people,
+  });
   return (
     <ConsoleDnd ctrl={ctrl}>
       <div className="fixed inset-0 z-10 flex flex-col bg-canvas" aria-label="Servicio en vivo">

@@ -27,6 +27,31 @@ function input(overrides: Partial<RemoteStateInput> = {}): RemoteStateInput {
     sounds: [],
     countdown: null,
     service: null,
+    serviceTypes: [],
+    selectedServiceTypeId: null,
+    people: [],
+    library: [
+      {
+        kind: "media",
+        id: "v1",
+        title: "Bienvenida",
+        subtitle: "",
+        icon: "video",
+        durationSeconds: 80,
+        previewUrl: "iris-media://asset/v1",
+      },
+      {
+        kind: "song",
+        id: "s1",
+        title: "Canción",
+        subtitle: "",
+        icon: "song",
+        durationSeconds: null,
+        previewUrl: null,
+      },
+    ],
+    bibles: [],
+    selectedBible: null,
     now: 10_000,
     ...overrides,
   };
@@ -37,6 +62,12 @@ describe("buildRemoteState", () => {
     const state = buildRemoteState(input());
     expect(JSON.stringify(state)).not.toContain("iris-media");
     expect(state.items[0]).toMatchObject({ id: "row-1", isPlayable: true });
+  });
+
+  it("lists only the library's images and videos", () => {
+    expect(buildRemoteState(input()).library).toEqual([
+      { id: "v1", kind: "video", title: "Bienvenida", durationSeconds: 80 },
+    ]);
   });
 
   it("adds a selected passage that is not in the service", () => {

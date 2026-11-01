@@ -3,10 +3,11 @@ import { useState, useTransition, type ReactNode } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button, IconButton } from "@renderer/components/ui/button";
 import { ConfirmDialog, Dialog } from "@renderer/components/ui/dialog";
+import { Select } from "@renderer/components/ui/select";
 import { Surface } from "@renderer/components/ui/surface";
 import { TextField } from "@renderer/components/ui/text-field";
 import type { Person, ServiceType } from "@shared/domain/models";
-import { plannedSeconds } from "@shared/domain/rules";
+import { BLOCK_MINUTES, plannedSeconds } from "@shared/domain/rules";
 import { cn } from "@renderer/lib/cn";
 import { blocksSummary, clock, overtime } from "@shared/lib/format";
 import { invoke } from "@renderer/lib/ipc";
@@ -15,6 +16,8 @@ import { createConsoleService } from "../actions";
 import {
   clockState,
   elapsedSeconds,
+  firstInsertIndex,
+  MAX_RECORD_BLOCKS,
   nextIndex,
   totals,
   type ClockState,
@@ -51,6 +54,7 @@ export function BlockTimerBar({
   const [isChoosing, setIsChoosing] = useState(false);
   const [changingLeader, setChangingLeader] = useState<number | null>(null);
   const [isConfirmingFinish, setIsConfirmingFinish] = useState(false);
+  const [isAddingBlock, setIsAddingBlock] = useState(false);
   const next = timer ? nextIndex(timer) : null;
 
   return (
@@ -84,6 +88,7 @@ export function BlockTimerBar({
           )}
           action={
             <>
+              <AddBlockButton timer={timer} onClick={() => setIsAddingBlock(true)} />
               <Button variant="ghost" onClick={() => setIsChoosing(true)}>
                 Cambiar
               </Button>
@@ -103,6 +108,7 @@ export function BlockTimerBar({
           now={service.now}
           next={next}
           onChangeLeader={() => setChangingLeader(timer.current)}
+          onAddBlock={() => setIsAddingBlock(true)}
           onNext={service.startNext}
           onFinish={() => setIsConfirmingFinish(true)}
         />
@@ -161,6 +167,16 @@ export function BlockTimerBar({
           }
         />
       )}
+      {isAddingBlock && timer && (
+        <AddBlockDialog
+          timer={timer}
+          onClose={() => setIsAddingBlock(false)}
+          onAdd={(block, at) => {
+            service.addBlock(block, at);
+            setIsAddingBlock(false);
+          }}
+        />
+      )}
       <ConfirmDialog
         open={isConfirmingFinish}
         onClose={() => setIsConfirmingFinish(false)}
@@ -193,6 +209,7 @@ function Running({
   now,
   next,
   onChangeLeader,
+  onAddBlock,
   onNext,
   onFinish,
 }: {
@@ -200,6 +217,7 @@ function Running({
   now: number;
   next: number | null;
   onChangeLeader: () => void;
+  onAddBlock: () => void;
   onNext: () => void;
   onFinish: () => void;
 }) {
@@ -246,6 +264,7 @@ function Running({
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <AddBlockButton timer={timer} onClick={onAddBlock} />
           {next !== null ? (
             <Button className="min-w-[220px]" onClick={onNext}>
               Siguiente: {timer.blocks[next].name} →
@@ -278,6 +297,122 @@ function Finished({ timer, now, onNew }: { timer: ServiceTimer; now: number; onN
         Nuevo servicio
       </Button>
     </div>
+  );
+}
+
+function AddBlockButton({ timer, onClick }: { timer: ServiceTimer; onClick: () => void }) {
+  return (
+    <Button
+      variant="ghost"
+      icon={<Plus className="size-4" />}
+      disabled={timer.blocks.length >= MAX_RECORD_BLOCKS}
+      onClick={onClick}
+    >
+      Agregar bloque
+    </Button>
+  );
+}
+
+/**
+ * "Agregar bloque" during a service: an extra block for this time only. It is timed and saved in
+ * Tiempos, but the service keeps its usual blocks (those change in Servicios).
+ */
+function AddBlockDialog({
+  timer,
+  onClose,
+  onAdd,
+}: {
+  timer: ServiceTimer;
+  onClose: () => void;
+  onAdd: (block: { name: string; plannedSeconds: number }, at: number) => void;
+}) {
+  const first = firstInsertIndex(timer);
+  // Right after the running block by default (before the service starts: at the end).
+  const [at, setAt] = useState(String(timer.current === null ? timer.blocks.length : first));
+  const [name, setName] = useState("");
+  const [minutes, setMinutes] = useState(String(BLOCK_MINUTES.default));
+  const [errors, setErrors] = useState<{ name?: string; minutes?: string }>({});
+  const positions = [];
+  for (let index = first; index <= timer.blocks.length; index++) {
+    positions.push({
+      value: String(index),
+      label: index === timer.blocks.length ? "Al final" : `Antes de ${timer.blocks[index].name}`,
+    });
+  }
+
+  function save() {
+    const trimmed = name.trim();
+    const value = Number(minutes);
+    const next = {
+      name: !trimmed
+        ? "Escribe el nombre del bloque."
+        : trimmed.length > 60
+          ? "Usa un nombre más corto."
+          : undefined,
+      minutes:
+        !Number.isInteger(value) || value < BLOCK_MINUTES.min
+          ? "Mínimo 1 minuto."
+          : value > BLOCK_MINUTES.max
+            ? "Máximo 240 minutos."
+            : undefined,
+    };
+    setErrors(next);
+    if (next.name || next.minutes) return;
+    onAdd({ name: trimmed, plannedSeconds: value * 60 }, Number(at));
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Agregar bloque"
+      description="Solo para este servicio: se guarda en Tiempos, pero el servicio conserva sus bloques de siempre."
+      size="sm"
+    >
+      <form
+        className="flex flex-col gap-4 pb-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          save();
+        }}
+      >
+        <TextField
+          id="extra-block-name"
+          label="Nombre"
+          placeholder="Ej. Santa cena"
+          value={name}
+          error={errors.name}
+          onChange={(event) => setName(event.target.value)}
+          autoFocus
+        />
+        <div className="flex gap-3">
+          <TextField
+            id="extra-block-minutes"
+            label="Minutos"
+            inputMode="numeric"
+            maxLength={3}
+            value={minutes}
+            error={errors.minutes}
+            onChange={(event) => setMinutes(event.target.value.replace(/\D/g, ""))}
+            containerClassName="w-28"
+          />
+          <Select
+            id="extra-block-position"
+            label="Ubicación"
+            options={positions}
+            value={at}
+            onValueChange={setAt}
+            containerClassName="flex-1"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit">Agregar</Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 

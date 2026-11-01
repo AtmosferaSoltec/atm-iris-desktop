@@ -17,6 +17,13 @@ const STATE: RemoteState = {
   sounds: [],
   countdown: null,
   service: null,
+  serviceTypes: [],
+  selectedServiceTypeId: null,
+  canChooseService: true,
+  people: [],
+  library: [],
+  bibles: [],
+  selectedBible: null,
 };
 
 let server: RemoteServer | null = null;
@@ -31,6 +38,10 @@ async function start(commands: unknown[] = [], statuses: RemoteStatus[] = []) {
     computerName: "PC",
     advertise: () => () => {},
     onCommand: (command) => commands.push(command),
+    onRequest: async (request) =>
+      request.kind === "bible-books"
+        ? { books: [{ id: "JHN", name: "Juan", testament: "new", chapterCount: 21 }] }
+        : { verses: [{ number: 16, text: "Porque de tal manera amó Dios al mundo" }] },
     changed: (status) => statuses.push(status),
     gate: new PairingGate({ newCode: () => "123456", newToken: () => "token-1" }),
     port: 0,
@@ -97,6 +108,35 @@ describe("RemoteServer", () => {
     await client.waitFor(4);
     expect(client.received[2]).toMatchObject({ type: "state", state: { churchName: "Iglesia" } });
     expect(client.received[3]).toEqual({ type: "state", state: null });
+  });
+
+  it("answers the iPad's questions only after pairing", async () => {
+    const url = await start();
+    const client = connect(url);
+    await client.opened;
+    client.socket.send(pair("123456"));
+    await client.waitFor(2);
+    client.socket.send(
+      JSON.stringify({
+        type: "request",
+        id: "r1",
+        request: { kind: "bible-chapter", translation: "rvr1960", bookId: "JHN", chapter: 3 },
+      }),
+    );
+    await client.waitFor(3);
+    expect(client.received[2]).toEqual({
+      type: "response",
+      id: "r1",
+      verses: [{ number: 16, text: "Porque de tal manera amó Dios al mundo" }],
+    });
+
+    const stranger = connect(url);
+    await stranger.opened;
+    stranger.socket.send(
+      JSON.stringify({ type: "request", id: "r2", request: { kind: "bible-books" } }),
+    );
+    await stranger.closed;
+    expect(stranger.received[0]).toMatchObject({ type: "error", code: "BAD_TOKEN" });
   });
 
   it("refuses a wrong code and a command before pairing", async () => {
