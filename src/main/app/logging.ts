@@ -9,7 +9,10 @@ export function initializeLogging(directory: string): void {
 }
 
 export function logError(error: unknown): void {
-  const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  logMessage(error instanceof Error ? (error.stack ?? error.message) : String(error));
+}
+
+export function logMessage(message: string): void {
   try {
     if (!logPath) return;
     if (existsSync(logPath) && statSync(logPath).size > 1_048_576) {

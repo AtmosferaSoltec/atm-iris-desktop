@@ -57,13 +57,10 @@ it("blocks the workspace until the mandatory update is installed and persists th
   expect(() => service.assertCanUse("songs:create")).toThrow("Espera");
   expect(() => service.assertCanUse("updates:status")).not.toThrow();
   const checked = await service.check();
-  expect(checked).toMatchObject({
-    phase: "ready",
-    isRequired: true,
-    nextVersion: "0.5.0",
-    progress: 100,
-  });
+  expect(checked).toMatchObject({ phase: "available", isRequired: true, nextVersion: "0.5.0" });
+  expect(port.download).not.toHaveBeenCalled();
   expect(settings.get("updates.requiredVersion")).toBe("0.5.0");
+  expect(await service.download()).toMatchObject({ phase: "ready", progress: 100 });
   expect(() => service.assertCanUse("console:load")).toThrow("Debes actualizar");
   expect(service.install().phase).toBe("installing");
   expect(options.prepareInstall).toHaveBeenCalledOnce();
@@ -92,6 +89,7 @@ it("never checks again or interrupts a session already admitted to the console",
   expect(port.check).toHaveBeenCalledOnce();
   expect(() => service.assertCanUse("projection:start")).not.toThrow();
   expect(() => service.install()).toThrow("todavía no está lista");
+  expect(() => service.download()).toThrow("No hay una actualización");
 });
 it("retires an installed marker and does not downgrade or skip a previously required version", async () => {
   const done = fixture("0.4.0");
@@ -104,16 +102,21 @@ it("retires an installed marker and does not downgrade or skip a previously requ
   });
   expect(required.port.download).not.toHaveBeenCalled();
   vi.mocked(required.port.check).mockResolvedValue("0.6.0");
-  expect((await required.service.check()).phase).toBe("ready");
+  expect((await required.service.check()).phase).toBe("available");
+  expect((await required.service.download()).phase).toBe("ready");
 });
 it("keeps download failures mandatory, retries them and serializes concurrent checks", async () => {
   const { service, port, settings } = fixture();
   vi.mocked(port.download).mockRejectedValueOnce(new Error("download failed"));
   const first = service.check();
   expect(service.check()).toBe(first);
-  expect((await first).phase).toBe("error");
+  expect((await first).phase).toBe("available");
+  const failed = await service.download();
+  expect(failed.phase).toBe("error");
   expect(settings.get("updates.requiredVersion")).toBe("0.5.0");
-  expect((await service.check()).phase).toBe("ready");
+  // Retrying after a failed download goes straight to the download, not back to the feed.
+  expect((await service.retry()).phase).toBe("ready");
+  expect(port.check).toHaveBeenCalledOnce();
 });
 it("does not install without a successful automatic backup or while projecting", async () => {
   const failed = fixture(null, {
@@ -122,16 +125,19 @@ it("does not install without a successful automatic backup or while projecting",
     },
   });
   await failed.service.check();
+  await failed.service.download();
   expect(failed.service.install().phase).toBe("error");
   expect(failed.port.install).not.toHaveBeenCalled();
   const projecting = fixture(null, { canInstall: () => false });
   await projecting.service.check();
+  await projecting.service.download();
   expect(() => projecting.service.install()).toThrow("Detén la proyección");
   expect(projecting.port.install).not.toHaveBeenCalled();
 });
 it("reports asynchronous installer failures without releasing the mandatory gate", async () => {
   const { service, port } = fixture();
   await service.check();
+  await service.download();
   vi.mocked(port.install).mockImplementation((failed) => failed(new Error("installer failed")));
   expect(service.install()).toMatchObject({ phase: "error", isRequired: true });
   expect(() => service.assertCanUse("songs:create")).toThrow("Debes actualizar");

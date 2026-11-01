@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Actualización obligatoria: ya no descarga sola. Primero aparece «Hay una nueva versión» con el botón «Descargar actualización».
+- El registro de Iris (`iris.log`) ahora guarda lo que hace el actualizador, para poder diagnosticar una instalación que no termina.
+
 ## 1.0.2
 
 - Audios: el selector de audio y «Asignar audios» tienen «Abrir carpeta de audios» (para copiar tus MP3 a Iris/Audio) y «Buscar archivos nuevos».

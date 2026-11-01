@@ -6,6 +6,7 @@ export const updateStatusSchema = z.object({
     "checking",
     "current",
     "offline",
+    "available",
     "downloading",
     "ready",
     "installing",

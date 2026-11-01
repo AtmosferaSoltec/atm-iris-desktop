@@ -63,6 +63,7 @@ export function defineChannel<I, O>(
 export const contract = {
   "updates:status": defineChannel("updates:status", z.void(), updateStatusSchema),
   "updates:retry": defineChannel("updates:retry", z.void(), updateStatusSchema),
+  "updates:download": defineChannel("updates:download", z.void(), updateStatusSchema),
   "updates:install": defineChannel("updates:install", z.void(), updateStatusSchema),
   "bible:select": defineChannel("bible:select", bibleTranslationSchema, z.custom<BibleStatus>()),
   "bible:status": defineChannel("bible:status", z.void(), z.custom<BibleStatus>()),

@@ -111,7 +111,8 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
     registerIpc(
       {
         "updates:status": () => updates.status(),
-        "updates:retry": () => updates.check(),
+        "updates:retry": () => updates.retry(),
+        "updates:download": () => updates.download(),
         "updates:install": () => updates.install(),
         ...bibleHandlers(bible),
         ...backupHandlers(backup, snapshots, storage, home.root, songImport),

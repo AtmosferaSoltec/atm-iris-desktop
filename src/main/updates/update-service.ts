@@ -22,6 +22,7 @@ const REQUIRED_VERSION = "updates.requiredVersion";
 const ALLOWED_CHANNELS: ReadonlySet<ChannelName> = new Set([
   "updates:status",
   "updates:retry",
+  "updates:download",
   "updates:install",
   "app:info",
 ]);
@@ -30,6 +31,8 @@ export class UpdateService {
   private state: UpdateStatus;
   private operation: Promise<UpdateStatus> | null = null;
   private hasSessionStarted: boolean;
+  /** The feed answered with a newer version in this run, so a failed download can be retried directly. */
+  private hasFoundUpdate = false;
   constructor(
     private readonly port: UpdatePort,
     private readonly options: UpdateOptions,
@@ -85,14 +88,11 @@ export class UpdateService {
       }
       if (this.state.nextVersion && isNewerVersion(this.state.nextVersion, version))
         throw new Error("The feed is older than the required release.");
-      // Persist before downloading: restarting or losing connectivity cannot dismiss an update.
+      // Persist before offering it: restarting or losing connectivity cannot dismiss an update.
       this.options.settings.setPreference(REQUIRED_VERSION, version);
-      this.change({ phase: "downloading", nextVersion: version, isRequired: true });
-      await this.port.download((percent) => {
-        if (this.state.phase === "downloading" && Number.isFinite(percent))
-          this.change({ progress: Math.min(100, Math.max(this.state.progress, percent)) });
-      });
-      this.change({ phase: "ready", progress: 100 });
+      this.hasFoundUpdate = true;
+      // The operator decides when to download: nothing starts on its own.
+      this.change({ phase: "available", nextVersion: version, isRequired: true });
     } catch (error) {
       this.options.reportError(error);
       if (this.state.isRequired)
@@ -110,6 +110,41 @@ export class UpdateService {
       }
     }
     return this.status();
+  }
+  /** Downloads the update the operator was offered (or retries a failed download). */
+  download(): Promise<UpdateStatus> {
+    if (this.operation) return this.operation;
+    const canDownload =
+      this.state.isRequired &&
+      this.hasFoundUpdate &&
+      (this.state.phase === "available" || this.state.phase === "error");
+    if (!canDownload) throw new AppError("CONFLICT", "No hay una actualización para descargar.");
+    this.operation = this.runDownload().finally(() => {
+      this.operation = null;
+    });
+    return this.operation;
+  }
+  private async runDownload(): Promise<UpdateStatus> {
+    this.change({ phase: "downloading", progress: 0, message: null });
+    try {
+      await this.port.download((percent) => {
+        if (this.state.phase === "downloading" && Number.isFinite(percent))
+          this.change({ progress: Math.min(100, Math.max(this.state.progress, percent)) });
+      });
+      this.change({ phase: "ready", progress: 100 });
+    } catch (error) {
+      this.options.reportError(error);
+      this.change({
+        phase: "error",
+        message:
+          "No pudimos descargar la actualización. Revisa la conexión y el espacio disponible, y vuelve a intentarlo.",
+      });
+    }
+    return this.status();
+  }
+  /** After an error: retry the download if the update is known, otherwise check again. */
+  retry(): Promise<UpdateStatus> {
+    return this.hasFoundUpdate && this.state.phase === "error" ? this.download() : this.check();
   }
   private async checkWithTimeout(): Promise<string | null> {
     let timer: ReturnType<typeof setTimeout> | undefined;

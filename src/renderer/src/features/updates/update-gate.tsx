@@ -23,13 +23,15 @@ export function UpdateGate({ children }: { children: ReactNode }) {
     [client],
   );
   const action = useMutation({
-    mutationFn: (name: "updates:retry" | "updates:install") => invoke(name, undefined),
+    mutationFn: (name: "updates:retry" | "updates:download" | "updates:install") =>
+      invoke(name, undefined),
     onSuccess: (next) => client.setQueryData(STATUS_KEY, next),
     meta: { handlesErrors: true },
   });
   const state = status.data;
   if (state && !state.isRequired && state.phase !== "checking") return children;
   const isChecking = !state || state.phase === "checking";
+  const isAvailable = state?.phase === "available";
   const isReady = state?.phase === "ready";
   const isError = state?.phase === "error" || status.isError;
   const isInstalling = state?.phase === "installing";
@@ -42,7 +44,7 @@ export function UpdateGate({ children }: { children: ReactNode }) {
         </h1>
         <p className="text-sm text-ink-2">
           {state?.isRequired
-            ? `Iris ${state.nextVersion} está disponible. Debes actualizar para continuar. Tus canciones, Biblias y archivos permanecen en Iris.`
+            ? `Hay una nueva versión de Iris (${state.nextVersion}). Debes actualizar para continuar. Tus canciones, Biblias y archivos permanecen en Iris.`
             : "Estamos comprobando si hay una nueva versión de Iris."}
         </p>
         {(state?.message || action.error || status.error) && (
@@ -70,6 +72,15 @@ export function UpdateGate({ children }: { children: ReactNode }) {
               Descargando actualización · {Math.floor(state.progress)} %
             </p>
           </div>
+        )}
+        {isAvailable && (
+          <Button
+            icon={<Download className="size-4" />}
+            onClick={() => action.mutate("updates:download")}
+            isLoading={action.isPending}
+          >
+            Descargar actualización
+          </Button>
         )}
         {isReady && (
           <Button onClick={() => action.mutate("updates:install")} isLoading={action.isPending}>
