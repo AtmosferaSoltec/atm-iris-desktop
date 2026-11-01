@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+- Control desde iPad: si la computadora está en Configuración o Tiempos, el iPad ya no se queda cargando; avisa que hay que volver a la pantalla del servicio.
+- Para diagnosticar la conexión: abrir la dirección de la computadora en el navegador del iPad muestra si Iris está activo, y `iris.log` registra cada intento del iPad.
+
 ## 1.1.0
 
 - Control desde iPad: en Configuración → «Control desde iPad» (apagado de fábrica) aparece un código de 6 dígitos que se escribe en la app de iPad, conectada a la misma red Wi-Fi. Desde el iPad se elige el elemento, se proyecta una diapositiva, se reproduce o pausa la pista, se cambia el fondo, se usa el cronómetro y los sonidos y se pasa al siguiente bloque. El iPad no guarda nada ni puede agregar o editar contenido.
