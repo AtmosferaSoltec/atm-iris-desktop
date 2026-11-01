@@ -1,4 +1,4 @@
-// Saved service timings → a CSV table or the HTML of a printable report. Pure: main prints it.
+// Saved service timings → table rows for an Excel sheet or the HTML of a printable report. Pure: main writes the files.
 
 import type { BlockRecord, Person, ServiceRecord, ServiceType } from "../domain/models";
 import { leaderName, recordTotals, serviceName } from "../domain/time-statistics";
@@ -14,62 +14,48 @@ export type ExportData = {
   generatedAt: Date;
 };
 
-const BLOCK_STATUS: Record<BlockRecord["status"], string> = {
-  pending: "Pendiente",
-  running: "En curso",
-  completed: "Completado",
-  adjusted: "Ajustado",
-  skipped: "Omitido",
+const SECONDS_PER_DAY = 86_400;
+
+/** One row per block. Dates and times are numbers so Excel can sort and add them. */
+export type TimesTableRow = {
+  /** The service day at 00:00 UTC, which Excel shows as the same calendar day. */
+  date: Date;
+  service: string;
+  block: string;
+  leader: string;
+  /** Fractions of a day; null when the block never ran. */
+  startTime: number | null;
+  endTime: number | null;
+  /** Fraction of a day over the plan, 0 when on time; null for a skipped block. */
+  overtime: number | null;
 };
 
-const pad = (value: number): string => String(value).padStart(2, "0");
-
-/** "0:09:40": always hours, so a spreadsheet reads it as a duration and not as a clock time. */
-function fullClock(totalSeconds: number): string {
-  const seconds = Math.round(Math.abs(totalSeconds));
-  return `${Math.floor(seconds / 3600)}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
-}
-
-/** A text cell that a spreadsheet must not run as a formula. */
-function textCell(value: string): string {
-  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-}
-
-function csvField(value: string | number): string {
-  const text = String(value);
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-export function timesCsv({ records, types, people, timeZone }: ExportData): string {
-  const rows: (string | number)[][] = [
-    [
-      "Fecha",
-      "Hora",
-      "Servicio",
-      "Bloque",
-      "Responsable",
-      "Planificado",
-      "Real",
-      "Diferencia (segundos)",
-      "Estado",
-    ],
-  ];
+export function timesTable({ records, types, people, timeZone }: ExportData): TimesTableRow[] {
+  const timeOfDay = (iso: string | null): number | null => {
+    if (!iso) return null;
+    const parts = zonedParts(new Date(iso), timeZone);
+    return (parts.hour * 3600 + parts.minute * 60 + parts.second) / SECONDS_PER_DAY;
+  };
+  const rows: TimesTableRow[] = [];
   for (const record of records) {
     const parts = zonedParts(new Date(record.date), timeZone);
-    for (const block of record.blocks)
-      rows.push([
-        `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`,
-        `${pad(parts.hour)}:${pad(parts.minute)}`,
-        textCell(serviceName(record, types)),
-        textCell(block.name),
-        textCell(leaderName(block, people)),
-        fullClock(block.plannedSeconds),
-        fullClock(block.actualSeconds),
-        block.status === "skipped" ? 0 : block.actualSeconds - block.plannedSeconds,
-        BLOCK_STATUS[block.status],
-      ]);
+    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    for (const block of record.blocks) {
+      const isSkipped = block.status === "skipped";
+      rows.push({
+        date,
+        service: serviceName(record, types),
+        block: block.name,
+        leader: leaderName(block, people),
+        startTime: isSkipped ? null : timeOfDay(block.startedAt),
+        endTime: isSkipped ? null : timeOfDay(block.endedAt),
+        overtime: isSkipped
+          ? null
+          : Math.max(0, block.actualSeconds - block.plannedSeconds) / SECONDS_PER_DAY,
+      });
+    }
   }
-  return rows.map((row) => row.map(csvField).join(",")).join("\r\n") + "\r\n";
+  return rows;
 }
 
 const esc = (value: string): string =>

@@ -35,7 +35,7 @@ export function deleteRecord(id: string): Promise<{ error?: string }> {
 }
 
 export async function exportRecords(
-  format: "csv" | "pdf",
+  format: "xlsx" | "pdf",
   recordIds: string[],
 ): Promise<{ result?: RecordExportResult; error?: string }> {
   try {

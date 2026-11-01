@@ -1,12 +1,14 @@
 import {
   closestCenter,
   DndContext,
+  pointerWithin,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type ScreenReaderInstructions,
 } from "@dnd-kit/core";
@@ -46,6 +48,15 @@ const ANNOUNCEMENTS: Announcements = {
   onDragCancel: () => "Se canceló el movimiento.",
 };
 
+/**
+ * A library entry only lands where the pointer actually is: `closestCenter` would always pick
+ * the nearest drop target, so dropping back in the library would still add it to the service.
+ */
+const collisionDetection: CollisionDetection = (args) =>
+  (args.active.data.current as LibraryDragData | undefined)?.type === "library"
+    ? pointerWithin(args)
+    : closestCenter(args);
+
 function position(data: unknown): string {
   const index = (data as { sortable?: { index?: number } } | undefined)?.sortable?.index;
   return index === undefined ? "" : String(index + 1);
@@ -72,7 +83,7 @@ export function ConsoleDnd({ ctrl, children }: { ctrl: LiveConsole; children: Re
     if (data?.type === "library") {
       const row = items.findIndex((item) => item.planItemId === over.id);
       if (row === -1) {
-        void add(data.entry.kind, data.entry.id);
+        if (over.id === SERVICE_DROP_ID) void add(data.entry.kind, data.entry.id);
         return;
       }
       // Dropped on the lower half of a row: after it.
@@ -91,7 +102,7 @@ export function ConsoleDnd({ ctrl, children }: { ctrl: LiveConsole; children: Re
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       accessibility={{ announcements: ANNOUNCEMENTS, screenReaderInstructions: INSTRUCTIONS }}
       onDragStart={({ active }) => {
         const data = active.data.current as LibraryDragData | undefined;

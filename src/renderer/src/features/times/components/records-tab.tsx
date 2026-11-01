@@ -57,7 +57,7 @@ export function RecordsTab({
   const finished = records.filter((record) => record.status === "finished");
   const [isExporting, startExport] = useTransition();
 
-  function download(format: "csv" | "pdf") {
+  function download(format: "xlsx" | "pdf") {
     startExport(async () => {
       const result = await exportRecords(
         format,
@@ -66,7 +66,7 @@ export function RecordsTab({
       if (result.error) toast.error(result.error);
       else if (result.result && !result.result.isCanceled)
         toast.success(
-          `Se guardó ${format === "pdf" ? "el informe" : "la tabla"} con ${plural(result.result.count, "servicio", "servicios")}`,
+          `Se guardó ${format === "pdf" ? "el informe" : "la hoja de Excel"} con ${plural(result.result.count, "servicio", "servicios")}`,
         );
     });
   }
@@ -126,9 +126,9 @@ export function RecordsTab({
                   <FileText aria-hidden />
                   Informe en PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => download("csv")}>
+                <DropdownMenuItem onSelect={() => download("xlsx")}>
                   <Table2 aria-hidden />
-                  Tabla (CSV, abre en Excel)
+                  Hoja de Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

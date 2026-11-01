@@ -116,3 +116,36 @@ test("deleting a song from the library removes its service entries", async () =>
     await instance.close();
   }
 });
+
+test("dropping a library song back inside the library does not add it to the service", async () => {
+  const instance = await launchApp();
+  try {
+    const page = await instance.app.firstWindow();
+    await page.evaluate(async () => {
+      for (const title of ["Canción uno", "Canción dos"])
+        await window.iris["songs:create"]({
+          title,
+          author: "",
+          sections: [{ label: null, text: title }],
+          audioId: null,
+        });
+    });
+    await page.reload();
+    const library = page.getByRole("region", { name: "Biblioteca", exact: true });
+    const service = page.getByRole("region", { name: "Servicio", exact: true });
+    const song = await library.getByText("Canción uno", { exact: true }).boundingBox();
+    const empty = await library.getByRole("button", { name: /Archivadas/ }).boundingBox();
+    if (!song || !empty) throw new Error("No se encontraron los paneles.");
+    await page.mouse.move(song.x + song.width / 2, song.y + song.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(empty.x + 20, empty.y + empty.height / 2, { steps: 15 });
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    await expect(service.getByText("Canción uno", { exact: true })).toHaveCount(0);
+    const plan = await page.evaluate(() => window.iris["console:load"](undefined));
+    if (!plan.ok) throw new Error(plan.error.message);
+    expect(plan.data.items).toHaveLength(0);
+  } finally {
+    await instance.close();
+  }
+});

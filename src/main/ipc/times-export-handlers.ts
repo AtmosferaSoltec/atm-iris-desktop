@@ -3,11 +3,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AppError } from "@shared/errors";
-import { timesCsv, timesReportHtml } from "@shared/lib/times-export";
+import { timesReportHtml } from "@shared/lib/times-export";
 import type { IpcHandlers } from "./dispatch";
 import type { TimingService } from "../services/timing-service";
-
-const BOM = String.fromCharCode(0xfeff);
+import { timesWorkbook } from "./times-workbook";
 
 /** The HTML is printed by a hidden window with no scripts and no network. */
 async function printPdf(html: string): Promise<Buffer> {
@@ -54,17 +53,16 @@ export function timesExportHandlers(
       };
       const today = new Date().toISOString().slice(0, 10);
       const result = await dialog.showSaveDialog({
-        title: format === "pdf" ? "Guardar informe de tiempos" : "Guardar tabla de tiempos",
-        defaultPath: `tiempos-${today}.${format}`,
+        title: format === "pdf" ? "Guardar informe de tiempos" : "Guardar tiempos en Excel",
+        defaultPath: `tiempos-${today}.${format === "pdf" ? "pdf" : "xlsx"}`,
         filters:
           format === "pdf"
             ? [{ name: "Informe PDF", extensions: ["pdf"] }]
-            : [{ name: "Tabla (CSV)", extensions: ["csv"] }],
+            : [{ name: "Excel", extensions: ["xlsx"] }],
       });
       if (result.canceled || !result.filePath) return { isCanceled: true, count: 0 };
       if (format === "pdf") await writeFile(result.filePath, await printPdf(timesReportHtml(data)));
-      // The BOM makes Excel read the accents as UTF-8.
-      else await writeFile(result.filePath, BOM + timesCsv(data), "utf8");
+      else await writeFile(result.filePath, await timesWorkbook(data));
       return { isCanceled: false, count: records.length };
     },
   };

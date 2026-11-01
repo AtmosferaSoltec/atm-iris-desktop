@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.1
+
+- Tiempos → Descargar: la tabla ahora es una hoja de Excel (.xlsx) con diseño, en vez de CSV. Columnas: fecha, servicio, bloque, responsable, hora de inicio, hora de fin y excedente (o «A tiempo»).
+- Arrastrar una canción o archivo de la biblioteca ahora solo lo añade al servicio si lo sueltas dentro del servicio; soltarlo en la biblioteca ya no lo añade.
+- Las barras de desplazamiento muestran un surco gris suave para indicar que el área se desplaza.
+
 ## 0.6.0
 
 - Barras de desplazamiento delgadas, redondeadas y sin flechas, con los colores de Iris, en toda la aplicación.

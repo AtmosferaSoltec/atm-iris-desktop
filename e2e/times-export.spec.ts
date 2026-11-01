@@ -43,9 +43,9 @@ test("filters the records by months and downloads them as a table and as a PDF r
     await page.getByRole("option", { name: "Octubre 2026" }).click();
     await expect(page.getByText("1 servicio", { exact: true })).toBeVisible();
 
-    const csv = join(instance.home, "tiempos.csv");
+    const xlsx = join(instance.home, "tiempos.xlsx");
     const pdf = join(instance.home, "tiempos.pdf");
-    let target = csv;
+    let target = xlsx;
     await instance.app.evaluate(
       ({ dialog }, paths) => {
         dialog.showSaveDialog = async (options) => ({
@@ -54,18 +54,16 @@ test("filters the records by months and downloads them as a table and as a PDF r
             ".pdf",
           )
             ? paths.pdf
-            : paths.csv,
+            : paths.xlsx,
         });
       },
-      { csv, pdf },
+      { xlsx, pdf },
     );
     await page.getByRole("button", { name: "Descargar" }).click();
-    await page.getByRole("menuitem", { name: /Tabla \(CSV/ }).click();
-    await expect(page.getByText("Se guardó la tabla con 1 servicio")).toBeVisible();
-    const text = await readFile(target, "utf8");
-    expect(text).toContain("Alabanza");
-    expect(text).toContain("2026-10-04");
-    expect(text).not.toContain("2026-09-06");
+    await page.getByRole("menuitem", { name: "Hoja de Excel" }).click();
+    await expect(page.getByText("Se guardó la hoja de Excel con 1 servicio")).toBeVisible();
+    // An .xlsx is a zip, so it starts with "PK".
+    expect((await readFile(target)).subarray(0, 2).toString()).toBe("PK");
 
     target = pdf;
     await page.getByRole("button", { name: "Descargar" }).click();

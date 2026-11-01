@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import type { ServiceRecord } from "../domain/models";
-import { rangeLabel, timesCsv, timesReportHtml, type ExportData } from "./times-export";
+import { rangeLabel, timesReportHtml, timesTable, type ExportData } from "./times-export";
 
 const block = (
   name: string,
@@ -39,24 +39,28 @@ const data = (records: ServiceRecord[]): ExportData => ({
   generatedAt: new Date("2026-10-31T12:00:00Z"),
 });
 
-it("writes one CSV row per block with durations a spreadsheet reads as time", () => {
-  const csv = timesCsv(
+it("builds one row per block with real dates, start/end times and only the overtime", () => {
+  const timed = {
+    ...block("Alabanza", 600, 700),
+    startedAt: "2026-10-04T15:05:00Z",
+    endedAt: "2026-10-04T15:16:40Z",
+  };
+  const rows = timesTable(
     data([
       record("2026-10-04T15:00:00Z", [
-        block("Alabanza, parte 1", 600, 700),
-        block("=SUMA(1)", 300, 0, "skipped"),
+        timed,
+        block("Palabra", 600, 500),
+        block("Ofrenda", 300, 0, "skipped"),
       ]),
     ]),
   );
-  const lines = csv.trim().split("\r\n");
-  expect(lines[0]).toBe(
-    "Fecha,Hora,Servicio,Bloque,Responsable,Planificado,Real,Diferencia (segundos),Estado",
-  );
-  expect(lines[1]).toBe(
-    '2026-10-04,10:00,Domingo,"Alabanza, parte 1",Ana,0:10:00,0:11:40,100,Completado',
-  );
-  expect(lines[2]).toContain("'=SUMA(1)");
-  expect(lines[2]).toContain(",0,Omitido");
+  expect(rows[0]!.date.toISOString()).toBe("2026-10-04T00:00:00.000Z");
+  expect(rows[0]).toMatchObject({ service: "Domingo", block: "Alabanza", leader: "Ana" });
+  expect(rows[0]!.startTime).toBeCloseTo((10 * 3600 + 5 * 60) / 86400);
+  expect(rows[0]!.endTime).toBeCloseTo((10 * 3600 + 16 * 60 + 40) / 86400);
+  expect(rows[0]!.overtime).toBeCloseTo(100 / 86400);
+  expect(rows[1]).toMatchObject({ startTime: null, endTime: null, overtime: 0 });
+  expect(rows[2]).toMatchObject({ overtime: null });
 });
 
 it("builds a report without tables and escapes what people typed", () => {
