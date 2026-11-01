@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Versión de prueba del flujo de actualización (sin cambios para el usuario).
+
 ## 1.0.3
 
 - Actualización obligatoria: ya no descarga sola. Primero aparece «Hay una nueva versión» con el botón «Descargar actualización».
