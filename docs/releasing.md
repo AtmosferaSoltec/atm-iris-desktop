@@ -27,45 +27,15 @@ verde. El tag debe ser `v` + esa versión; si no coincide, el flujo falla. Una e
 
 ## Una sola vez: el VPS
 
-1. Carpeta de publicación y usuario de despliegue (sin shell, solo recibe archivos):
+Se usa el usuario `deploy` que ya existe para los despliegues desde GitHub (no hay usuario aparte).
+La carpeta de publicación es suya y la sirve el contenedor de la landing (ver `atm-iris-web`):
 
 ```bash
 sudo mkdir -p /opt/iris-landing/releases
-sudo adduser --disabled-password --gecos "" irisdeploy
-sudo chown -R irisdeploy:irisdeploy /opt/iris-landing/releases
+sudo chown -R deploy:deploy /opt/iris-landing
 ```
 
-En `~irisdeploy/.ssh/authorized_keys`, la llave pública del despliegue, limitada a esa carpeta:
-
-```
-command="rrsync /opt/iris-landing/releases",restrict ssh-ed25519 AAAA… iris-release
-```
-
-(`rrsync` viene con rsync; la llave solo puede escribir ahí.) Crea el par de llaves en tu equipo
-(`ssh-keygen -t ed25519 -f iris-release`) y guarda la privada solo en GitHub.
-
-2. Nginx del host (HTTPS ya lo tienes con el comodín `*.atmosferast.com`). Los instaladores se sirven
-   directo del disco; el resto va a la página de descargas (contenedor, puerto en loopback):
-
-```nginx
-server {
-    server_name iris.atmosferast.com;
-    # …listen 443 ssl, certificados y demás, como tus otros sitios…
-
-    location /releases/ {
-        alias /opt/iris-landing/releases/;
-        # Los índices nunca se cachean: de ellos depende que la app vea la versión nueva.
-        location ~ ^/releases/(latest.*\.(yml|json))$ { add_header Cache-Control "no-store"; }
-        location ~* \.(exe|dmg|zip|blockmap)$ { add_header Cache-Control "public, max-age=31536000, immutable"; }
-    }
-
-    location / { proxy_pass http://127.0.0.1:3060; }   # la página de descargas
-}
-```
-
-> El nombre `iris.atmosferast.com` debe estar libre: `atm-iris-web` ya corre como contenedor `iris-web`.
-> Si ese sitio usa ese nombre, elige otro y cámbialo en `electron-builder.yml` (`publish.url`), en
-> `.github/workflows/release.yml` (`comprobar lo publicado`) y en esta guía.
+El nginx del host (`iris.atmosferast.com`) ya apunta al contenedor, que sirve `/releases/` desde esa carpeta.
 
 ## Una sola vez: secretos en GitHub (Settings → Secrets and variables → Actions)
 
@@ -73,7 +43,7 @@ El repositorio es público: **ninguna llave va en el código ni en el historial*
 
 | Secreto                                | Qué es                                                                |
 | -------------------------------------- | --------------------------------------------------------------------- |
-| `SSH_HOST`, `SSH_USER`, `SSH_KEY`      | VPS, `irisdeploy` y la llave privada `iris-release`                   |
+| `SSH_HOST`, `SSH_USER`, `SSH_KEY`      | VPS, `deploy` y su llave privada (los mismos de los demás repos)      |
 | `MAC_CERT_P12_BASE64`                  | certificado «Developer ID Application» exportado como .p12, en base64 |
 | `MAC_CERT_PASSWORD`                    | contraseña de ese .p12                                                |
 | `APPLE_API_KEY_P8`                     | contenido del archivo `AuthKey_XXXX.p8`                               |

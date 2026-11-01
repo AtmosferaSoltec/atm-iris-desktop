@@ -16,6 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # Carpeta del VPS que sirve https://iris.atmosferast.com/releases/ (es del usuario `deploy`).
+  RELEASES_DIR: /opt/iris-landing/releases
 
 jobs:
   check:
@@ -159,8 +161,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh_cmd="ssh -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
-          # La llave solo puede escribir en la carpeta de publicación (rrsync): "./" es esa carpeta.
-          target="$SSH_USER@$SSH_HOST:./"
+          target="$SSH_USER@$SSH_HOST:$RELEASES_DIR/"
           # 1) Instaladores y mapas de bloques: los clientes todavía no los ven.
           rsync -av -e "$ssh_cmd" --exclude 'latest*.yml' --exclude 'latest.json' release/ "$target"
           # 2) Recién ahora los índices: las apps y la página empiezan a ofrecer la versión nueva.
