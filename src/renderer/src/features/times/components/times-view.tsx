@@ -6,6 +6,7 @@ import type { Person, ServiceRecord, ServiceType } from "@shared/domain/models";
 import type { Period } from "@shared/domain/time-statistics";
 import { cn } from "@renderer/lib/cn";
 import { timeSearchParams } from "@renderer/lib/search-params";
+import { filterByMonths, monthOptions } from "../month-range";
 import { RecordsTab } from "./records-tab";
 import { SummariesTab } from "./summaries-tab";
 
@@ -45,9 +46,18 @@ export function TimesView(props: Props) {
       <div className={cn("transition-opacity", isLoading && "opacity-60")} aria-busy={isLoading}>
         {params.tab === "records" ? (
           <RecordsTab
-            records={props.records.filter(
-              (record) => !params.service || record.serviceTypeId === params.service,
+            records={filterByMonths(
+              props.records.filter(
+                (record) => !params.service || record.serviceTypeId === params.service,
+              ),
+              params.from,
+              params.to,
+              props.timeZone,
             )}
+            months={monthOptions(props.records, props.timeZone)}
+            from={params.from}
+            to={params.to}
+            onRange={(range) => void setParams({ ...range, record: null })}
             types={props.types}
             people={props.people}
             timeZone={props.timeZone}

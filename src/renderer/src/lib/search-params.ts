@@ -48,6 +48,8 @@ export const TIME_PERIODS = [
 export const timeSearchParams = {
   tab: literalParser(TIME_TABS, "records"),
   service: stringParser(),
+  from: stringParser(),
+  to: stringParser(),
   record: stringParser(),
   period: literalParser(TIME_PERIODS, "last3Months"),
   month: stringParser(),

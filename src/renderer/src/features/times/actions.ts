@@ -1,6 +1,7 @@
 import { invoke } from "@renderer/lib/ipc";
 import { queryClient } from "@renderer/lib/query-client";
 import { errorMessage } from "@shared/errors";
+import type { RecordExportResult } from "@shared/schemas/timing";
 
 async function update(action: () => Promise<unknown>): Promise<{ error?: string }> {
   try {
@@ -31,4 +32,15 @@ export function changeBlockLeader(
 
 export function deleteRecord(id: string): Promise<{ error?: string }> {
   return update(() => invoke("records:delete", id));
+}
+
+export async function exportRecords(
+  format: "csv" | "pdf",
+  recordIds: string[],
+): Promise<{ result?: RecordExportResult; error?: string }> {
+  try {
+    return { result: await invoke("records:export", { format, recordIds }) };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
 }

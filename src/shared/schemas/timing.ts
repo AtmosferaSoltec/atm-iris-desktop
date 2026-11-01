@@ -86,3 +86,9 @@ export const blockLeaderSchema = z.object({
 });
 export type ServiceTypeInput = z.infer<typeof serviceTypeSchema>;
 export type ServiceRecordInput = z.infer<typeof recordInputSchema>;
+
+export const recordExportSchema = z.object({
+  format: z.enum(["csv", "pdf"]),
+  recordIds: z.array(timingIdSchema).min(1, "No hay registros para descargar.").max(5000),
+});
+export type RecordExportResult = { isCanceled: boolean; count: number };

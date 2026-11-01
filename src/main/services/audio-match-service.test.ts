@@ -46,16 +46,33 @@ it("proposes pairs for songs without a track and assigns only the chosen ones", 
   const { service, setSongAudio } = setup();
   const preview = await service.preview();
   expect(preview.matches.map((match) => match.title)).toEqual(["Bendito Jesús", "Hosanna"]);
-  expect(preview.unmatchedFiles).toEqual(["Suelto.mp3"]);
+  expect(preview.unmatchedFiles).toEqual([{ id: "a3", fileName: "Suelto.mp3" }]);
   expect(setSongAudio).not.toHaveBeenCalled();
 
   const result = service.confirm({
     token: preview.token,
-    songIds: ["11111111-1111-4111-8111-111111111111"],
+    pairs: [{ songId: "11111111-1111-4111-8111-111111111111", fileId: "a1" }],
   });
   expect(result).toEqual({ assigned: 1, skipped: 0 });
   expect(setSongAudio).toHaveBeenCalledOnce();
   expect(setSongAudio).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "a1");
+});
+
+it("lets the operator join a song with any free file and refuses the rest", async () => {
+  const { service, setSongAudio } = setup(new Set(["a1"]));
+  const preview = await service.preview();
+  expect(preview.unmatchedFiles.map((file) => file.id)).toEqual(["a3"]);
+  const result = service.confirm({
+    token: preview.token,
+    pairs: [
+      { songId: "11111111-1111-4111-8111-111111111111", fileId: "a3" },
+      // Already owned by another song, and a song that already has a track.
+      { songId: "22222222-2222-4222-8222-222222222222", fileId: "a1" },
+      { songId: "33333333-3333-4333-8333-333333333333", fileId: "a3" },
+    ],
+  });
+  expect(result).toEqual({ assigned: 1, skipped: 2 });
+  expect(setSongAudio).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "a3");
 });
 
 it("ignores tracks that already belong to a song and refuses a stale preview", async () => {
@@ -63,5 +80,5 @@ it("ignores tracks that already belong to a song and refuses a stale preview", a
   const first = await service.preview();
   expect(first.matches.map((match) => match.title)).toEqual(["Bendito Jesús"]);
   await service.preview();
-  expect(() => service.confirm({ token: first.token, songIds: [] })).toThrow(/venció/);
+  expect(() => service.confirm({ token: first.token, pairs: [] })).toThrow(/venció/);
 });

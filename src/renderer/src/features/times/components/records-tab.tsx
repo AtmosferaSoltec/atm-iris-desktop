@@ -1,8 +1,19 @@
-import { Timer } from "lucide-react";
+import { Download, FileText, Table2, Timer } from "lucide-react";
+import { useTransition } from "react";
 import { Chip } from "@renderer/components/ui/chip";
 import { EmptyState } from "@renderer/components/ui/empty-state";
 import { Select } from "@renderer/components/ui/select";
 import { Surface } from "@renderer/components/ui/surface";
+import { Button } from "@renderer/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@renderer/components/ui/dropdown-menu";
+import { toast } from "@renderer/components/ui/toaster";
+import { plural } from "@shared/lib/text";
+import { exportRecords } from "../actions";
 import type { Person, ServiceRecord, ServiceType } from "@shared/domain/models";
 import { recordTotals, serviceName } from "@shared/domain/time-statistics";
 import { cn } from "@renderer/lib/cn";
@@ -17,6 +28,10 @@ type Props = {
   types: ServiceType[];
   people: Person[];
   timeZone: string;
+  months: { value: string; label: string }[];
+  from: string;
+  to: string;
+  onRange: (range: { from: string | null; to: string | null }) => void;
   serviceFilter: string;
   selectedId: string;
   onServiceFilter: (id: string) => void;
@@ -28,6 +43,10 @@ export function RecordsTab({
   types,
   people,
   timeZone,
+  months,
+  from,
+  to,
+  onRange,
   serviceFilter,
   selectedId,
   onServiceFilter,
@@ -35,11 +54,27 @@ export function RecordsTab({
 }: Props) {
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const groups = groupByMonth(records, timeZone);
+  const finished = records.filter((record) => record.status === "finished");
+  const [isExporting, startExport] = useTransition();
+
+  function download(format: "csv" | "pdf") {
+    startExport(async () => {
+      const result = await exportRecords(
+        format,
+        finished.map((record) => record.id),
+      );
+      if (result.error) toast.error(result.error);
+      else if (result.result && !result.result.isCanceled)
+        toast.success(
+          `Se guardó ${format === "pdf" ? "el informe" : "la tabla"} con ${plural(result.result.count, "servicio", "servicios")}`,
+        );
+    });
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
       <Surface className="flex flex-col overflow-hidden lg:max-h-[calc(100dvh-14rem)]">
-        <div className="border-b border-line p-4">
+        <div className="flex flex-col gap-3 border-b border-line p-4">
           <Select
             id="records-service"
             ariaLabel="Servicio"
@@ -50,6 +85,54 @@ export function RecordsTab({
               ...types.map((type) => ({ value: type.id, label: type.name })),
             ]}
           />
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              id="records-from"
+              ariaLabel="Desde el mes"
+              value={from || ALL}
+              onValueChange={(value) =>
+                onRange({ from: value === ALL ? null : value, to: to || null })
+              }
+              options={[{ value: ALL, label: "Desde: todos" }, ...months]}
+            />
+            <Select
+              id="records-to"
+              ariaLabel="Hasta el mes"
+              value={to || ALL}
+              onValueChange={(value) =>
+                onRange({ from: from || null, to: value === ALL ? null : value })
+              }
+              options={[{ value: ALL, label: "Hasta: todos" }, ...months]}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-ink-2">
+              {plural(records.length, "servicio", "servicios")}
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Download className="size-4" />}
+                  isLoading={isExporting}
+                  disabled={finished.length === 0}
+                >
+                  Descargar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => download("pdf")}>
+                  <FileText aria-hidden />
+                  Informe en PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => download("csv")}>
+                  <Table2 aria-hidden />
+                  Tabla (CSV, abre en Excel)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         {records.length === 0 ? (
           <EmptyState icon={<Timer />} title="No hay tiempos con estos filtros" className="py-10" />

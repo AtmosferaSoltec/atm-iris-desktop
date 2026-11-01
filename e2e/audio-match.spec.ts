@@ -30,8 +30,11 @@ test("assigns the MP3s dropped in Iris/Audio to the songs with the same name", a
     const dialog = page.getByRole("dialog", { name: "Asignar audios" });
     await expect(dialog.getByText("01 - HOSANNA.mp3")).toBeVisible();
     await expect(dialog.getByText("bendito jesus.mp3")).toBeVisible();
-    await dialog.getByRole("button", { name: "Asignar 2 audios" }).click();
-    await expect(page.getByText("Se asignaron 2 audios")).toBeVisible();
+    // "Sin audio" has no file with a similar name: it is joined by hand with "suelto.mp3".
+    await dialog.getByRole("button", { name: "Sin asignar" }).click();
+    await page.getByRole("option", { name: "suelto.mp3" }).click();
+    await dialog.getByRole("button", { name: "Asignar 3 audios" }).click();
+    await expect(page.getByText("Se asignaron 3 audios")).toBeVisible();
 
     const audios = await page.evaluate(async (songIds) => {
       const files: (string | null)[] = [];
@@ -42,7 +45,7 @@ test("assigns the MP3s dropped in Iris/Audio to the songs with the same name", a
       }
       return files;
     }, ids);
-    expect(audios).toEqual(["01 - HOSANNA.mp3", "bendito jesus.mp3", null]);
+    expect(audios).toEqual(["01 - HOSANNA.mp3", "bendito jesus.mp3", "suelto.mp3"]);
   } finally {
     await instance.close();
   }

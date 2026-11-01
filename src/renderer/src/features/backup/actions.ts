@@ -66,10 +66,10 @@ export async function previewAudioMatch(): Promise<{
 }
 export async function confirmAudioMatch(
   token: string,
-  songIds: string[],
+  pairs: { songId: string; fileId: string }[],
 ): Promise<{ result?: AudioMatchResult; error?: string }> {
   try {
-    const result = await invoke("songs:match-audio-confirm", { token, songIds });
+    const result = await invoke("songs:match-audio-confirm", { token, pairs });
     await queryClient.invalidateQueries();
     return { result };
   } catch (error) {

@@ -2,6 +2,7 @@ import { BibleService } from "../services/bible-service";
 import { SqliteBibleRepository } from "../repositories/sqlite/bible-repository";
 import { bibleHandlers } from "../ipc/bible-handlers";
 import { BackupService } from "../services/backup-service";
+import { timesExportHandlers } from "../ipc/times-export-handlers";
 import { SongImportService } from "../services/song-import-service";
 import { AudioMatchService } from "../services/audio-match-service";
 import { SnapshotService } from "../services/snapshot-service";
@@ -93,6 +94,7 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       "service-types:delete": (id) => timing.deleteServiceType(id),
       "service-types:select": (id) => timing.selectService(id),
       "records:list": (input) => timing.listRecords(input),
+      ...timesExportHandlers(timing, () => repository.get().church.name),
       "records:get": (id) => timing.record(id),
       "records:save": ({ id, input }) => timing.saveRecord(id, input),
       "records:delete": (id) => timing.deleteRecord(id),

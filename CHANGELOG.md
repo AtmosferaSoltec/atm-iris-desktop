@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.6.0
+
+- Barras de desplazamiento delgadas, redondeadas y sin flechas, con los colores de Iris, en toda la aplicación.
+
+- Asignar audios: los nombres que solo añaden algo al título (por ejemplo «Océanos» y «Océanos Hillsong») se sugieren marcados como «Revisar» y sin casilla activa, y las canciones sin pareja se pueden unir a mano eligiendo el archivo en una lista con búsqueda.
+
+- Tiempos → Registros: filtro «Desde / Hasta» por meses (por ejemplo, de enero a diciembre) además del filtro por servicio.
+- Tiempos → botón «Descargar»: informe en PDF con diseño (resumen y una tarjeta por servicio con barras de tiempo, sin tablas) o tabla CSV que abre en Excel, Google Sheets o LibreOffice. Respeta los filtros activos.
+
 ## 0.5.1
 
 ## Unreleased
