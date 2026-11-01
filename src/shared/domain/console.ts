@@ -7,7 +7,7 @@ export type ConsoleItem = {
   planItemId: string;
   refId: string;
   /** `track` is a song that is only a track: it plays in the room, the screen does not change. */
-  kind: "song" | "track" | "image" | "video" | "bible";
+  kind: "song" | "track" | "image" | "video" | "youtube" | "bible";
   title: string;
   subtitle: string | null;
   /** A song's lyrics, one per screen; a passage's whole chapter, one verse per screen. */
@@ -16,6 +16,8 @@ export type ConsoleItem = {
   focus?: { first: number; last: number };
   /** The file: the image or video, or the song's track. Null for lyrics only. */
   file: ConsoleFile | null;
+  /** A YouTube video the operator pasted: played by YouTube's player, never saved. */
+  youTubeId?: string;
   /** A song's own background: put up when it is presented (never forced afterwards). */
   backgroundId?: string | null;
 };

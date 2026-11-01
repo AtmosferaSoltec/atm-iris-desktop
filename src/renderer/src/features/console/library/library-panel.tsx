@@ -28,6 +28,7 @@ import { LibraryToolbar } from "./library-toolbar";
 import type { Library } from "./use-library";
 
 import { MEDIA_EMPTY } from "../messages";
+import { YouTubePanel } from "./youtube-panel";
 
 export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Library }) {
   const [tab, setTab] = useSearchParamState(
@@ -36,7 +37,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
   );
   const [mediaTab, setMediaTab] = useSearchParamState(
     "kind",
-    literalParser(["image", "video"] as const, "image"),
+    literalParser(["image", "video", "youtube"] as const, "image"),
   );
   const [query, setQuery] = useSearchParamState("search", searchParser);
   const [dialog, setDialog] = useState<LibraryDialog | null>(null);
@@ -45,6 +46,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
     literalParser(["active", "archived"] as const, "active"),
   );
   const showArchived = archiveMode === "archived";
+  const isYouTube = tab === "media" && mediaTab === "youtube";
   const [artistKey, setArtistKey] = useSearchParamState("artist", searchParser);
   const adding = useAdding(ctrl);
   const added = useMemo(() => new Set(ctrl.items.map((item) => item.refId)), [ctrl.items]);
@@ -131,17 +133,20 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           options={[
             { value: "image", label: "Imágenes" },
             { value: "video", label: "Videos" },
+            { value: "youtube", label: "YouTube" },
           ]}
         />
       )}
 
       {tab === "song" && (
-        <LibraryToolbar
-          tab={tab === "song" ? "song" : mediaTab}
-          onNewSong={() => setDialog({ kind: "song", id: null })}
-        />
+        <LibraryToolbar tab="song" onNewSong={() => setDialog({ kind: "song", id: null })} />
       )}
-      <div role="group" aria-label="Controles de biblioteca" className="flex items-center gap-2">
+      {isYouTube && <YouTubePanel onPlay={ctrl.presentYouTube} />}
+      <div
+        role="group"
+        aria-label="Controles de biblioteca"
+        className={cn("flex items-center gap-2", isYouTube && "hidden")}
+      >
         <TextField
           id="library-search"
           density="sm"
@@ -153,7 +158,7 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           onChange={(event) => setQuery(event.target.value)}
           containerClassName="min-w-0 flex-1"
         />
-        {tab === "media" && <LibraryFolderActions kind={mediaTab} />}
+        {tab === "media" && mediaTab !== "youtube" && <LibraryFolderActions kind={mediaTab} />}
         {tab === "song" && artists.length > 0 && !showArchived && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -211,7 +216,9 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
           {showArchived ? "Volver a la biblioteca" : "Archivadas"}
         </button>
       )}
-      <ul className="-mx-2 flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <ul
+        className={cn("-mx-2 flex min-h-0 flex-1 flex-col overflow-y-auto", isYouTube && "hidden")}
+      >
         {tab === "song" && showArchived && (
           <li className="col-span-full">
             <ArchivedSongs library={library} query={query} />
@@ -244,7 +251,9 @@ export function LibraryPanel({ ctrl, library }: { ctrl: LiveConsole; library: Li
               ? "Sin resultados."
               : tab === "song"
                 ? "Aún no hay canciones. Crea la primera con «Nueva canción»."
-                : MEDIA_EMPTY[mediaTab]}
+                : mediaTab === "youtube"
+                  ? ""
+                  : MEDIA_EMPTY[mediaTab]}
           </li>
         )}
       </ul>

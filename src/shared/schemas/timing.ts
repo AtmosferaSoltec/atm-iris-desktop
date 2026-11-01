@@ -84,6 +84,11 @@ export const blockLeaderSchema = z.object({
   blockId: timingIdSchema,
   personId: timingIdSchema.nullable(),
 });
+export const blockStartSchema = z.object({
+  recordId: timingIdSchema,
+  blockId: timingIdSchema,
+  startedAt: instant,
+});
 export type ServiceTypeInput = z.infer<typeof serviceTypeSchema>;
 export type ServiceRecordInput = z.infer<typeof recordInputSchema>;
 

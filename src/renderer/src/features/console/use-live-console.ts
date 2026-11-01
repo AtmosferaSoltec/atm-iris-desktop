@@ -136,7 +136,7 @@ export function useLiveConsole(data: ConsoleData) {
     () => ({
       background,
       content:
-        liveContent.kind === "video"
+        liveContent.kind === "video" || liveContent.kind === "youtube"
           ? { ...liveContent, muted: isScreenMuted, volume }
           : liveContent,
       typography,
@@ -148,15 +148,18 @@ export function useLiveConsole(data: ConsoleData) {
 
   /** Local playback follows the console timeline. */
   const followVideo = useCallback(
-    (fileId: string, position: number, duration: number, isSound = false) => {
+    (fileId: string, position: number, duration: number, isSound = false, title?: string) => {
       setPlayback((current) => {
         if (!current || current.error) return current;
-        const next = followPlayback(
+        const followed = followPlayback(
           current,
           { id: fileId, position, duration },
           isSound,
           Date.now(),
         );
+        // A YouTube video is named by YouTube's player once it knows the title.
+        const next =
+          followed && title && followed.title !== title ? { ...followed, title } : followed;
         if (!next && current.kind === "video")
           setLive((live) => (live?.key === current.key ? null : live));
         return next;
@@ -173,7 +176,7 @@ export function useLiveConsole(data: ConsoleData) {
   useEffect(
     () =>
       window.iris.onEvent("projection:video-time", (time) =>
-        followVideo(time.id, time.position, time.duration, true),
+        followVideo(time.id, time.position, time.duration, true, time.title),
       ),
     [followVideo],
   );
@@ -211,10 +214,10 @@ export function useLiveConsole(data: ConsoleData) {
 
   const startPlayback = useCallback(
     (item: ConsoleItem) => {
-      const fileId = item.file?.id;
+      const fileId = item.youTubeId ?? item.file?.id;
       if (!fileId) return;
       const current = playbackRef.current;
-      const kind = item.kind === "video" ? "video" : "track";
+      const kind = item.kind === "video" || item.kind === "youtube" ? "video" : "track";
       // Presenting what is already loaded resumes it, never restarts.
       if (current?.key === item.planItemId) {
         if (current.playing) return;
@@ -365,6 +368,27 @@ export function useLiveConsole(data: ConsoleData) {
     [items, show, startPlayback],
   );
 
+  /** A pasted YouTube link: straight to the screens and playing, never saved in the service. */
+  const presentYouTube = useCallback(
+    (videoId: string) => {
+      const item: ConsoleItem = {
+        planItemId: `youtube:${videoId}`,
+        refId: videoId,
+        kind: "youtube",
+        title: "Video de YouTube",
+        subtitle: "YouTube",
+        slides: [],
+        file: null,
+        youTubeId: videoId,
+      };
+      setQuickItemState(item);
+      setOpenKey(item.planItemId);
+      show({ key: item.planItemId, slide: 0 });
+      startPlayback(item);
+    },
+    [show, startPlayback],
+  );
+
   const presentSlide = useCallback(
     (index: number) => {
       if (openKey) show({ key: openKey, slide: index });
@@ -375,7 +399,7 @@ export function useLiveConsole(data: ConsoleData) {
   const presentMedia = useCallback(() => {
     if (!openItem) return;
     if (openItem.kind === "image") show({ key: openItem.planItemId, slide: 0 });
-    if (openItem.kind === "video") {
+    if (openItem.kind === "video" || openItem.kind === "youtube") {
       show({ key: openItem.planItemId, slide: 0 });
       startPlayback(openItem);
     }
@@ -576,6 +600,7 @@ export function useLiveConsole(data: ConsoleData) {
     reportPlaybackError,
     presentSlide,
     presentMedia,
+    presentYouTube,
     toggleTrack,
     step,
     add,

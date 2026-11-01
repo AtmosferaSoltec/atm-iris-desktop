@@ -89,8 +89,22 @@ export function useServiceTimer({
     void invoke("service-types:select", null).catch((error) => toast.error(errorMessage(error)));
   }, []);
 
+  /** A service deleted from "Seleccionar servicio": out of the list, and out of the console if it was chosen. */
+  const removeType = useCallback(
+    (id: string) => {
+      setTypes((current) => current.filter((type) => type.id !== id));
+      if (serviceType?.id === id) {
+        setServiceType(null);
+        setTimer(null);
+        latest.current = null;
+      }
+    },
+    [serviceType?.id],
+  );
+
   return {
     types,
+    removeType,
     /** A service created from the console joins the list. */
     addType: (type: ServiceType) => setTypes((current) => [...current, type]),
     serviceType,

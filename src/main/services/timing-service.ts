@@ -196,6 +196,64 @@ export class TimingService {
       status: "adjusted",
     }));
   }
+  /**
+   * The block really began at `startedAt`: it lasts until it ended, and the block before it ends
+   * there. The first block also moves the service's date.
+   */
+  changeStart(recordId: string, blockId: string, startedAt: string): ServiceRecord {
+    const record = this.repository.record(recordId);
+    const index = record?.blocks.findIndex((block) => block.id === blockId) ?? -1;
+    if (!record || index === -1) throw new AppError("NOT_FOUND", "No encontramos el registro.");
+    if (record.status === "inProgress")
+      throw new AppError(
+        "CONFLICT",
+        "El servicio sigue en curso. Finalízalo antes de ajustar sus tiempos.",
+      );
+    const block = record.blocks[index]!;
+    const previous = record.blocks[index - 1];
+    if (block.status === "skipped" || !block.startedAt || !block.endedAt)
+      throw new AppError("VALIDATION_FAILED", "Este bloque no tiene horas guardadas.");
+    const start = Date.parse(startedAt);
+    const end = Date.parse(block.endedAt);
+    if (start >= end)
+      throw new AppError(
+        "VALIDATION_FAILED",
+        "La hora de inicio debe ser anterior al final del bloque.",
+      );
+    if ((end - start) / 1000 > 43200)
+      throw new AppError(
+        "VALIDATION_FAILED",
+        "Revisa la hora: el bloque quedaría demasiado largo.",
+      );
+    const previousStart = previous?.startedAt ? Date.parse(previous.startedAt) : null;
+    if (previous && previousStart !== null && start <= previousStart)
+      throw new AppError(
+        "VALIDATION_FAILED",
+        "La hora de inicio debe ser posterior al inicio del bloque anterior.",
+      );
+    const blocks = record.blocks.map((candidate, position) => {
+      if (position === index)
+        return {
+          ...candidate,
+          startedAt,
+          actualSeconds: Math.round((end - start) / 1000),
+          status: "adjusted" as const,
+        };
+      if (position === index - 1 && previousStart !== null)
+        return {
+          ...candidate,
+          endedAt: startedAt,
+          actualSeconds: Math.round((start - previousStart) / 1000),
+          status: "adjusted" as const,
+        };
+      return candidate;
+    });
+    return this.saveRecord(recordId, {
+      ...record,
+      date: index === 0 ? startedAt : record.date,
+      blocks,
+    });
+  }
   changeLeader(recordId: string, blockId: string, personId: string | null): ServiceRecord {
     const person = personId ? this.repository.person(personId) : null;
     if (personId && !person) throw new AppError("NOT_FOUND", "No encontramos a esa persona.");

@@ -12,6 +12,7 @@ import {
   serviceTypeUpdateSchema,
   recordListSchema,
   recordExportSchema,
+  blockStartSchema,
   recordSaveSchema,
   blockAdjustmentSchema,
   blockLeaderSchema,
@@ -149,6 +150,11 @@ export const contract = {
   "records:adjust-duration": defineChannel(
     "records:adjust-duration",
     blockAdjustmentSchema,
+    z.custom<ServiceRecord>(),
+  ),
+  "records:change-start": defineChannel(
+    "records:change-start",
+    blockStartSchema,
     z.custom<ServiceRecord>(),
   ),
   "records:change-leader": defineChannel(

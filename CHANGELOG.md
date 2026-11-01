@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.7.0
+
+- «Seleccionar servicio»: cada servicio tiene un botón para eliminarlo (con confirmación). Los tiempos ya guardados en Tiempos se conservan con el nombre del servicio.
+- Tiempos → Registros: cada bloque muestra a qué hora inició y el menú tiene «Cambiar hora de inicio…»: si el bloque empezó antes o después de pulsar el botón, el bloque dura hasta que terminó, el bloque anterior termina a esa hora y, si es el primero, el servicio se mueve a esa hora.
+
+- Panel de trabajo: se quitó el selector «Tarjetas / Lista»; las diapositivas se muestran siempre como tarjetas.
+- Multimedia → YouTube: pega el enlace de un video y se proyecta con el reproductor de YouTube en la pantalla de proyección (sonido incluido), con los controles de EN VIVO. No se descarga ni se guarda en el servicio; necesita internet y puede mostrar anuncios.
+
 ## 0.6.1
 
 - Tiempos → Descargar: la tabla ahora es una hoja de Excel (.xlsx) con diseño, en vez de CSV. Columnas: fecha, servicio, bloque, responsable, hora de inicio, hora de fin y excedente (o «A tiempo»).

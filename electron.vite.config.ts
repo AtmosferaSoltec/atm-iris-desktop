@@ -20,6 +20,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve("src/renderer/index.html"),
+          youtubePlayer: resolve("src/renderer/youtube-player.html"),
         },
       },
     },

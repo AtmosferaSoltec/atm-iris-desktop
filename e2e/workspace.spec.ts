@@ -55,19 +55,7 @@ test("shows thirty compact slides in four or five columns while keeping full liv
       expect(visible).toBeGreaterThanOrEqual(columns * 3);
       await page.screenshot({ path: test.info().outputPath(`workspace-${width}.png`) });
     }
-    await page.getByRole("radio", { name: "Lista", exact: true }).click();
-    await expect(grid).toHaveCSS("display", "flex");
-    await expect(cards).toHaveCount(30);
-    await expect(page).toHaveURL(/slides=list/);
-    await expect(page.getByRole("radio", { name: "Lista", exact: true })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    await page.screenshot({
-      path: test.info().outputPath("workspace-list.png"),
-      animations: "disabled",
-    });
-    await page.getByRole("radio", { name: "Tarjetas", exact: true }).click();
+    await expect(page.getByRole("radio", { name: "Lista", exact: true })).toHaveCount(0);
     await expect(grid).toHaveCSS("display", "grid");
     await first.click({ button: "right" });
     const editor = page.getByRole("dialog", {

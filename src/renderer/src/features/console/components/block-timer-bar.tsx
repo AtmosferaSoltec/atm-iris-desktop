@@ -9,6 +9,8 @@ import type { Person, ServiceType } from "@shared/domain/models";
 import { plannedSeconds } from "@shared/domain/rules";
 import { cn } from "@renderer/lib/cn";
 import { blocksSummary, clock, overtime } from "@shared/lib/format";
+import { invoke } from "@renderer/lib/ipc";
+import { errorMessage } from "@shared/errors";
 import { createConsoleService } from "../actions";
 import {
   clockState,
@@ -126,6 +128,8 @@ export function BlockTimerBar({
         <ChooseServiceDialog
           types={service.types}
           currentId={service.serviceType?.id ?? null}
+          isRunning={timer?.phase === "running"}
+          onDeleted={service.removeType}
           onClose={() => setIsChoosing(false)}
           onChoose={(type) => {
             service.choose(type);
@@ -311,17 +315,40 @@ function Breadcrumbs({ timer, now }: { timer: ServiceTimer; now: number }) {
 function ChooseServiceDialog({
   types,
   currentId,
+  isRunning,
+  onDeleted,
   onClose,
   onChoose,
   onCreated,
 }: {
   types: ServiceType[];
   currentId: string | null;
+  /** The chosen service is being timed: it cannot be deleted now. */
+  isRunning: boolean;
+  onDeleted: (id: string) => void;
   onClose: () => void;
   onChoose: (type: ServiceType) => void;
   onCreated: (type: ServiceType) => void;
 }) {
   const [isCreating, setIsCreating] = useState(types.length === 0);
+  const [deleting, setDeleting] = useState<ServiceType | null>(null);
+  const [deleteError, setDeleteError] = useState<string>();
+  const [isDeleting, startDelete] = useTransition();
+
+  function confirmDelete() {
+    if (!deleting) return;
+    const type = deleting;
+    startDelete(async () => {
+      try {
+        await invoke("service-types:delete", type.id);
+        onDeleted(type.id);
+        setDeleting(null);
+        if (types.length <= 1) setIsCreating(true);
+      } catch (error) {
+        setDeleteError(errorMessage(error));
+      }
+    });
+  }
 
   return (
     <Dialog
@@ -343,27 +370,38 @@ function ChooseServiceDialog({
       ) : (
         <div className="flex flex-col gap-2 pb-6">
           {types.map((type) => (
-            <button
-              key={type.id}
-              type="button"
-              onClick={() => onChoose(type)}
-              aria-current={type.id === currentId ? "true" : undefined}
-              className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-md px-4 py-3 text-left ring-1 transition ring-inset",
-                type.id === currentId
-                  ? "bg-surface-raised ring-coral/60"
-                  : "ring-line hover:bg-surface",
-              )}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{type.name}</span>
-                <span className="block text-xs text-ink-2">
-                  {type.blocks.length > 0
-                    ? blocksSummary(type.blocks.length, plannedSeconds(type.blocks))
-                    : "Sin bloques · solo proyección"}
+            <div key={type.id} className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onChoose(type)}
+                aria-current={type.id === currentId ? "true" : undefined}
+                className={cn(
+                  "flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-4 py-3 text-left ring-1 transition ring-inset",
+                  type.id === currentId
+                    ? "bg-surface-raised ring-coral/60"
+                    : "ring-line hover:bg-surface",
+                )}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{type.name}</span>
+                  <span className="block text-xs text-ink-2">
+                    {type.blocks.length > 0
+                      ? blocksSummary(type.blocks.length, plannedSeconds(type.blocks))
+                      : "Sin bloques · solo proyección"}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
+              <IconButton
+                label={`Eliminar el servicio ${type.name}`}
+                disabled={isRunning && type.id === currentId}
+                onClick={() => {
+                  setDeleteError(undefined);
+                  setDeleting(type);
+                }}
+              >
+                <Trash2 />
+              </IconButton>
+            </div>
           ))}
           <Button
             variant="ghost"
@@ -375,6 +413,16 @@ function ChooseServiceDialog({
           </Button>
         </div>
       )}
+      <ConfirmDialog
+        open={deleting !== null}
+        onClose={() => setDeleting(null)}
+        onConfirm={confirmDelete}
+        isPending={isDeleting}
+        error={deleteError}
+        title={`¿Eliminar «${deleting?.name ?? ""}»?`}
+        description="Se borra el servicio y sus bloques. Los tiempos que ya guardaste en Tiempos se conservan."
+        confirmLabel="Eliminar"
+      />
     </Dialog>
   );
 }

@@ -27,7 +27,7 @@ La consola publica frames completos. Main los conserva y los envía a la salida 
 
 El renderer tiene CSP local y `frame-src 'none'`. No existe reproductor de YouTube, oEmbed, protocolo iris-player ni IPC para guardar enlaces. Las canciones usan letra y/o MP3 local; la migración conserva las letras de canciones antes vinculadas. El botón de limpiar es un latch independiente que no se desactiva al cambiar de canción. El volumen se aplica al audio del salón y a los frames de video; la vista previa sigue silenciada.
 
-Iris no usa red. Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
+Iris solo usa internet para reproducir un enlace de YouTube pegado en Multimedia → YouTube (reproductor incrustado de YouTube en la pantalla de proyección; no se descarga ni se guarda). Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
 
 ## Verificación y distribución
 

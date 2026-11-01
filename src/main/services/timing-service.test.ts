@@ -82,6 +82,44 @@ describe("service timing", () => {
       status: "adjusted",
     });
   });
+  it("moves a block's real start: it lasts until it ended and the one before ends there", () => {
+    const type = service.saveServiceType(null, {
+      name: "Culto",
+      blocks: [
+        { name: "Bienvenida", plannedMinutes: 5 },
+        { name: "Mensaje", plannedMinutes: 30 },
+      ],
+    });
+    const at = (minute: number): number => Date.UTC(2026, 9, 25, 12, minute);
+    let timer = startNext(timerFor(type, createId), { id: null, name: null }, at(33));
+    timer = startNext(timer, { id: null, name: null }, at(40));
+    timer = finish(timer, at(70));
+    service.saveRecord(timer.recordId, recordInput(timer));
+    const [welcome, message] = timer.blocks;
+
+    // The welcome was really at 12:30 and not 12:33: three minutes more, and the date moves.
+    const early = new Date(at(30)).toISOString();
+    const first = service.changeStart(timer.recordId, welcome.id, early);
+    expect(first.date).toBe(early);
+    expect(first.blocks[0]).toMatchObject({ actualSeconds: 600, status: "adjusted" });
+
+    // The message began at 12:38: the welcome now ends there.
+    const second = service.changeStart(timer.recordId, message.id, new Date(at(38)).toISOString());
+    expect(second.blocks[0]).toMatchObject({
+      actualSeconds: 480,
+      endedAt: new Date(at(38)).toISOString(),
+    });
+    expect(second.blocks[1]).toMatchObject({ actualSeconds: 32 * 60, status: "adjusted" });
+    expect(second.date).toBe(early);
+
+    // Not after the block ended, nor before the previous block began.
+    expect(() =>
+      service.changeStart(timer.recordId, message.id, new Date(at(75)).toISOString()),
+    ).toThrow("anterior al final");
+    expect(() =>
+      service.changeStart(timer.recordId, message.id, new Date(at(29)).toISOString()),
+    ).toThrow("posterior al inicio");
+  });
 });
 
 it("rejects skipping and starting a later block while the first is pending", () => {

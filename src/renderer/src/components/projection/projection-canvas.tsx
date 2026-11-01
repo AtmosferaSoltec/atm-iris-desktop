@@ -1,4 +1,6 @@
 import { playbackPosition, shouldSeekVideo } from "@shared/domain/playback";
+import { YouTubeVideo } from "@renderer/features/projection/youtube-video";
+import { youTubeThumbnail } from "@shared/lib/youtube";
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@renderer/lib/cn";
 import { clock } from "@shared/lib/format";
@@ -12,7 +14,7 @@ import {
   type ProjectionTypography,
 } from "@shared/domain/projection";
 
-type VideoTime = { id: string; position: number; duration: number };
+type VideoTime = { id: string; position: number; duration: number; title?: string };
 
 type Props = {
   frame: ProjectionFrame;
@@ -89,6 +91,7 @@ function contentKey(content: ProjectionContent): string {
       return "timer";
     case "image":
     case "video":
+    case "youtube":
       return `${content.kind}:${content.id}`;
   }
 }
@@ -286,6 +289,28 @@ function Content({
           decoding="async"
           draggable={false}
         />
+      );
+    case "youtube":
+      return playsVideo ? (
+        <YouTubeVideo
+          content={content}
+          audible={audible}
+          onVideoTime={onVideoTime}
+          onVideoError={onVideoError}
+        />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center">
+          {/* Previews and cards never load a second player: only YouTube's thumbnail. */}
+          <img
+            className="absolute inset-0 size-full object-cover"
+            src={youTubeThumbnail(content.id)}
+            alt=""
+            draggable={false}
+          />
+          <span className="relative grid size-[13cqw] place-items-center rounded-full bg-black/40 ring-1 ring-white/30 backdrop-blur-sm">
+            <span className="ml-[1cqw] border-y-[2.4cqw] border-l-[3.8cqw] border-y-transparent border-l-white" />
+          </span>
+        </div>
       );
     case "video":
       return playsVideo ? (

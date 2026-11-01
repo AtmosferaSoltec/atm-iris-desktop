@@ -90,3 +90,8 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 - No verificado en Windows: renombrar un MP3 desde el editor (incluyendo tildes), confirmar referencias tras reiniciar; quitar/reemplazar/eliminar pistas y revisar la Papelera. Probar permisos restringidos y archivo en uso: debe fallar sin perder el original.
 - No verificado con RVR1960 real en Windows: escribir «salm», «Salmos 96» y «Salmos 96:13», comprobar capítulo y versículos completos; Enter sin versículo empieza por el primero.
 - Las pruebas Electron en macOS usan audios y Biblias sintéticos, no verifican sonido audible ni hardware Windows.
+
+## YouTube por enlace (0.7.0)
+
+- Verificado en macOS con un video real: el reproductor incrustado corre en la ventana de proyección, informa su duración y su título, sin errores.
+- Pendiente en Windows con internet y el televisor por HDMI: pegar un enlace en Multimedia → YouTube, «Proyectar video»; comprobar imagen, sonido por HDMI, pausa/avance desde EN VIVO y que un video que no permite incrustarse muestre el aviso. Los anuncios de YouTube pueden aparecer; Iris no inicia sesión en ninguna cuenta.

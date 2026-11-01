@@ -100,6 +100,8 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       "records:delete": (id) => timing.deleteRecord(id),
       "records:adjust-duration": ({ recordId, blockId, actualSeconds }) =>
         timing.adjustDuration(recordId, blockId, actualSeconds),
+      "records:change-start": ({ recordId, blockId, startedAt }) =>
+        timing.changeStart(recordId, blockId, startedAt),
       "records:change-leader": ({ recordId, blockId, personId }) =>
         timing.changeLeader(recordId, blockId, personId),
       "times:load": () => timing.loadTimes(),

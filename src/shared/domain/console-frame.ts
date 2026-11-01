@@ -35,5 +35,13 @@ export function consoleContent(
       position: state?.position ?? 0,
       at: state?.at ?? 0,
     };
+  if (item.kind === "youtube" && item.youTubeId)
+    return {
+      kind: "youtube",
+      id: item.youTubeId,
+      playing: state?.playing ?? false,
+      position: state?.position ?? 0,
+      at: state?.at ?? 0,
+    };
   return { kind: "blank" };
 }

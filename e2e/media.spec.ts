@@ -111,7 +111,7 @@ test("reads images from their folder, opens the matching folder, and refreshes a
     await expect
       .poll(() => openedFolderIdentity(instance))
       .toEqual(await directoryIdentity(join(instance.home, "Videos")));
-    await expect(page.getByRole("radio", { name: "YouTube", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("radio", { name: "YouTube", exact: true })).toBeVisible();
     await page.getByRole("radio", { name: "Imágenes", exact: true }).click();
     await writeFile(join(instance.home, "Images", "added.png"), PNG);
     await page.getByRole("button", { name: "Actualizar biblioteca", exact: true }).click();

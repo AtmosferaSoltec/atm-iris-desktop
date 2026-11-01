@@ -70,3 +70,31 @@ it("keeps the web's lyrics-only, track-only and combined library icons", () => {
     >[0]).icon,
   ).toBe("image");
 });
+
+it("builds the screen content of a pasted YouTube video from the playback", () => {
+  const item = {
+    planItemId: "youtube:dQw4w9WgXcQ",
+    refId: "dQw4w9WgXcQ",
+    kind: "youtube" as const,
+    title: "Video de YouTube",
+    subtitle: null,
+    slides: [],
+    file: null,
+    youTubeId: "dQw4w9WgXcQ",
+  };
+  expect(consoleContent(item, 0, false, null, null)).toEqual({
+    kind: "youtube",
+    id: "dQw4w9WgXcQ",
+    playing: false,
+    position: 0,
+    at: 0,
+  });
+  expect(
+    consoleContent(item, 0, false, null, {
+      key: "youtube:dQw4w9WgXcQ",
+      playing: true,
+      position: 12,
+      at: 1000,
+    }),
+  ).toMatchObject({ kind: "youtube", playing: true, position: 12, at: 1000 });
+});

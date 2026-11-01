@@ -44,3 +44,11 @@ export async function exportRecords(
     return { error: errorMessage(error) };
   }
 }
+
+export function changeBlockStart(
+  recordId: string,
+  blockId: string,
+  startedAt: string,
+): Promise<{ error?: string }> {
+  return update(() => invoke("records:change-start", { recordId, blockId, startedAt }));
+}

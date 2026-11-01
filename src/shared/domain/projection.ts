@@ -23,6 +23,16 @@ export type ProjectionContent =
   /** A countdown: `seconds` left at `at` (epoch ms), running down from there or paused; `label` goes above it. */
   | { kind: "timer"; seconds: number; running: boolean; at: number; label?: string }
   | { kind: "image"; id: string; url: string }
+  /** A YouTube video (its 11-character id), played by YouTube's own player on the screens. */
+  | {
+      kind: "youtube";
+      id: string;
+      muted?: boolean;
+      volume?: number;
+      playing: boolean;
+      position: number;
+      at: number;
+    }
   | {
       kind: "video";
       id: string;

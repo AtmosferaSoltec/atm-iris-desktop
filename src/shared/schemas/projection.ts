@@ -43,6 +43,13 @@ export const projectionContentSchema = z.discriminatedUnion("kind", [
   }),
   z.object({ kind: z.literal("image"), id: assetId, url: assetUrl }),
   z.object({
+    kind: z.literal("youtube"),
+    id: z.string().regex(/^[\w-]{11}$/),
+    ...position,
+    muted: z.boolean().optional(),
+    volume: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
     kind: z.literal("video"),
     id: assetId,
     url: assetUrl,
@@ -64,4 +71,6 @@ export const videoTimeSchema = z.object({
   id: z.string().min(1).max(64),
   position: z.number().finite().min(0),
   duration: z.number().finite().min(0),
+  /** YouTube's own title for the video, once its player knows it. */
+  title: z.string().max(200).optional(),
 });

@@ -1,4 +1,4 @@
-import { Ellipsis, Timer, Trash2, UserRound } from "lucide-react";
+import { Clock, Ellipsis, Timer, Trash2, UserRound } from "lucide-react";
 import { useState, useTransition } from "react";
 import { TimeBar } from "@renderer/components/service/time-bar";
 import { Button, IconButton } from "@renderer/components/ui/button";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@renderer/components/ui/dropdown-menu";
 import { Select } from "@renderer/components/ui/select";
+import { TextField } from "@renderer/components/ui/text-field";
 import { toast } from "@renderer/components/ui/toaster";
 import type { BlockRecord, Person, ServiceRecord, ServiceType } from "@shared/domain/models";
 import {
@@ -21,9 +22,10 @@ import {
   serviceName,
 } from "@shared/domain/time-statistics";
 import { cn } from "@renderer/lib/cn";
-import { clock, longDate, overtime } from "@shared/lib/format";
+import { clock, longDate, overtime, timeOfDay } from "@shared/lib/format";
+import { zonedParts, zonedTimeToUtc } from "@shared/lib/zoned-time";
 import { compareNames } from "@shared/lib/text";
-import { adjustBlockDuration, changeBlockLeader, deleteRecord } from "../actions";
+import { adjustBlockDuration, changeBlockLeader, changeBlockStart, deleteRecord } from "../actions";
 
 type Props = {
   record: ServiceRecord;
@@ -36,6 +38,7 @@ type Props = {
 export function RecordDetail({ record, types, people, timeZone, onDeleted }: Props) {
   const [adjusting, setAdjusting] = useState<BlockRecord | null>(null);
   const [reassigning, setReassigning] = useState<BlockRecord | null>(null);
+  const [restarting, setRestarting] = useState<BlockRecord | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
   const [isDeleting, startDelete] = useTransition();
@@ -100,8 +103,11 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
                       )}
                       {skipped && <Chip>Omitido</Chip>}
                     </p>
-                    <p className={cn("text-sm", skipped ? "text-ink-2" : "text-ink-2")}>
-                      {leaderName(block, people)}
+                    <p className="text-sm text-ink-2">
+                      <span>{leaderName(block, people)}</span>
+                      {block.startedAt && !skipped && (
+                        <span> · inició {startLabel(block.startedAt, timeZone)}</span>
+                      )}
                     </p>
                   </div>
                   {!skipped && (
@@ -123,6 +129,12 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
                         <Timer aria-hidden />
                         Ajustar duración…
                       </DropdownMenuItem>
+                      {block.startedAt && block.endedAt && !skipped && (
+                        <DropdownMenuItem onSelect={() => setRestarting(block)}>
+                          <Clock aria-hidden />
+                          Cambiar hora de inicio…
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onSelect={() => setReassigning(block)}>
                         <UserRound aria-hidden />
                         Cambiar responsable
@@ -167,6 +179,14 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
           recordId={record.id}
           block={adjusting}
           onClose={() => setAdjusting(null)}
+        />
+      )}
+      {restarting && (
+        <ChangeStartDialog
+          recordId={record.id}
+          block={restarting}
+          timeZone={timeZone}
+          onClose={() => setRestarting(null)}
         />
       )}
       {reassigning && (
@@ -290,6 +310,87 @@ function AdjustDurationDialog({
             }))}
           />
         </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function startLabel(instant: string, timeZone: string): string {
+  const { hour, minute } = zonedParts(new Date(instant), timeZone);
+  return timeOfDay(hour, minute);
+}
+
+/** The block really began earlier or later than the click: it lasts until it ended. */
+function ChangeStartDialog({
+  recordId,
+  block,
+  timeZone,
+  onClose,
+}: {
+  recordId: string;
+  block: BlockRecord;
+  timeZone: string;
+  onClose: () => void;
+}) {
+  const start = zonedParts(new Date(block.startedAt!), timeZone);
+  const [time, setTime] = useState(
+    `${String(start.hour).padStart(2, "0")}:${String(start.minute).padStart(2, "0")}`,
+  );
+  const [error, setError] = useState<string>();
+  const [isPending, startTransition] = useTransition();
+
+  function save() {
+    const [hour, minute] = time.split(":").map(Number);
+    if (hour === undefined || minute === undefined || Number.isNaN(hour * minute)) {
+      setError("Escribe una hora válida.");
+      return;
+    }
+    // The same day as the block, in the church's time zone.
+    const instant = zonedTimeToUtc(timeZone, start.year, start.month, start.day, hour, minute);
+    startTransition(async () => {
+      const result = await changeBlockStart(recordId, block.id, instant.toISOString());
+      if (result.error) setError(result.error);
+      else {
+        toast.success("Hora de inicio actualizada");
+        onClose();
+      }
+    });
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="sm"
+      title="Cambiar hora de inicio"
+      description={`${block.name} · terminó a las ${startLabel(block.endedAt!, timeZone)}`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} isLoading={isPending}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        {error && (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {error}
+          </p>
+        )}
+        <TextField
+          id="change-start-time"
+          label="Hora de inicio"
+          type="time"
+          value={time}
+          onChange={(event) => setTime(event.target.value)}
+        />
+        <p className="text-xs text-ink-2">
+          El bloque durará hasta que terminó. Si hay un bloque antes, terminará a esa hora.
+        </p>
       </div>
     </Dialog>
   );
