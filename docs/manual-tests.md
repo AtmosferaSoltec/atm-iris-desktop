@@ -95,3 +95,9 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 
 - Verificado en macOS con un video real: el reproductor incrustado corre en la ventana de proyección, informa su duración y su título, sin errores.
 - Pendiente en Windows con internet y el televisor por HDMI: pegar un enlace en Multimedia → YouTube, «Proyectar video»; comprobar imagen, sonido por HDMI, pausa/avance desde EN VIVO y que un video que no permite incrustarse muestre el aviso. Los anuncios de YouTube pueden aparecer; Iris no inicia sesión en ninguna cuenta.
+
+## Actualización obligatoria y publicación (0.8.0)
+
+- Pendiente con el servidor real: publicar una versión de prueba con un tag y comprobar que `https://iris.atmosferast.com/releases/latest.yml` y `latest-mac.yml` responden con la versión nueva y que las apps instaladas con la versión anterior muestran «Actualización obligatoria», descargan e instalan.
+- Mac: comprobar que la app descargada está firmada y notarizada (`spctl --assess --type execute -vv Iris.app`) y que se actualiza sola desde /Aplicaciones.
+- Windows: sin firma aparece el aviso de SmartScreen; comprobar que la actualización se instala igual.

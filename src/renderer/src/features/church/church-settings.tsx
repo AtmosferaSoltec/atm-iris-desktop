@@ -9,6 +9,7 @@ import type { ChurchSettings } from "@shared/domain/models";
 import { CHURCH_FIELDS, churchSchema } from "@shared/schemas/settings";
 import { toFormErrors } from "@shared/errors";
 import { listTimeZones } from "@shared/lib/time-zones";
+import { AtmosferaCredit } from "@renderer/components/brand/atmosfera-credit";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button } from "@renderer/components/ui/button";
 import { Combobox } from "@renderer/components/ui/combobox";
@@ -113,6 +114,9 @@ export function ChurchSettingsPage() {
       )}
       <BiblesPanel />
       <MaintenancePanels />
+      <footer className="flex justify-center pt-2 pb-4">
+        <AtmosferaCredit />
+      </footer>
     </div>
   );
 }

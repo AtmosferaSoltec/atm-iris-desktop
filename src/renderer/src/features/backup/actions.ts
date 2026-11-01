@@ -31,12 +31,12 @@ export async function eraseContent(
   }
 }
 
-export async function previewSongImport(): Promise<{
+export async function previewSongImport(source: "files" | "folder"): Promise<{
   preview?: SongImportPreview;
   error?: string;
 }> {
   try {
-    const preview = await invoke("songs:import-preview", undefined);
+    const preview = await invoke("songs:import-preview", { source });
     return preview ? { preview } : {};
   } catch (error) {
     return { error: errorMessage(error) };

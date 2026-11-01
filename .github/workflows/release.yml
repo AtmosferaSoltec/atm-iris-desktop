@@ -1,0 +1,174 @@
+name: Release
+
+# Un tag `vX.Y.Z` (igual a la versión de package.json) construye Windows y macOS, firma lo que
+# tenga firma configurada y lo publica en nuestro servidor. Sin tag (ejecución manual) solo
+# construye y guarda los archivos como artifacts, sin publicar nada. Ver docs/releasing.md.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm format:check
+      - name: El tag coincide con la versión
+        if: github.ref_type == 'tag'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          test "${GITHUB_REF_NAME}" = "v${version}" || {
+            echo "::error::El tag ${GITHUB_REF_NAME} no coincide con package.json (${version})"
+            exit 1
+          }
+
+  windows:
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      # La firma de Windows se agrega después con secretos (ver docs/releasing.md).
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:e2e
+      - run: pnpm release:win
+      - run: pnpm test:packaged dist/win-unpacked/Iris.exe
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows
+          path: |
+            dist/Iris-*-win-x64-setup.exe
+            dist/Iris-*-win-x64-setup.exe.blockmap
+            dist/latest.yml
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: electron-test-results-windows
+          path: test-results/
+          if-no-files-found: ignore
+
+  macos:
+    needs: check
+    # Se activa con la variable del repositorio ENABLE_MAC=true cuando ya están los secretos de Apple.
+    if: vars.ENABLE_MAC == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      # Certificado "Developer ID Application" (.p12 en base64) y su contraseña.
+      CSC_LINK: ${{ secrets.MAC_CERT_P12_BASE64 }}
+      CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+      # Llave de la API de App Store Connect para notarizar.
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:e2e
+      - name: Guardar la llave de notarización
+        run: |
+          printf '%s' "${{ secrets.APPLE_API_KEY_P8 }}" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - run: pnpm release:mac
+      - name: Comprobar firma y notarización
+        run: |
+          for app in dist/mac-arm64/Iris.app dist/mac/Iris.app; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose=2 "$app"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-macos
+          path: |
+            dist/Iris-*-mac-*.dmg
+            dist/Iris-*-mac-*.zip
+            dist/Iris-*-mac-*.zip.blockmap
+            dist/latest-mac.yml
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: electron-test-results-macos
+          path: test-results/
+          if-no-files-found: ignore
+
+  publish:
+    needs: [windows, macos]
+    # Solo los tags publican; la ejecución manual deja los archivos como artifacts.
+    # macOS puede estar apagado (skipped): entonces se publica solo Windows.
+    if: ${{ !cancelled() && github.ref_type == 'tag' && needs.windows.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.macos.result) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
+      - name: Manifiesto de la página de descargas
+        run: node scripts/release-manifest.mjs release
+      - name: Subir al servidor
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh_cmd="ssh -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20"
+          # La llave solo puede escribir en la carpeta de publicación (rrsync): "./" es esa carpeta.
+          target="$SSH_USER@$SSH_HOST:./"
+          # 1) Instaladores y mapas de bloques: los clientes todavía no los ven.
+          rsync -av -e "$ssh_cmd" --exclude 'latest*.yml' --exclude 'latest.json' release/ "$target"
+          # 2) Recién ahora los índices: las apps y la página empiezan a ofrecer la versión nueva.
+          rsync -av -e "$ssh_cmd" release/latest*.yml release/latest.json "$target"
+      - name: Comprobar lo publicado
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          for file in release/latest*.yml; do
+            file="$(basename "$file")"
+            curl -fsS "https://iris.atmosferast.com/releases/$file" | grep -q "^version: $version$"
+          done

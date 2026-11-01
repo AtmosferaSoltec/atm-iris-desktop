@@ -14,4 +14,10 @@ export class SettingsService {
   updateProjection(input: unknown): ProjectionSettings {
     return this.repository.updateProjection(parseInput(projectionSchema, input));
   }
+  isOnboardingDone(): boolean {
+    return this.repository.getPreference("onboarding.completed", false);
+  }
+  completeOnboarding(): void {
+    this.repository.setPreference("onboarding.completed", true);
+  }
 }

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { launchApp } from "./helpers";
 
@@ -51,6 +51,40 @@ test("previews a Holyrics export and imports only the new songs", async () => {
     const song = await page.evaluate((id) => window.iris["songs:get"](id), summary!.id);
     if (!song.ok) throw new Error(song.error.message);
     expect(song.data.sections.map((section) => section.label)).toEqual([null, "CORO"]);
+  } finally {
+    await instance.close();
+  }
+});
+
+test("imports a whole folder of song files in one go", async () => {
+  const instance = await launchApp();
+  try {
+    const folder = join(instance.home, "canciones");
+    await mkdir(folder);
+    for (const title of ["Uno", "Dos", "Tres"])
+      await writeFile(
+        join(folder, `${title}.json`),
+        JSON.stringify([
+          {
+            title,
+            artist: "",
+            author: "",
+            lyrics: { paragraphs: [{ text: `Letra de ${title}` }] },
+          },
+        ]),
+        "utf8",
+      );
+    await writeFile(join(folder, "notas.txt"), "no es una canción", "utf8");
+    await instance.app.evaluate(({ dialog }, path) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] });
+    }, folder);
+    const page = await instance.app.firstWindow();
+    await page.getByRole("link", { name: "Configuración" }).click();
+    await page.getByRole("button", { name: "Importar carpeta" }).click();
+    const dialog = page.getByRole("dialog", { name: "Importar canciones" });
+    await expect(dialog.getByText("canciones · 3 canciones nuevas")).toBeVisible();
+    await dialog.getByRole("button", { name: "Importar 3 canciones" }).click();
+    await expect(page.getByText("Se importaron 3 canciones")).toBeVisible();
   } finally {
     await instance.close();
   }

@@ -4,7 +4,7 @@
 
 **Desde un Mac:** `pnpm pack:win` genera `dist/Iris-<versión>-win.zip` (no necesita Windows ni Wine). Se copia el ZIP a la PC, se descomprime y se ejecuta `Iris.exe`; los datos siguen en la carpeta Iris del usuario. El instalador NSIS (`pnpm build:win`) solo se puede generar en Windows o con Rosetta/Wine.
 
-No hay workflows de CI: se trabaja solo en la rama `main` y el instalador se genera en el equipo con `pnpm build:win` (Windows) o `pnpm build:mac` (Mac), en `dist/`. Entrega al usuario el `.exe` de Windows o el `.dmg` de su Mac; no necesita el código fuente, Node ni pnpm. El `.blockmap` no se instala.
+Las versiones públicas se publican con un tag (`vX.Y.Z`): GitHub Actions construye, firma y las sube al servidor (ver [publicar una versión](releasing.md)). Para una prueba local, `pnpm pack:win` (ZIP de Windows desde un Mac) o `pnpm build:mac`, en `dist/`. Entrega al usuario el `.exe` de Windows o el `.dmg` de su Mac; no necesita el código fuente, Node ni pnpm.
 
 ## Actualizar una instalación existente
 

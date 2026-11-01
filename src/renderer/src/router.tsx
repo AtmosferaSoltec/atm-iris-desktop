@@ -5,15 +5,22 @@ import { createHashRouter } from "react-router";
 import { AppLayout } from "./components/app-layout";
 import { PageHeader } from "./components/ui/page-header";
 import { BackLink } from "./components/ui/back-link";
+import { OnboardingGate } from "./features/onboarding/onboarding-gate";
 import { TimesPage } from "./features/times/times-page";
 
 export const router = createHashRouter([
-  { path: "/", element: <LiveConsolePage /> },
   {
-    element: <AppLayout />,
+    // The projection window (/display) stays outside the gate: it must never show the tour.
+    element: <OnboardingGate />,
     children: [
-      { path: "/times", element: <TimesPage /> },
-      { path: "/settings", element: <ChurchSettingsPage /> },
+      { path: "/", element: <LiveConsolePage /> },
+      {
+        element: <AppLayout />,
+        children: [
+          { path: "/times", element: <TimesPage /> },
+          { path: "/settings", element: <ChurchSettingsPage /> },
+        ],
+      },
     ],
   },
   {

@@ -10,3 +10,16 @@ playwright-report
 *.tsbuildinfo
 .pnpm-store/
 electron.vite.config.*.mjs
+
+# Secretos: nunca se versionan (las llaves viven en GitHub Secrets y en el servidor).
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.pfx
+*.pem
+*.key
+*.cer
+id_rsa*
+id_ed25519*

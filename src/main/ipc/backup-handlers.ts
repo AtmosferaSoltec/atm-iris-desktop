@@ -6,7 +6,7 @@ import type { IpcHandlers } from "./dispatch";
 import type { BackupService } from "../services/backup-service";
 import type { SnapshotService } from "../services/snapshot-service";
 import type { StorageService } from "../services/storage-service";
-import type { SongImportService } from "../services/song-import-service";
+import type { SongImportFile, SongImportService } from "../services/song-import-service";
 import { basename } from "node:path";
 
 const EXPORT_NAMES = {
@@ -16,6 +16,17 @@ const EXPORT_NAMES = {
   Videos: "Videos",
   Sounds: "Sonidos",
 } as const;
+
+const MAX_IMPORT_FILES = 500;
+
+/** The .json files of a folder and its subfolders, in name order. */
+async function jsonFilesIn(folder: string): Promise<string[]> {
+  const entries = await readdir(folder, { withFileTypes: true, recursive: true });
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
+    .map((entry) => join(entry.parentPath, entry.name))
+    .sort((a, b) => a.localeCompare(b, "es"));
+}
 
 export function backupHandlers(
   backup: BackupService,
@@ -92,22 +103,36 @@ export function backupHandlers(
       }
       return backup.import(file);
     },
-    "songs:import-preview": async () => {
+    "songs:import-preview": async ({ source }) => {
       const result = await dialog.showOpenDialog({
-        title: "Importar canciones",
-        properties: ["openFile"],
-        filters: [{ name: "Canciones (JSON)", extensions: ["json"] }],
+        title: source === "folder" ? "Importar canciones de una carpeta" : "Importar canciones",
+        properties: source === "folder" ? ["openDirectory"] : ["openFile", "multiSelections"],
+        filters: source === "folder" ? [] : [{ name: "Canciones (JSON)", extensions: ["json"] }],
       });
-      if (result.canceled || !result.filePaths[0]) return null;
-      const path = result.filePaths[0];
-      let content: string;
-      try {
-        if ((await stat(path)).size > 50 * 1024 * 1024) throw new Error("Archivo demasiado grande");
-        content = await readFile(path, "utf8");
-      } catch {
-        throw new AppError("VALIDATION_FAILED", "No pudimos leer ese archivo.");
+      if (result.canceled || !result.filePaths.length) return null;
+      const paths =
+        source === "folder"
+          ? (await jsonFilesIn(result.filePaths[0]!)).slice(0, MAX_IMPORT_FILES)
+          : result.filePaths.slice(0, MAX_IMPORT_FILES);
+      if (!paths.length)
+        throw new AppError("VALIDATION_FAILED", "Esa carpeta no tiene archivos JSON.");
+      const files: SongImportFile[] = [];
+      for (const path of paths) {
+        try {
+          if ((await stat(path)).size > 50 * 1024 * 1024) throw new Error("too large");
+          files.push({ name: basename(path), content: await readFile(path, "utf8") });
+        } catch {
+          // A file we cannot read shows up in the preview as a problem, not as a failed import.
+          files.push({ name: basename(path), content: "" });
+        }
       }
-      return songImport.preview(content, basename(path));
+      const label =
+        source === "folder"
+          ? basename(result.filePaths[0]!)
+          : files.length === 1
+            ? files[0]!.name
+            : `${files.length} archivos`;
+      return songImport.preview(files, label);
     },
     "songs:import-confirm": (input) => songImport.confirm(input),
     "backup:erase": (input) => backup.erase(input),

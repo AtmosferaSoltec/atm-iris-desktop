@@ -1,9 +1,11 @@
+import { updateStatusSchema } from "../schemas/updates";
 import type { Monitor, ProjectionStatus } from "../domain/monitors";
 import type { ProjectionFrame } from "../domain/projection";
 import { projectionFrameSchema, videoTimeSchema } from "../schemas/projection";
 import { z } from "@shared/zod";
 
 export const eventContract = {
+  "updates:changed": updateStatusSchema,
   "projection:error": z.string().min(1).max(200),
   "projection:frame": projectionFrameSchema as z.ZodType<ProjectionFrame>,
   "projection:status": z.custom<ProjectionStatus>(),

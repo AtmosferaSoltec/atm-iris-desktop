@@ -1,4 +1,4 @@
-import { FileUp } from "lucide-react";
+import { FileUp, FolderOpen } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@renderer/components/ui/button";
 import { Dialog } from "@renderer/components/ui/dialog";
@@ -22,14 +22,16 @@ export function SongImportButton({ onError }: { onError: (message: string | null
   const [isReading, startReading] = useTransition();
   const [isSaving, startSaving] = useTransition();
   const [preview, setPreview] = useState<SongImportPreview | null>(null);
+  const [readingSource, setReadingSource] = useState<"files" | "folder" | null>(null);
 
   const count = (status: SongImportStatus): number =>
     preview?.items.filter((item) => item.status === status).length ?? 0;
 
-  function choose() {
+  function choose(source: "files" | "folder") {
     onError(null);
+    setReadingSource(source);
     startReading(async () => {
-      const result = await previewSongImport();
+      const result = await previewSongImport(source);
       if (result.error) onError(result.error);
       else if (result.preview) setPreview(result.preview);
     });
@@ -59,10 +61,20 @@ export function SongImportButton({ onError }: { onError: (message: string | null
       <Button
         variant="secondary"
         icon={<FileUp className="size-4" />}
-        onClick={choose}
-        isLoading={isReading}
+        onClick={() => choose("files")}
+        isLoading={isReading && readingSource === "files"}
+        disabled={isReading}
       >
         Importar canciones
+      </Button>
+      <Button
+        variant="secondary"
+        icon={<FolderOpen className="size-4" />}
+        onClick={() => choose("folder")}
+        isLoading={isReading && readingSource === "folder"}
+        disabled={isReading}
+      >
+        Importar carpeta
       </Button>
       <Dialog
         open={preview !== null}

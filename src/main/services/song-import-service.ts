@@ -12,6 +12,8 @@ import {
 } from "@shared/schemas/song-import";
 import type { SqliteMaintenanceRepository } from "../repositories/sqlite/maintenance-repository";
 
+export type SongImportFile = { name: string; content: string };
+
 type Pending = { token: string; songs: ImportedSong[] };
 
 /** Songs from a file (Holyrics JSON or an Iris backup): a preview first, nothing is saved until the operator confirms. */
@@ -40,34 +42,54 @@ export class SongImportService {
     return null;
   }
 
-  preview(raw: string, fileName: string): SongImportPreview {
-    let songs: ImportedSong[];
-    try {
-      songs = parseSongFile(raw);
-    } catch {
-      throw new AppError(
-        "VALIDATION_FAILED",
-        "Ese archivo no parece un archivo de canciones (JSON).",
-      );
-    }
-    if (!songs.length) throw new AppError("VALIDATION_FAILED", "El archivo no contiene canciones.");
+  /** One or many files. With several, a file that is not a song file only shows up as a problem row. */
+  preview(files: SongImportFile[], label: string): SongImportPreview {
+    const songs: ImportedSong[] = [];
+    const items: SongImportItem[] = [];
     const seen = new Set(this.repository.songs().map(SongImportService.key));
-    const items: SongImportItem[] = songs.map((song) => {
-      const base = {
-        title: song.title || "(sin título)",
-        author: song.author,
-        slides: song.sections.length,
-      };
-      const problem = SongImportService.problem(song);
-      if (problem) return { ...base, status: "invalid", reason: problem };
-      const key = SongImportService.key(song);
-      if (seen.has(key))
-        return { ...base, status: "duplicate", reason: "Ya existe una canción igual." };
-      seen.add(key);
-      return { ...base, status: "new", reason: null };
-    });
+    for (const file of files) {
+      let parsed: ImportedSong[];
+      try {
+        parsed = parseSongFile(file.content);
+      } catch {
+        if (files.length === 1)
+          throw new AppError(
+            "VALIDATION_FAILED",
+            "Ese archivo no parece un archivo de canciones (JSON).",
+          );
+        items.push({
+          title: file.name,
+          author: "",
+          slides: 0,
+          status: "invalid",
+          reason: "No es un archivo de canciones (JSON).",
+        });
+        continue;
+      }
+      for (const song of parsed) {
+        songs.push(song);
+        const base = {
+          title: song.title || "(sin título)",
+          author: song.author,
+          slides: song.sections.length,
+        };
+        const problem = SongImportService.problem(song);
+        if (problem) {
+          items.push({ ...base, status: "invalid", reason: problem });
+          continue;
+        }
+        const key = SongImportService.key(song);
+        if (seen.has(key))
+          items.push({ ...base, status: "duplicate", reason: "Ya existe una canción igual." });
+        else {
+          seen.add(key);
+          items.push({ ...base, status: "new", reason: null });
+        }
+      }
+    }
+    if (!songs.length) throw new AppError("VALIDATION_FAILED", "No hay canciones en los archivos.");
     this.pending = { token: createId(), songs };
-    return { token: this.pending.token, fileName, items };
+    return { token: this.pending.token, fileName: label, items };
   }
 
   confirm(raw: unknown): SongImportResult {

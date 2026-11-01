@@ -84,9 +84,9 @@ pnpm build:mac --arm64 --publish never
 pnpm build:mac --x64 --publish never
 ```
 
-La versión 0.3.0 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema (`pnpm build:win` o `pnpm build:mac`). No hay workflows de GitHub Actions: se trabaja solo en `main` y los instaladores se generan localmente.
+La versión 0.3.0 produce instalador NSIS/ZIP de Windows x64 y DMG/ZIP de Mac Apple Silicon e Intel en `dist/`. Compila cada plataforma en su sistema (`pnpm build:win` o `pnpm build:mac`). Las versiones públicas las construye, firma y publica GitHub Actions al subir un tag (ver [publicar una versión](docs/releasing.md)).
 
-**Actualizar conserva los datos:** cierra Iris y ejecuta el instalador nuevo en Windows, o reemplaza Iris.app en Aplicaciones en Mac. Se reutilizan la carpeta Iris y la base existente; las migraciones crean antes una copia de seguridad y se aplican en una transacción. No hay actualización automática: se instala la versión nueva a mano. Consulta [la guía de instalación, actualización y recuperación](docs/updating.md).
+**Actualizar conserva los datos:** cierra Iris y ejecuta el instalador nuevo en Windows, o reemplaza Iris.app en Aplicaciones en Mac. Se reutilizan la carpeta Iris y la base existente; las migraciones crean antes una copia de seguridad y se aplican en una transacción. Iris busca actualizaciones al abrir y las instala de forma obligatoria (ver [publicar una versión](docs/releasing.md)). Consulta [la guía de instalación, actualización y recuperación](docs/updating.md).
 
 Windows no está firmado; macOS usa firma ad-hoc y no está notarizado. Los avisos de descarga, la instalación/actualización en los equipos finales y HDMI requieren las pruebas manuales indicadas en la guía.
 

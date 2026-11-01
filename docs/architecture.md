@@ -27,13 +27,13 @@ La consola publica frames completos. Main los conserva y los envía a la salida 
 
 El renderer tiene CSP local y `frame-src 'none'`. No existe reproductor de YouTube, oEmbed, protocolo iris-player ni IPC para guardar enlaces. Las canciones usan letra y/o MP3 local; la migración conserva las letras de canciones antes vinculadas. El botón de limpiar es un latch independiente que no se desactiva al cambiar de canción. El volumen se aplica al audio del salón y a los frames de video; la vista previa sigue silenciada.
 
-Iris solo usa internet para reproducir un enlace de YouTube pegado en Multimedia → YouTube (reproductor incrustado de YouTube en la pantalla de proyección; no se descarga ni se guarda). Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
+Iris solo usa internet para buscar actualizaciones en nuestro servidor (obligatorias, ver docs/releasing.md) y para reproducir un enlace de YouTube pegado en Multimedia → YouTube (reproductor incrustado de YouTube en la pantalla de proyección; no se descarga ni se guarda). Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
 
 ## Verificación y distribución
 
 Vitest cubre reglas, servicios, repositorios y migraciones. Playwright abre Electron con perfil e `IRIS_HOME` temporales, bloquea red externa por defecto y simula los servicios externos cuando se necesitan. El checklist físico está en [manual-tests.md](manual-tests.md).
 
-Windows usa instalador NSIS por usuario y ZIP x64; macOS añade DMG/ZIP arm64 y x64, con marca Iris y datos fuera de la instalación. Los instaladores se generan localmente; no hay CI. Las actualizaciones manuales conservan la identidad y la carpeta Iris; se reutilizan las migraciones transaccionales con respaldo previo. Ver [actualización y recuperación](updating.md). Firma de distribución, notarización y comprobaciones físicas quedan pendientes.
+Windows usa instalador NSIS por usuario y ZIP x64; macOS añade DMG/ZIP arm64 y x64, con marca Iris y datos fuera de la instalación. Las versiones públicas las publica GitHub Actions al subir un tag; para pruebas, los instaladores se generan localmente (`pnpm pack:win`, `pnpm build:mac`). Las actualizaciones manuales conservan la identidad y la carpeta Iris; se reutilizan las migraciones transaccionales con respaldo previo. Ver [actualización y recuperación](updating.md). Firma de distribución, notarización y comprobaciones físicas quedan pendientes.
 
 ## Biblias locales (fases 12 y 14)
 

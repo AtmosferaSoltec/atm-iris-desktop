@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { _electron, type ElectronApplication } from "@playwright/test";
 
-export async function launchApp(options: { home?: string; rendererUrl?: string } = {}): Promise<{
+export async function launchApp(
+  options: { home?: string; rendererUrl?: string; updates?: string; onboarding?: boolean } = {},
+): Promise<{
   app: ElectronApplication;
   home: string;
   close: () => Promise<void>;
@@ -13,6 +15,8 @@ export async function launchApp(options: { home?: string; rendererUrl?: string }
     ...process.env,
     IRIS_HOME: home,
     IRIS_E2E: "1",
+    IRIS_E2E_UPDATES: options.updates,
+    IRIS_E2E_ONBOARDING: options.onboarding ? "1" : undefined,
     ELECTRON_RENDERER_URL: options.rendererUrl,
   };
   delete environment.ELECTRON_RUN_AS_NODE;

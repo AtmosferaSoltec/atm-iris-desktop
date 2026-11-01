@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
+
+- Primera versión pública. Al abrir por primera vez, una guía de bienvenida de cuatro pasos. Sello «Desarrollado por Atmosfera» en Configuración, con enlace a atmosferast.com.
+- Configuración → Respaldo: «Importar canciones» ahora acepta varios archivos JSON a la vez, y el nuevo botón «Importar carpeta» importa todos los JSON de una carpeta (y sus subcarpetas) con una sola vista previa.
+- Actualización automática obligatoria desde nuestro propio servidor (Windows y macOS): al abrir, si hay una versión nueva se descarga y la app no deja entrar hasta instalarla. Sin internet abre normal; no instala mientras se proyecta.
+- Publicación con tags en GitHub Actions: construye Windows y macOS, firma y notariza la versión de Mac y la sube al servidor (ver docs/releasing.md). El instalador de Windows ahora se llama `Iris-<versión>-win-x64-setup.exe`.
 
 ## 0.7.0
 

@@ -1,7 +1,8 @@
 import { bibleChapterSchema, bibleTranslationSchema } from "../schemas/bible";
 import type { BibleChapter, BibleStatus } from "../domain/bible";
 import { eraseSchema, exportFilesSchema } from "../schemas/backup";
-import { songImportConfirmSchema } from "../schemas/song-import";
+import { updateStatusSchema } from "../schemas/updates";
+import { songImportConfirmSchema, songImportSourceSchema } from "../schemas/song-import";
 import { audioMatchConfirmSchema } from "../schemas/audio-match";
 import {
   personInputSchema,
@@ -60,6 +61,9 @@ export function defineChannel<I, O>(
 }
 
 export const contract = {
+  "updates:status": defineChannel("updates:status", z.void(), updateStatusSchema),
+  "updates:retry": defineChannel("updates:retry", z.void(), updateStatusSchema),
+  "updates:install": defineChannel("updates:install", z.void(), updateStatusSchema),
   "bible:select": defineChannel("bible:select", bibleTranslationSchema, z.custom<BibleStatus>()),
   "bible:status": defineChannel("bible:status", z.void(), z.custom<BibleStatus>()),
   "bible:import": defineChannel("bible:import", z.void(), z.custom<BibleStatus | null>()),
@@ -77,7 +81,7 @@ export const contract = {
   ),
   "songs:import-preview": defineChannel(
     "songs:import-preview",
-    z.void(),
+    songImportSourceSchema,
     z.custom<import("../schemas/song-import").SongImportPreview | null>(),
   ),
   "songs:import-confirm": defineChannel(
@@ -280,6 +284,9 @@ export const contract = {
     z.void(),
     z.custom<{ version: string; homePath: string }>(),
   ),
+  "onboarding:get": defineChannel("onboarding:get", z.void(), z.boolean()),
+  "onboarding:complete": defineChannel("onboarding:complete", z.void(), z.void()),
+  "app:open-atmosfera": defineChannel("app:open-atmosfera", z.void(), z.void()),
 } as const;
 
 export type ChannelName = keyof typeof contract;

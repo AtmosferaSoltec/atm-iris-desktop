@@ -1,3 +1,6 @@
+import { UpdateService } from "../updates/update-service";
+import { createUpdatePort } from "../updates/electron-updater";
+import { createE2eUpdatePort } from "../updates/e2e-update-port";
 import { BibleService } from "../services/bible-service";
 import { SqliteBibleRepository } from "../repositories/sqlite/bible-repository";
 import { bibleHandlers } from "../ipc/bible-handlers";
@@ -80,67 +83,101 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
     }
     const { monitors, projection } = createProjection(repository);
     const bible = new BibleService(new SqliteBibleRepository(db));
-    registerIpc({
-      ...bibleHandlers(bible),
-      ...backupHandlers(backup, snapshots, storage, home.root, songImport),
-      "people:list": () => timing.people(),
-      "people:create": ({ name }) => timing.savePerson(null, name),
-      "people:update": ({ id, name }) => timing.savePerson(id, name),
-      "people:delete": (id) => timing.deletePerson(id),
-      "people:find-or-add": (name) => timing.findOrAddPerson(name),
-      "service-types:list": () => timing.serviceTypes(),
-      "service-types:create": (input) => timing.saveServiceType(null, input),
-      "service-types:update": ({ id, input }) => timing.saveServiceType(id, input),
-      "service-types:delete": (id) => timing.deleteServiceType(id),
-      "service-types:select": (id) => timing.selectService(id),
-      "records:list": (input) => timing.listRecords(input),
-      ...timesExportHandlers(timing, () => repository.get().church.name),
-      "records:get": (id) => timing.record(id),
-      "records:save": ({ id, input }) => timing.saveRecord(id, input),
-      "records:delete": (id) => timing.deleteRecord(id),
-      "records:adjust-duration": ({ recordId, blockId, actualSeconds }) =>
-        timing.adjustDuration(recordId, blockId, actualSeconds),
-      "records:change-start": ({ recordId, blockId, startedAt }) =>
-        timing.changeStart(recordId, blockId, startedAt),
-      "records:change-leader": ({ recordId, blockId, personId }) =>
-        timing.changeLeader(recordId, blockId, personId),
-      "times:load": () => timing.loadTimes(),
-      "sounds:list": () => media.sounds(),
-      "projection:report-error": (message) => broadcast("projection:error", message),
-      "monitors:list": () => monitors.list(),
-      "projection:start": (input) => projection.start(input),
-      "projection:stop": () => projection.stop(),
-      "projection:get-status": () => projection.status(),
-      "projection:push-frame": (frame) => projection.push(frame),
-      "projection:request-frame": () => projection.frame(),
-      "projection:video-time": (time) => broadcast("projection:video-time", time),
-      "projection:set-default-background": (id) => consoleService.setDefaultBackground(id),
-      "projection:preferences": () => {
-        const saved = repository.getPreference<{
-          id: number;
-          bounds: { x: number; y: number; width: number; height: number };
-        } | null>("projectionMonitor", null);
-        const monitor = monitors
-          .list()
-          .find(
-            (candidate) =>
-              candidate.id === saved?.id &&
-              JSON.stringify(candidate.bounds) === JSON.stringify(saved.bounds),
-          );
-        return { monitorId: monitor?.id ?? null };
+    const isTestUpdate = env.isE2e && Boolean(env.e2eUpdates);
+    // macOS only updates itself when the app is signed; Windows works with or without a signature.
+    const isUpdateEnabled =
+      isTestUpdate ||
+      (!env.isE2e &&
+        app.isPackaged &&
+        (process.platform === "win32" || process.platform === "darwin"));
+    const updates = new UpdateService(
+      isTestUpdate
+        ? createE2eUpdatePort(env.e2eUpdates!)
+        : isUpdateEnabled
+          ? createUpdatePort()
+          : { check: async () => null, download: async () => {}, install: () => {} },
+      {
+        version: app.getVersion(),
+        isEnabled: isUpdateEnabled,
+        settings: repository,
+        changed: (status) => broadcast("updates:changed", status),
+        prepareInstall: () => {
+          snapshots.create(true);
+        },
+        canInstall: () => !projection.status().running,
+        reportError: logError,
       },
-      "console:load": () => consoleService.load(),
-      "plan:add": ({ kind, refId }) => consoleService.add(kind, refId),
-      "plan:move": ({ id, position }) => consoleService.move(id, position),
-      "plan:remove": (id) => consoleService.remove(id),
-      "plan:clear": () => consoleService.clear(),
-      "console:item": ({ kind, refId }) => consoleService.item(kind, refId, `quick:${refId}`),
-      "songs:edit-slide": ({ songId, index, previousText, text }) =>
-        consoleService.editSlide(songId, index, previousText, text),
-      ...songsHandlers(songsService, songsRepository, audioMatch),
-      ...settingsHandlers(new SettingsService(repository), app.getVersion(), home.root),
-      ...mediaHandlers(media),
-    });
+    );
+    registerIpc(
+      {
+        "updates:status": () => updates.status(),
+        "updates:retry": () => updates.check(),
+        "updates:install": () => updates.install(),
+        ...bibleHandlers(bible),
+        ...backupHandlers(backup, snapshots, storage, home.root, songImport),
+        "people:list": () => timing.people(),
+        "people:create": ({ name }) => timing.savePerson(null, name),
+        "people:update": ({ id, name }) => timing.savePerson(id, name),
+        "people:delete": (id) => timing.deletePerson(id),
+        "people:find-or-add": (name) => timing.findOrAddPerson(name),
+        "service-types:list": () => timing.serviceTypes(),
+        "service-types:create": (input) => timing.saveServiceType(null, input),
+        "service-types:update": ({ id, input }) => timing.saveServiceType(id, input),
+        "service-types:delete": (id) => timing.deleteServiceType(id),
+        "service-types:select": (id) => timing.selectService(id),
+        "records:list": (input) => timing.listRecords(input),
+        ...timesExportHandlers(timing, () => repository.get().church.name),
+        "records:get": (id) => timing.record(id),
+        "records:save": ({ id, input }) => timing.saveRecord(id, input),
+        "records:delete": (id) => timing.deleteRecord(id),
+        "records:adjust-duration": ({ recordId, blockId, actualSeconds }) =>
+          timing.adjustDuration(recordId, blockId, actualSeconds),
+        "records:change-start": ({ recordId, blockId, startedAt }) =>
+          timing.changeStart(recordId, blockId, startedAt),
+        "records:change-leader": ({ recordId, blockId, personId }) =>
+          timing.changeLeader(recordId, blockId, personId),
+        "times:load": () => timing.loadTimes(),
+        "sounds:list": () => media.sounds(),
+        "projection:report-error": (message) => broadcast("projection:error", message),
+        "monitors:list": () => monitors.list(),
+        "projection:start": (input) => projection.start(input),
+        "projection:stop": () => projection.stop(),
+        "projection:get-status": () => projection.status(),
+        "projection:push-frame": (frame) => projection.push(frame),
+        "projection:request-frame": () => projection.frame(),
+        "projection:video-time": (time) => broadcast("projection:video-time", time),
+        "projection:set-default-background": (id) => consoleService.setDefaultBackground(id),
+        "projection:preferences": () => {
+          const saved = repository.getPreference<{
+            id: number;
+            bounds: { x: number; y: number; width: number; height: number };
+          } | null>("projectionMonitor", null);
+          const monitor = monitors
+            .list()
+            .find(
+              (candidate) =>
+                candidate.id === saved?.id &&
+                JSON.stringify(candidate.bounds) === JSON.stringify(saved.bounds),
+            );
+          return { monitorId: monitor?.id ?? null };
+        },
+        "console:load": () => consoleService.load(),
+        "plan:add": ({ kind, refId }) => consoleService.add(kind, refId),
+        "plan:move": ({ id, position }) => consoleService.move(id, position),
+        "plan:remove": (id) => consoleService.remove(id),
+        "plan:clear": () => consoleService.clear(),
+        "console:item": ({ kind, refId }) => consoleService.item(kind, refId, `quick:${refId}`),
+        "songs:edit-slide": ({ songId, index, previousText, text }) =>
+          consoleService.editSlide(songId, index, previousText, text),
+        ...songsHandlers(songsService, songsRepository, audioMatch),
+        ...settingsHandlers(new SettingsService(repository), app.getVersion(), home.root, {
+          skipOnboarding: env.isE2e && !env.hasE2eOnboarding,
+        }),
+        ...mediaHandlers(media),
+      },
+      (name) => updates.assertCanUse(name),
+    );
+    void updates.check().catch(logError);
     void media.scan().catch(logError);
     let scanTimer: ReturnType<typeof setTimeout> | undefined;
     app.on("browser-window-focus", () => {
