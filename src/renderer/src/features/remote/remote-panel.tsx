@@ -85,8 +85,17 @@ export function RemotePanel() {
           </div>
           {status.addresses.length > 0 && (
             <p className="text-xs text-ink-2">
-              Si el iPad no encuentra esta computadora, usa la dirección {status.addresses[0]}:
-              {status.port}.
+              Si el iPad no encuentra esta computadora, escribe su dirección en el iPad:{" "}
+              {status.addresses
+                .slice(0, 3)
+                .map((address) => `${address}:${status.port}`)
+                .join(" · ")}
+              . Para comprobar la conexión, abre{" "}
+              <span className="font-medium">
+                http://{status.addresses[0]}:{status.port}
+              </span>{" "}
+              en el navegador del iPad: debe decir que Iris está activo. Si no abre, el firewall de
+              Windows está bloqueando a Iris.
             </p>
           )}
         </div>

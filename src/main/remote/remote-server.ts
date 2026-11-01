@@ -36,6 +36,8 @@ type Dependencies = {
   changed: (status: RemoteStatus) => void;
   gate?: PairingGate;
   port?: number;
+  /** For `iris.log`: what to look at when an iPad cannot connect. Never the code or the token. */
+  log?: (message: string) => void;
 };
 
 /**
@@ -61,14 +63,21 @@ export class RemoteServer {
   async start(): Promise<void> {
     if (this.http) return;
     const http = createServer((_request, response) => {
-      response.writeHead(404).end();
+      // Opening this address in the iPad's browser shows whether the computer can be reached at all
+      // (a blocked firewall is the usual reason it cannot).
+      response
+        .writeHead(200, { "Content-Type": "text/plain; charset=utf-8" })
+        .end("Iris: el control desde iPad está activo en esta computadora.");
     });
     const sockets = new WebSocketServer({
       server: http,
       maxPayload: 64 * 1024,
       verifyClient: ({ origin }: { origin: string }) => !origin,
     });
-    sockets.on("connection", (socket) => this.accept(socket));
+    sockets.on("connection", (socket, request) => {
+      this.deps.log?.(`remote: conexión desde ${request.socket.remoteAddress ?? "?"}`);
+      this.accept(socket);
+    });
     await listen(http, this.deps.port ?? PREFERRED_PORT).catch(() => listen(http, 0));
     this.http = http;
     this.sockets = sockets;
@@ -77,6 +86,7 @@ export class RemoteServer {
     this.heartbeat.unref();
     this.gate.rotate();
     this.scheduleRotation();
+    this.deps.log?.(`remote: encendido en el puerto ${this.status().port}`);
     this.deps.changed(this.status());
   }
 
@@ -160,6 +170,9 @@ export class RemoteServer {
       }
       const result = this.gate.attempt(message.code);
       this.scheduleRotation();
+      this.deps.log?.(
+        `remote: vinculación ${result.ok ? "aceptada" : `rechazada (${result.code})`}`,
+      );
       if (!result.ok) {
         this.deps.changed(this.status());
         return this.refuse(socket, result.code);

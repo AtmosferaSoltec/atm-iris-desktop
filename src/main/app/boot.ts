@@ -29,7 +29,7 @@ import { MediaService } from "../services/media-service";
 import { SqliteMediaRepository } from "../repositories/sqlite/media-repository";
 import { mediaHandlers } from "../ipc/media-handlers";
 import { mediaResponse } from "../files/protocol";
-import { logError } from "./logging";
+import { logError, logMessage } from "./logging";
 import { env } from "../env";
 import { createIrisHome, selectIrisHome } from "../files/iris-home";
 import { SqliteDatabase } from "../db/sqlite";
@@ -118,6 +118,7 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       advertise: advertiseOnNetwork(`Iris · ${hostname()}`),
       onCommand: (command) => broadcast("remote:command", command),
       changed: (status) => broadcast("remote:changed", status),
+      log: logMessage,
     });
     if (!env.isE2e && repository.getPreference("remoteEnabled", false))
       void remote.start().catch(logError);
