@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Incluye todo lo de 1.2.0, que no llegó a publicarse. La barra de bloques cabe en pantallas angostas: «Agregar bloque» es el botón «+» junto a «Comenzar» y «Siguiente».
+
 ## 1.2.0
 
 - «Agregar bloque» durante el servicio (en la barra de bloques): un bloque extra solo para ese servicio, en el lugar que elijas. Se cronometra y queda en Tiempos, pero el servicio conserva sus bloques de siempre.

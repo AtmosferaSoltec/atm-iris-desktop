@@ -194,8 +194,8 @@ export function BlockTimerBar({
 
 function Idle({ title, text, action }: { title: string; text: string; action: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="min-w-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      <div className="min-w-40 flex-1">
         <h2 className="truncate eyebrow text-ink-2">{title}</h2>
         <p className="text-sm">{text}</p>
       </div>
@@ -302,14 +302,14 @@ function Finished({ timer, now, onNew }: { timer: ServiceTimer; now: number; onN
 
 function AddBlockButton({ timer, onClick }: { timer: ServiceTimer; onClick: () => void }) {
   return (
-    <Button
-      variant="ghost"
-      icon={<Plus className="size-4" />}
+    // Icon only: the bar shares the middle column, and on a narrow screen "Comenzar" must stay in view.
+    <IconButton
+      label="Agregar bloque"
       disabled={timer.blocks.length >= MAX_RECORD_BLOCKS}
       onClick={onClick}
     >
-      Agregar bloque
-    </Button>
+      <Plus />
+    </IconButton>
   );
 }
 
