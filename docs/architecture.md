@@ -27,13 +27,13 @@ La consola publica frames completos. Main los conserva y los envía a la salida 
 
 El renderer tiene CSP local y `frame-src 'none'`. No existe reproductor de YouTube, oEmbed, protocolo iris-player ni IPC para guardar enlaces. Las canciones usan letra y/o MP3 local; la migración conserva las letras de canciones antes vinculadas. El botón de limpiar es un latch independiente que no se desactiva al cambiar de canción. El volumen se aplica al audio del salón y a los frames de video; la vista previa sigue silenciada.
 
-La edición general no usa red. Solo la edición personal, con la función activada, permite el descargador y actualizaciones verificadas de yt-dlp. Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
+Iris no usa red. Las letras se escriben o pegan manualmente. No hay telemetría ni actualización automática de la app. Los logs rotan en `userData/logs`.
 
 ## Verificación y distribución
 
 Vitest cubre reglas, servicios, repositorios y migraciones. Playwright abre Electron con perfil e `IRIS_HOME` temporales, bloquea red externa por defecto y simula los servicios externos cuando se necesitan. El checklist físico está en [manual-tests.md](manual-tests.md).
 
-Windows usa instalador NSIS por usuario y ZIP x64; macOS añade DMG/ZIP arm64 y x64, con marca Iris y datos fuera de la instalación. Dos workflows construyen y publican artifacts de CI, sin desplegar Releases. Abren además el ejecutable empaquetado con un perfil temporal antes de subir los archivos. Las actualizaciones manuales conservan la identidad y la carpeta Iris; se reutilizan las migraciones transaccionales con respaldo previo. Ver [actualización y recuperación](updating.md). Firma de distribución, notarización y comprobaciones físicas quedan pendientes.
+Windows usa instalador NSIS por usuario y ZIP x64; macOS añade DMG/ZIP arm64 y x64, con marca Iris y datos fuera de la instalación. Los instaladores se generan localmente; no hay CI. Las actualizaciones manuales conservan la identidad y la carpeta Iris; se reutilizan las migraciones transaccionales con respaldo previo. Ver [actualización y recuperación](updating.md). Firma de distribución, notarización y comprobaciones físicas quedan pendientes.
 
 ## Biblias locales (fases 12 y 14)
 
@@ -42,7 +42,3 @@ El selector y las referencias portan la consola web. Configuración permite impo
 ## Biblioteca por carpetas (fase 13)
 
 Multimedia muestra los archivos presentes en Images/Videos con búsqueda, carpeta y actualizar. El escaneo conserva ids por ruta relativa, respeta los tipos de cada carpeta y detecta modificaciones por tamaño y fecha del archivo. Las URLs de assets admiten únicamente un parámetro numérico de versión para renovar previews; se mantienen los controles de ruta y Range. Los archivos faltantes se ocultan en esa biblioteca, conservando sus referencias para avisos en el plan y mantenimiento. SQLite almacena solo metadatos, nunca los bytes de imágenes, videos o audios. La importación de las otras herramientas sigue separada del nuevo flujo de biblioteca.
-
-## Módulo personal (fase 99)
-
-`IRIS_PERSONAL_BUILD=1` resuelve módulos virtuales hacia los directorios opcionales de main/renderer; la edición general resuelve implementaciones vacías/IPC no disponible. El build inspecciona bundles para comprobar inclusión/exclusión. La preferencia `features.downloader` arranca desactivada. Main mantiene un trabajo a la vez, verifica el ejecutable oficial, usa `spawn` sin shell, valida metadatos/límites, mide el resultado con FFprobe e importa el archivo terminado con el servicio existente. FFmpeg/FFprobe se seleccionan nativamente; ningún renderer recibe sus rutas. Los temporales y herramientas están en `userData/tools`, los medios finales en Iris. El esquema SQLite sigue en 11. Véase [edición personal](downloader-personal.md).

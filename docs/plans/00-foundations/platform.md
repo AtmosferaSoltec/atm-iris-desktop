@@ -3,7 +3,7 @@
 > Product, architecture and conventions shared by every phase. If a phase seems to contradict this document, this
 > document wins; ask the user before changing it.
 
-**Current 0.3.0 override (explicit user request, phase 17):** all linked YouTube playback and saved links are retired. Songs use lyrics and/or local MP3; only the optional personal downloader uses YouTube. Installed data upgrades to schema 12 with a backup. The original phase decisions below remain as historical context; the phase 17 deviations document the conservative migration.
+**Current 0.3.0 override (explicit user request, phase 17):** all linked YouTube playback and saved links are retired. Songs use lyrics and/or local MP3; **Later (explicit user request): the optional personal downloader, automatic updates and all GitHub Actions workflows were removed; there is a single edition, work happens on `main` only.** Installed data upgrades to schema 12 with a backup. The original phase decisions below remain as historical context; the phase 17 deviations document the conservative migration.
 
 ---
 

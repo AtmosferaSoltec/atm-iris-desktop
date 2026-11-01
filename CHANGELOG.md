@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Se elimina el descargador de YouTube y toda la edición personal: hay una sola edición de Iris, sin acceso a YouTube.
+- Se elimina la actualización automática obligatoria (electron-updater, pantalla de bloqueo y su IPC). Las actualizaciones vuelven a ser manuales.
+- Se eliminan los workflows de GitHub Actions; se trabaja solo en `main` y los instaladores se generan localmente.
+
 ## 0.4.1
 
 - Actualizaciones automáticas obligatorias en Windows: al abrir, si hay una versión nueva se descarga y se debe instalar antes de continuar. Las releases se publican desde deploy/windows.

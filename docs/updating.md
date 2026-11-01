@@ -1,15 +1,8 @@
 # Instalar y actualizar Iris
 
-## Entrega 0.3.0
+## Entrega
 
-Los workflows se ejecutan por separado: `deploy/windows` genera Windows y `deploy/macos` genera Mac. Los cambios en `main` y los pull requests no activan ambos. También puedes usar «Run workflow» en GitHub Actions:
-
-- [Windows](https://github.com/AtmosferaSoltec/atm-iris-desktop/actions/workflows/build-win.yml): artifact `iris-windows-0.3.0`, con `atm-iris-desktop-0.3.0-setup.exe`, ZIP alternativo y blockmap.
-- [macOS](https://github.com/AtmosferaSoltec/atm-iris-desktop/actions/workflows/build-mac.yml): artifacts `iris-macos-0.3.0-arm64` para Apple Silicon y `iris-macos-0.3.0-x64` para Intel, con DMG y ZIP de cada arquitectura.
-
-En cada ejecución aprobada, baja el artifact desde «Artifacts» y descomprime ese contenedor de GitHub. Entrega al usuario el `.exe` de Windows o el `.dmg` de su Mac. No necesita el código fuente, Node ni pnpm. El ZIP de aplicación es una alternativa; el `.blockmap` no se instala.
-
-La versión de los artifacts se lee de `package.json`, no se escribe manualmente en cada workflow. Los resultados se conservan como artifacts de la ejecución, no como una publicación automática de GitHub Releases.
+No hay workflows de CI: se trabaja solo en la rama `main` y el instalador se genera en el equipo con `pnpm build:win` (Windows) o `pnpm build:mac` (Mac), en `dist/`. Entrega al usuario el `.exe` de Windows o el `.dmg` de su Mac; no necesita el código fuente, Node ni pnpm. El `.blockmap` no se instala.
 
 ## Actualizar una instalación existente
 
@@ -31,7 +24,7 @@ La versión de la aplicación (`0.3.0`) y la versión de estructura de SQLite (`
 - Si una migración falla, la transacción se revierte y se informa del error. No borres la base ni la carpeta Iris para intentar resolverlo.
 - Una app anterior rechaza una estructura más reciente que la que conoce. Para retroceder de versión, conserva la base actual, instala la app anterior y restaura con Iris cerrado el respaldo previo a la migración. Se perderán en esa restauración los cambios posteriores al respaldo; los archivos multimedia permanecen en sus carpetas.
 
-La versión 0.3.0 añade vista Lista, controles de pantalla/audio y una edición personal opcional. Migra al esquema 12: conserva canciones, letras, audios locales, Biblias y ajustes; retira los enlaces de YouTube y sus filas del servicio. Guarda antes un respaldo automático de la base. Las canciones que solo tenían enlace conservan su título para agregarles un MP3. Para obtener el descargador, sigue la [guía de edición personal](downloader-personal.md); los artifacts generales no lo incluyen.
+La versión 0.3.0 añade vista Lista, controles de pantalla/audio. Migra al esquema 12: conserva canciones, letras, audios locales, Biblias y ajustes; retira los enlaces de YouTube y sus filas del servicio. Guarda antes un respaldo automático de la base. Las canciones que solo tenían enlace conservan su título para agregarles un MP3.
 
 Las migraciones 0009–0011 guardan las Biblias locales y conservan la RVR1960 existente al incorporar varias traducciones. Los archivos multimedia no se reimportan ni se trasladan durante una migración.
 

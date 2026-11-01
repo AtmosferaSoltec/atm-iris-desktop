@@ -58,7 +58,7 @@ timing), rebuilt as an Electron desktop app that needs no server:
 | 15  | [Cross-platform delivery](15-cross-platform-delivery/README.md): Windows/macOS workflows and safe manual upgrades                | [x]                      |
 | 16  | [Compact workspace](16-compact-workspace/README.md): four/five-column slides with normal text, release 0.2.1                     | [x]                      |
 | 17  | [Local operation](17-local-operation/README.md): local MP3, latched clear, audio lifecycle, Bible search and deployment branches | [x]                      |
-| 99  | [Optional downloader](99-optional-downloader/README.md): personal edition, explicitly authorized; real download check pending    | [ ]                      |
+| 99  | Optional downloader: removed (no YouTube download in any edition)                                                                | [removed]                |
 
 Tick the box when a phase is done and fill its _Deviations_ section ("None" if there are none).
 

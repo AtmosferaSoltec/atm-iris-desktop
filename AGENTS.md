@@ -5,8 +5,8 @@
 
 This is a **local-first Windows desktop app** (Electron) that replaces the web console: the PC drives a second screen
 (TV or projector over HDMI), media lives in a folder (`Iris/`), data lives in a local SQLite database.
-**No backend, no account, no sign-in.** The only network use is YouTube (embedded player and oEmbed check) and the
-optional online lyrics lookup. Everything else works offline.
+**No backend, no account, no sign-in.** No network use at all: everything works offline. There is a single edition (no
+YouTube downloader, no automatic updates) and no CI workflows: all work happens on `main`.
 
 ## Reference projects (read-only)
 

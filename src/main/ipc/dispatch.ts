@@ -17,7 +17,6 @@ export async function dispatch<K extends ChannelName>(
   input: unknown,
   isTrustedSender: boolean,
   handlers: IpcHandlers,
-  guard?: (name: ChannelName) => void,
 ): Promise<IpcResult<ChannelOutput<K>>> {
   try {
     if (!isTrustedSender) throw new AppError("VALIDATION_FAILED", "No se permite esta solicitud.");
@@ -25,7 +24,6 @@ export async function dispatch<K extends ChannelName>(
       contract[name].input as z.ZodType<ChannelInput<K>>,
       input,
     );
-    guard?.(name);
     const handler = handlers[name] as (
       value: typeof parsed,
     ) => ChannelOutput<K> | Promise<ChannelOutput<K>>;

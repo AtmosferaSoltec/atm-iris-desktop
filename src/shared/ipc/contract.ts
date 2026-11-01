@@ -1,9 +1,3 @@
-import { updateStatusSchema } from "../schemas/updates";
-import {
-  downloaderInputSchema,
-  type DownloaderStatus,
-  type DownloadJob,
-} from "../schemas/downloader";
 import { bibleChapterSchema, bibleTranslationSchema } from "../schemas/bible";
 import type { BibleChapter, BibleStatus } from "../domain/bible";
 import { eraseSchema } from "../schemas/backup";
@@ -62,28 +56,6 @@ export function defineChannel<I, O>(
 }
 
 export const contract = {
-  "updates:status": defineChannel("updates:status", z.void(), updateStatusSchema),
-  "updates:retry": defineChannel("updates:retry", z.void(), updateStatusSchema),
-  "updates:install": defineChannel("updates:install", z.void(), updateStatusSchema),
-  "downloader:help": defineChannel("downloader:help", z.void(), z.void()),
-  "downloader:status": defineChannel("downloader:status", z.void(), z.custom<DownloaderStatus>()),
-  "downloader:enable": defineChannel(
-    "downloader:enable",
-    z.boolean(),
-    z.custom<DownloaderStatus>(),
-  ),
-  "downloader:install": defineChannel("downloader:install", z.void(), z.custom<DownloaderStatus>()),
-  "downloader:configure": defineChannel(
-    "downloader:configure",
-    z.void(),
-    z.custom<DownloaderStatus>(),
-  ),
-  "downloader:start": defineChannel(
-    "downloader:start",
-    downloaderInputSchema,
-    z.custom<DownloadJob>(),
-  ),
-  "downloader:cancel": defineChannel("downloader:cancel", z.void(), z.void()),
   "bible:select": defineChannel("bible:select", bibleTranslationSchema, z.custom<BibleStatus>()),
   "bible:status": defineChannel("bible:status", z.void(), z.custom<BibleStatus>()),
   "bible:import": defineChannel("bible:import", z.void(), z.custom<BibleStatus | null>()),

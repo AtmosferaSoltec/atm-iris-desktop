@@ -1,4 +1,3 @@
-import { UpdateGate } from "./features/updates/update-gate";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router";
 import { IrisBackground } from "./components/brand/iris-background";
@@ -12,9 +11,7 @@ export default function App(): React.JSX.Element {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <IrisBackground />
-        <UpdateGate>
-          <RouterProvider router={router} />
-        </UpdateGate>
+        <RouterProvider router={router} />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

@@ -27,7 +27,7 @@ No verificadas: requieren Windows y hardware real.
 
 ## YouTube (fase 09, retirado en 0.3.0)
 
-Las comprobaciones del reproductor quedaron obsoletas: se retiró toda reproducción por enlace a petición del usuario. Solo permanece el descargador personal (fase 99).
+Las comprobaciones del reproductor quedaron obsoletas: se retiró toda reproducción por enlace a petición del usuario.
 
 ## Entrega y fallos (fase 11)
 
@@ -82,13 +82,6 @@ Todas las comprobaciones siguientes siguen **pendientes / no verificadas**. Se d
 
 - Pendiente en Windows con datos de prueba: actualizar mediante `atm-iris-desktop-0.2.1-setup.exe` sobre la instalación anterior, manteniendo la misma cuenta de Windows y carpeta Iris. Confirmar canciones, Biblias, archivos y ajustes conservados. La entrega 0.2.1 mantiene el esquema 11, sin migración adicional.
 - Pendiente en el equipo real/HDMI: abrir una canción de 20–30 diapositivas; comprobar cuatro/cinco columnas según el espacio disponible, texto normal legible, selección y edición, y que En vivo/proyección mantengan su tipografía. Probar escala de Windows 100 %, 150 % y 200 % según el monitor disponible.
-
-## Herramienta personal (fase 99)
-
-- Pendiente en Windows/macOS con FFmpeg: generar/instalar la edición personal, activar la función, preparar la herramienta, seleccionar FFmpeg/FFprobe, descargar un video público corto como MP4 y MP3 y reproducir ambos. Verificar el destino Videos/Audio/Sounds y asignar el MP3 desde «Elegir audio de Iris» sin duplicar el archivo.
-- Pendiente con descargas reales: progreso, cancelación durante transferencia y conversión, cierre de Iris, pérdida de internet, video retirado/restringido y archivo superior a los límites. No se usan cookies de cuentas ni se promete eliminar restricciones de YouTube.
-- Pendiente: vista Lista/Tarjetas con letras reales en el monitor de operación y proyección HDMI.
-- Spike real macOS con perfil temporal: descarga oficial y SHA-256 de yt-dlp 2026.10.21, ejecución nativa, motor Node de Electron v24.22.0 y metadatos de M7lc1UVf-VE (1344 segundos). No verifica descarga de contenido, conversión ni sonido audible.
 
 ## Operación local 0.3.0 (fase 17)
 
