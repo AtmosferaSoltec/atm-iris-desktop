@@ -5,7 +5,7 @@
 
 This is a **local-first Windows desktop app** (Electron) that replaces the web console: the PC drives a second screen
 (TV or projector over HDMI), media lives in a folder (`Iris/`), data lives in a local SQLite database.
-**No backend, no account, no sign-in.** The only network use is the update check against our own server and a YouTube link the operator pastes in
+**No backend, no account, no sign-in.** The only network use is the update check against our own server, the optional iPad remote control on the local network (Ajustes → «Control desde iPad», off by default, phase 18) and a YouTube link the operator pastes in
 Multimedia → YouTube (YouTube's own embedded player, never downloaded or saved); everything else works offline. There is a single
 edition (no YouTube downloader) and the app updates itself from our own server (mandatory updates, see
 `docs/releasing.md`); a `vX.Y.Z` tag builds, signs and publishes through GitHub Actions. All work happens on `main`.

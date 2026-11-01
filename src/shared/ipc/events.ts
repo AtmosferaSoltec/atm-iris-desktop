@@ -3,6 +3,7 @@ import type { Monitor, ProjectionStatus } from "../domain/monitors";
 import type { ProjectionFrame } from "../domain/projection";
 import { projectionFrameSchema, videoTimeSchema } from "../schemas/projection";
 import { z } from "@shared/zod";
+import { remoteCommandSchema, type RemoteStatus } from "../remote/protocol";
 
 export const eventContract = {
   "updates:changed": updateStatusSchema,
@@ -12,6 +13,8 @@ export const eventContract = {
   "projection:video-time": videoTimeSchema,
   "monitors:changed": z.custom<Monitor[]>(),
   "media:changed": z.void(),
+  "remote:changed": z.custom<RemoteStatus>(),
+  "remote:command": remoteCommandSchema,
   "media:import-progress": z.object({
     fileName: z.string(),
     completedBytes: z.number(),

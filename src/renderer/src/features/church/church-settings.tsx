@@ -1,3 +1,4 @@
+import { RemotePanel } from "@renderer/features/remote/remote-panel";
 import { BiblesPanel } from "@renderer/features/console/bible/bibles-panel";
 import { MaintenancePanels } from "@renderer/features/backup/components/maintenance-panels";
 import { Building2 } from "lucide-react";
@@ -112,6 +113,7 @@ export function ChurchSettingsPage() {
           <ChurchForm church={settings.data.church} />
         </Panel>
       )}
+      <RemotePanel />
       <BiblesPanel />
       <MaintenancePanels />
       <footer className="flex justify-center pt-2 pb-4">

@@ -1,6 +1,6 @@
 {
   "name": "atm-iris-desktop",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Consola local de proyección y tiempos para iglesias",
   "main": "./out/main/index.js",
   "author": "Atmosfera",
@@ -41,6 +41,7 @@
     "@fontsource/poppins": "^5",
     "@hookform/resolvers": "^5",
     "@tanstack/react-query": "^5",
+    "bonjour-service": "^1.4.4",
     "clsx": "^2.1.1",
     "electron-updater": "^6.8.11",
     "exceljs": "^4.4.0",
@@ -52,6 +53,7 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "uuid": "^13",
+    "ws": "^8.22.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -66,6 +68,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.1.2",
     "babel-plugin-react-compiler": "1.0.0",
     "electron": "^44.7.2",

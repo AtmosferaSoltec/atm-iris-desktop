@@ -37,6 +37,7 @@ import {
   songListSchema,
 } from "../schemas/songs";
 import type { EventApi } from "./events";
+import { remoteStateSchema, type RemoteStatus } from "../remote/protocol";
 import type { LocalMediaAsset, Paginated, StorageUsage } from "../domain/models";
 import {
   mediaDetailsSchema,
@@ -288,6 +289,15 @@ export const contract = {
   "onboarding:get": defineChannel("onboarding:get", z.void(), z.boolean()),
   "onboarding:complete": defineChannel("onboarding:complete", z.void(), z.void()),
   "app:open-atmosfera": defineChannel("app:open-atmosfera", z.void(), z.void()),
+  "remote:status": defineChannel("remote:status", z.void(), z.custom<RemoteStatus>()),
+  "remote:set-enabled": defineChannel("remote:set-enabled", z.boolean(), z.custom<RemoteStatus>()),
+  "remote:new-code": defineChannel("remote:new-code", z.void(), z.custom<RemoteStatus>()),
+  "remote:disconnect-all": defineChannel(
+    "remote:disconnect-all",
+    z.void(),
+    z.custom<RemoteStatus>(),
+  ),
+  "remote:publish-state": defineChannel("remote:publish-state", remoteStateSchema, z.void()),
 } as const;
 
 export type ChannelName = keyof typeof contract;

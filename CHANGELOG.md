@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Control desde iPad: en Configuración → «Control desde iPad» (apagado de fábrica) aparece un código de 6 dígitos que se escribe en la app de iPad, conectada a la misma red Wi-Fi. Desde el iPad se elige el elemento, se proyecta una diapositiva, se reproduce o pausa la pista, se cambia el fondo, se usa el cronómetro y los sonidos y se pasa al siguiente bloque. El iPad no guarda nada ni puede agregar o editar contenido.
+- La primera vez que se enciende, Windows pide permiso en el firewall: elige «Permitir» en redes privadas.
+
 ## 1.0.4
 
 - Versión de prueba del flujo de actualización (sin cambios para el usuario).

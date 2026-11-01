@@ -396,6 +396,17 @@ export function useLiveConsole(data: ConsoleData) {
     [openKey, show],
   );
 
+  /** A slide of any element of the console (the iPad picks one without opening it first). */
+  const presentAt = useCallback(
+    (key: string, index: number) => {
+      const item = itemByKey.get(key);
+      if (!item || index >= Math.max(item.slides.length, 1)) return;
+      setOpenKey(key);
+      show({ key, slide: index });
+    },
+    [itemByKey, show],
+  );
+
   const presentMedia = useCallback(() => {
     if (!openItem) return;
     if (openItem.kind === "image") show({ key: openItem.planItemId, slide: 0 });
@@ -599,6 +610,7 @@ export function useLiveConsole(data: ConsoleData) {
     stopPlayback,
     reportPlaybackError,
     presentSlide,
+    presentAt,
     presentMedia,
     presentYouTube,
     toggleTrack,

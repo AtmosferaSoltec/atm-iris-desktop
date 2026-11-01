@@ -14,6 +14,7 @@ import { ServicePanel } from "./service-panel";
 import { useServiceTimer } from "../use-service-timer";
 import { BlockTimerBar } from "./block-timer-bar";
 import { Workspace } from "./workspace";
+import { useRemoteBridge } from "@renderer/features/remote/use-remote-bridge";
 
 export function LiveConsolePage() {
   const query = useQuery({
@@ -43,6 +44,7 @@ export function LiveConsole({ data }: { data: ConsoleData }) {
   const service = useServiceTimer(data);
   const library = useLibrary(data.library, ctrl);
   useShortcuts(ctrl);
+  useRemoteBridge(ctrl, service, data.churchName);
   return (
     <ConsoleDnd ctrl={ctrl}>
       <div className="fixed inset-0 z-10 flex flex-col bg-canvas" aria-label="Servicio en vivo">

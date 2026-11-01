@@ -14,7 +14,11 @@ import { SqliteMaintenanceRepository } from "../repositories/sqlite/maintenance-
 import { backupHandlers } from "../ipc/backup-handlers";
 import { TimingService } from "../services/timing-service";
 import { SqliteTimingRepository } from "../repositories/sqlite/timing-repository";
+import { hostname } from "node:os";
 import { app, BrowserWindow, protocol, shell } from "electron";
+import { RemoteServer } from "../remote/remote-server";
+import { advertiseOnNetwork } from "../remote/discovery";
+import { remoteHandlers } from "../ipc/remote-handlers";
 import { createProjection } from "../windows/projection";
 import { ConsoleService } from "../services/console-service";
 import { SqlitePlanRepository } from "../repositories/sqlite/plan-repository";
@@ -108,8 +112,21 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
         reportError: logError,
       },
     );
+    // The iPad's remote control: off until the operator turns it on (it opens the local network).
+    const remote = new RemoteServer({
+      computerName: hostname(),
+      advertise: advertiseOnNetwork(`Iris · ${hostname()}`),
+      onCommand: (command) => broadcast("remote:command", command),
+      changed: (status) => broadcast("remote:changed", status),
+    });
+    if (!env.isE2e && repository.getPreference("remoteEnabled", false))
+      void remote.start().catch(logError);
+    app.once("will-quit", () => void remote.stop().catch(logError));
     registerIpc(
       {
+        ...remoteHandlers(remote, (isEnabled) =>
+          repository.setPreference("remoteEnabled", isEnabled),
+        ),
         "updates:status": () => updates.status(),
         "updates:retry": () => updates.retry(),
         "updates:download": () => updates.download(),
