@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Audios: el selector de audio y «Asignar audios» tienen «Abrir carpeta de audios» (para copiar tus MP3 a Iris/Audio) y «Buscar archivos nuevos».
+
 ## 1.0.0
 
 - Primera versión pública. Al abrir por primera vez, una guía de bienvenida de cuatro pasos. Sello «Desarrollado por Atmosfera» en Configuración, con enlace a atmosferast.com.
