@@ -1,14 +1,12 @@
-import { Download, Upload } from "lucide-react";
+import { Download } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button } from "@renderer/components/ui/button";
-import { toast } from "@renderer/components/ui/toaster";
-import { plural } from "@shared/lib/text";
-import { exportBackup, importBackup } from "../actions";
+import { exportBackup } from "../actions";
+import { SongImportButton } from "./song-import-button";
 
 export function BackupPanel() {
   const [isExporting, startExport] = useTransition();
-  const [isImporting, startImport] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function download() {
@@ -16,23 +14,6 @@ export function BackupPanel() {
     startExport(async () => {
       const result = await exportBackup();
       if (result.error) setError(result.error);
-    });
-  }
-
-  function upload() {
-    setError(null);
-    startImport(async () => {
-      const result = await importBackup();
-      if (!result.result) {
-        if (result.error) setError(result.error);
-        return;
-      }
-      const { songs, skipped, withoutLyrics } = result.result;
-      toast.success(
-        `Se importaron ${plural(songs, "canción", "canciones")}` +
-          (skipped ? `; ${skipped} ya estaban` : "") +
-          (withoutLyrics ? `; ${withoutLyrics} eran solo pista y no se traen` : ""),
-      );
     });
   }
 
@@ -48,14 +29,7 @@ export function BackupPanel() {
         >
           Descargar respaldo
         </Button>
-        <Button
-          variant="secondary"
-          icon={<Upload className="size-4" />}
-          onClick={upload}
-          isLoading={isImporting}
-        >
-          Importar respaldo
-        </Button>
+        <SongImportButton onError={setError} />
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export function createConsoleWindow(settings?: SettingsRepository): BrowserWindo
     screen.getAllDisplays().map((display) => display.workArea),
   );
   const window = new BrowserWindow({
-    title: "Iris",
+    title: `Iris ${app.getVersion()}`,
     icon: join(__dirname, "../../resources/icon.png"),
     width: 1440,
     height: 900,
@@ -27,6 +27,8 @@ export function createConsoleWindow(settings?: SettingsRepository): BrowserWindo
       webSecurity: true,
     },
   });
+  // The page title stays "Iris"; the window bar shows the version so the operator knows which build runs.
+  window.on("page-title-updated", (event) => event.preventDefault());
   window.once("ready-to-show", () => {
     if (saved?.isMaximized) window.maximize();
     window.show();
@@ -37,6 +39,10 @@ export function createConsoleWindow(settings?: SettingsRepository): BrowserWindo
       isMaximized: window.isMaximized(),
     }),
   );
+  // The projection screen belongs to the console: without it nobody drives that window, so it would stay frozen on the TV.
+  window.on("closed", () => {
+    for (const other of BrowserWindow.getAllWindows()) other.close();
+  });
   window.webContents.on("will-navigate", (event) => event.preventDefault());
   window.webContents.on("will-attach-webview", (event) => event.preventDefault());
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

@@ -5,16 +5,21 @@ import type { IpcHandlers } from "./dispatch";
 import type { BackupService } from "../services/backup-service";
 import type { SnapshotService } from "../services/snapshot-service";
 import type { StorageService } from "../services/storage-service";
+import type { SongImportService } from "../services/song-import-service";
+import { basename } from "node:path";
 
 export function backupHandlers(
   backup: BackupService,
   snapshots: SnapshotService,
   storage: StorageService,
   homePath: string,
+  songImport: SongImportService,
 ): Pick<
   IpcHandlers,
   | "backup:export"
   | "backup:import"
+  | "songs:import-preview"
+  | "songs:import-confirm"
   | "backup:erase"
   | "backup:snapshot"
   | "storage:details"
@@ -49,6 +54,24 @@ export function backupHandlers(
       }
       return backup.import(file);
     },
+    "songs:import-preview": async () => {
+      const result = await dialog.showOpenDialog({
+        title: "Importar canciones",
+        properties: ["openFile"],
+        filters: [{ name: "Canciones (JSON o TXT)", extensions: ["json", "txt"] }],
+      });
+      if (result.canceled || !result.filePaths[0]) return null;
+      const path = result.filePaths[0];
+      let content: string;
+      try {
+        if ((await stat(path)).size > 50 * 1024 * 1024) throw new Error("Archivo demasiado grande");
+        content = await readFile(path, "utf8");
+      } catch {
+        throw new AppError("VALIDATION_FAILED", "No pudimos leer ese archivo.");
+      }
+      return songImport.preview(content, basename(path));
+    },
+    "songs:import-confirm": (input) => songImport.confirm(input),
     "backup:erase": (input) => backup.erase(input),
     "backup:snapshot": () => snapshots.create(true)!,
     "storage:details": () => storage.get(),

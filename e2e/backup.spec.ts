@@ -32,8 +32,11 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
         }
       })
       .toBe(1);
-    await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
-    await expect(page.getByText(/Se importaron 0 canciones; 1 ya estaban/)).toBeVisible();
+    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
+    const preview = page.getByRole("dialog", { name: "Importar canciones" });
+    await expect(preview.getByText("Ya existe una canción igual.")).toBeVisible();
+    await expect(preview.getByRole("button", { name: "No hay canciones nuevas" })).toBeDisabled();
+    await preview.getByRole("button", { name: "Cancelar" }).click();
     await page.getByRole("button", { name: "Crear respaldo ahora", exact: true }).click();
     await expect(page.getByText("Respaldo creado", { exact: true })).toBeVisible();
     expect(
@@ -45,12 +48,18 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
     await page.getByLabel("Escribe ELIMINAR para confirmar").fill("ELIMINAR");
     await page.getByRole("button", { name: "Eliminar todo", exact: true }).click();
     await expect(page.getByText(/Se eliminó todo lo elegido \(1 canciones/)).toBeVisible();
-    await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
+    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
+    await page
+      .getByRole("dialog", { name: "Importar canciones" })
+      .getByRole("button", { name: "Importar 1 canción" })
+      .click();
     await expect(page.getByText(/Se importaron 1 canción/)).toBeVisible();
     await writeFile(path, "not a backup");
-    await page.getByRole("button", { name: "Importar respaldo", exact: true }).click();
+    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
     await expect(
-      page.getByText("Ese archivo no es un respaldo de Iris.", { exact: true }),
+      page.getByText("Ese archivo no parece un archivo de canciones (JSON o TXT).", {
+        exact: true,
+      }),
     ).toBeVisible();
   } finally {
     await instance.close();

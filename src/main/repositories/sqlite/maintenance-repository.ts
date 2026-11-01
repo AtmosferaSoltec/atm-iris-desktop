@@ -17,6 +17,11 @@ export class SqliteMaintenanceRepository {
   saveSong(id: string, input: SongInput): void {
     this.songsRepository.save(id, input, true);
   }
+  setSongAudio(songId: string, audioId: string): void {
+    this.db
+      .prepare("UPDATE songs SET audio_id=?,updated_at=? WHERE id=?")
+      .run(audioId, new Date().toISOString(), songId);
+  }
   unusedIds(): string[] {
     return this.db
       .prepare<{ id: string }>(

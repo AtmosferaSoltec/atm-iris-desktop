@@ -1,6 +1,8 @@
 import { bibleChapterSchema, bibleTranslationSchema } from "../schemas/bible";
 import type { BibleChapter, BibleStatus } from "../domain/bible";
 import { eraseSchema } from "../schemas/backup";
+import { songImportConfirmSchema } from "../schemas/song-import";
+import { audioMatchConfirmSchema } from "../schemas/audio-match";
 import {
   personInputSchema,
   personUpdateSchema,
@@ -65,6 +67,26 @@ export const contract = {
     "backup:import",
     z.void(),
     z.custom<import("../schemas/backup").ImportResult | null>(),
+  ),
+  "songs:import-preview": defineChannel(
+    "songs:import-preview",
+    z.void(),
+    z.custom<import("../schemas/song-import").SongImportPreview | null>(),
+  ),
+  "songs:import-confirm": defineChannel(
+    "songs:import-confirm",
+    songImportConfirmSchema,
+    z.custom<import("../schemas/song-import").SongImportResult>(),
+  ),
+  "songs:match-audio-preview": defineChannel(
+    "songs:match-audio-preview",
+    z.void(),
+    z.custom<import("../schemas/audio-match").AudioMatchPreview>(),
+  ),
+  "songs:match-audio-confirm": defineChannel(
+    "songs:match-audio-confirm",
+    audioMatchConfirmSchema,
+    z.custom<import("../schemas/audio-match").AudioMatchResult>(),
   ),
   "backup:erase": defineChannel(
     "backup:erase",

@@ -2,6 +2,8 @@ import { BibleService } from "../services/bible-service";
 import { SqliteBibleRepository } from "../repositories/sqlite/bible-repository";
 import { bibleHandlers } from "../ipc/bible-handlers";
 import { BackupService } from "../services/backup-service";
+import { SongImportService } from "../services/song-import-service";
+import { AudioMatchService } from "../services/audio-match-service";
 import { SnapshotService } from "../services/snapshot-service";
 import { StorageService } from "../services/storage-service";
 import { SqliteMaintenanceRepository } from "../repositories/sqlite/maintenance-repository";
@@ -64,6 +66,10 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
     );
     const maintenance = new SqliteMaintenanceRepository(db, songsRepository);
     const backup = new BackupService(maintenance, songsRepository, mediaRepository, media);
+    const songImport = new SongImportService(maintenance);
+    const audioMatch = new AudioMatchService(maintenance, mediaRepository, songsRepository, () =>
+      media.scan(),
+    );
     const snapshots = new SnapshotService(maintenance, repository, home);
     const storage = new StorageService(maintenance, mediaRepository, home);
     try {
@@ -75,7 +81,7 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
     const bible = new BibleService(new SqliteBibleRepository(db));
     registerIpc({
       ...bibleHandlers(bible),
-      ...backupHandlers(backup, snapshots, storage, home.root),
+      ...backupHandlers(backup, snapshots, storage, home.root, songImport),
       "people:list": () => timing.people(),
       "people:create": ({ name }) => timing.savePerson(null, name),
       "people:update": ({ id, name }) => timing.savePerson(id, name),
@@ -127,7 +133,7 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       "console:item": ({ kind, refId }) => consoleService.item(kind, refId, `quick:${refId}`),
       "songs:edit-slide": ({ songId, index, previousText, text }) =>
         consoleService.editSlide(songId, index, previousText, text),
-      ...songsHandlers(songsService, songsRepository),
+      ...songsHandlers(songsService, songsRepository, audioMatch),
       ...settingsHandlers(new SettingsService(repository), app.getVersion(), home.root),
       ...mediaHandlers(media),
     });

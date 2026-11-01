@@ -9,6 +9,7 @@ import { fileSize } from "@shared/lib/format";
 import type { LocalMediaAsset } from "@shared/domain/models";
 import { errorMessage } from "@shared/errors";
 import { BackupPanel } from "./backup-panel";
+import { AudioMatchPanel } from "./audio-match-panel";
 import { ErasePanel } from "./erase-panel";
 
 const FOLDER_LABELS: Record<string, string> = {
@@ -135,7 +136,7 @@ export function MaintenancePanels() {
       </Panel>
       <Panel
         title="Respaldo"
-        description="Guarda las letras de tus canciones en un archivo e impórtalo en esta o en otra instalación de Iris. Las pistas, imágenes y videos subidos no viajan en el archivo."
+        description="Guarda las letras de tus canciones en un archivo, o trae canciones de un archivo (JSON o TXT, también el de Holyrics). Verás una vista previa antes de guardar y las canciones que ya existen no se duplican. Las pistas, imágenes y videos subidos no viajan en el archivo."
       >
         <div className="flex flex-col gap-5">
           <BackupPanel />
@@ -155,6 +156,12 @@ export function MaintenancePanels() {
             </p>
           </div>
         </div>
+      </Panel>
+      <Panel
+        title="Asignar audios a las canciones"
+        description="Copia todos tus MP3 a la carpeta Iris/Audio (Configuración → Abrir carpeta de Iris) y pulsa «Buscar coincidencias»: Iris los empareja por nombre con las canciones que no tienen audio y te muestra el resultado para que lo revises antes de asignar."
+      >
+        <AudioMatchPanel />
       </Panel>
       <Panel
         title="Empezar de cero"

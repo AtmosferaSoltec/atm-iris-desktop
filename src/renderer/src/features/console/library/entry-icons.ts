@@ -6,7 +6,7 @@ export const ENTRY_ICONS = {
   bible: { icon: BookOpen, color: "var(--color-violet)" },
   /** Lyrics only. */
   song: { icon: Type, color: "var(--color-ember)" },
-  /** Lyrics and a track (an MP3 or YouTube). */
+  /** Lyrics and a track (an MP3). */
   songTrack: { icon: ListMusic, color: "var(--color-coral)" },
   /** A track only. */
   track: { icon: Music, color: "var(--color-success)" },

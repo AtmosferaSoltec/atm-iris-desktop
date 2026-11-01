@@ -1,10 +1,12 @@
 import type { SongsService } from "../services/songs-service";
 import type { SongsRepository } from "../repositories/types";
 import type { IpcHandlers } from "./dispatch";
+import type { AudioMatchService } from "../services/audio-match-service";
 
 export function songsHandlers(
   service: SongsService,
   repository: SongsRepository,
+  audioMatch: AudioMatchService,
 ): Pick<
   IpcHandlers,
   | "songs:list"
@@ -14,6 +16,8 @@ export function songsHandlers(
   | "songs:delete"
   | "songs:archive"
   | "songs:unarchive"
+  | "songs:match-audio-preview"
+  | "songs:match-audio-confirm"
 > {
   return {
     "songs:list": (input) => repository.list(input),
@@ -23,5 +27,7 @@ export function songsHandlers(
     "songs:delete": ({ id }) => service.delete(id),
     "songs:archive": (id) => service.archive(id, true),
     "songs:unarchive": (id) => service.archive(id, false),
+    "songs:match-audio-preview": () => audioMatch.preview(),
+    "songs:match-audio-confirm": (input) => audioMatch.confirm(input),
   };
 }

@@ -124,3 +124,25 @@ test("video reports its time from the projection and screen muting leaves previe
     await instance.close();
   }
 });
+
+test("closing the console also closes the projection screen", async () => {
+  const instance = await launchApp();
+  try {
+    const page = await instance.app.firstWindow();
+    await page.getByRole("button", { name: "Proyectar", exact: true }).click();
+    const opened = instance.app.waitForEvent("window");
+    await page.getByRole("button", { name: "Iniciar proyección", exact: true }).click();
+    await opened;
+    expect(instance.app.windows()).toHaveLength(2);
+    await instance.app.evaluate(({ BrowserWindow }) => {
+      const consoleWindow = BrowserWindow.getAllWindows().find((window) =>
+        window.title.startsWith("Iris"),
+      );
+      consoleWindow?.close();
+    });
+    await expect.poll(() => instance.app.windows().length).toBe(0);
+  } catch (error) {
+    await instance.close().catch(() => undefined);
+    throw error;
+  }
+});
