@@ -2,9 +2,9 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
   "include": [
     "electron.vite.config.*",
-    "src/main/**/*",
-    "src/preload/**/*",
-    "src/shared/**/*",
+    "./src/main/**/*",
+    "./src/preload/**/*",
+    "./src/shared/**/*",
     "vitest.config.ts",
     "playwright.config.ts",
     "e2e/**/*"
@@ -15,16 +15,15 @@
       "electron-vite/node"
     ],
     "strict": true,
-    "baseUrl": ".",
     "paths": {
       "@shared/*": [
-        "src/shared/*"
+        "./src/shared/*"
       ],
       "@main/*": [
-        "src/main/*"
+        "./src/main/*"
       ],
       "@renderer/*": [
-        "src/renderer/src/*"
+        "./src/renderer/src/*"
       ]
     },
     "noImplicitAny": true
