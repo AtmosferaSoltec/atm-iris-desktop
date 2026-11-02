@@ -8,9 +8,9 @@ import { useState, useTransition } from "react";
 import { Dialog } from "@renderer/components/ui/dialog";
 import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
-import { type BibleBookInfo } from "@shared/domain/bible-books";
+import { BIBLE_BOOK_BY_ID, type BibleBookInfo } from "@shared/domain/bible-books";
 import { cn } from "@renderer/lib/cn";
-import { completeBookName, parseReference, passageId } from "@shared/lib/bible-reference";
+import { completeBookName, parseReferenceIn, passageId } from "@shared/lib/bible-reference";
 import type { LiveConsole } from "../use-live-console";
 import { BookList, type BookOrder } from "./book-list";
 import { ChapterGrid } from "./chapter-grid";
@@ -21,17 +21,26 @@ import { VerseList } from "./verse-list";
 /** The one key the quick passage uses: a new one replaces the last. */
 const QUICK_KEY = "bible-live";
 
+/** Where the last passage came from; the dialog opens there next time. */
+export type BiblePlace = { bookId: string; chapter: number };
+
 /**
  * "Biblia" (V): when the preacher says "Juan 3:16", type it and press Enter: the verse is on
  * the screens at once, without going through the service. Or pick book → chapter → verse.
+ * It reopens on the chapters of the last book, so "now chapter 20" is one click, or "20:8" typed.
  */
 export function BibleDialog({
   ctrl,
+  place,
+  onProjected,
   onClose,
 }: {
   ctrl: Pick<LiveConsole, "presentPassage">;
+  place: BiblePlace | null;
+  onProjected: (place: BiblePlace) => void;
   onClose: () => void;
 }) {
+  const lastBook = place ? (BIBLE_BOOK_BY_ID.get(place.bookId) ?? null) : null;
   const status = useQuery({
     queryKey: ["bible", "status"],
     queryFn: () => invoke("bible:status", undefined),
@@ -47,7 +56,7 @@ export function BibleDialog({
     },
   });
   const [query, setQuery] = useState("");
-  const [book, setBook] = useState<BibleBookInfo | null>(null);
+  const [book, setBook] = useState<BibleBookInfo | null>(lastBook);
   const [chapterNumber, setChapterNumber] = useState<number | null>(null);
   const [verse, setVerse] = useState<{ from: number; to: number } | null>(null);
   const [order, setOrder] = useState<BookOrder>("canonical");
@@ -58,11 +67,12 @@ export function BibleDialog({
   function search(text: string) {
     setQuery(text);
     setError(null);
-    const reference = parseReference(text);
+    const reference = parseReferenceIn(text, lastBook);
     if (!reference) {
       setVerse(null);
       setChapterNumber(null);
-      setBook(null);
+      // Back to the last book's chapters, not to the whole Bible, when the box is emptied.
+      setBook(text.trim() ? null : lastBook);
       return;
     }
     setBook(reference.book);
@@ -88,6 +98,7 @@ export function BibleDialog({
         refId: passageId(passage),
       });
       ctrl.presentPassage(item, item.focus?.first ?? 0);
+      onProjected({ bookId, chapter: chapterNo });
       onClose();
     });
   }
@@ -133,7 +144,7 @@ export function BibleDialog({
             id="bible-quick"
             type="search"
             aria-label="Versículo"
-            placeholder="Juan 3:16"
+            placeholder={lastBook ? `Juan 3:16, o solo 20:8 en ${lastBook.name}` : "Juan 3:16"}
             icon={<Search />}
             value={query}
             onChange={(event) => {
@@ -244,7 +255,11 @@ export function BibleDialog({
           {!book ? (
             <BookList query={query} order={order} onPick={setBook} />
           ) : !chapterNumber ? (
-            <ChapterGrid book={book} onPick={setChapterNumber} />
+            <ChapterGrid
+              book={book}
+              current={place?.bookId === book.id ? place.chapter : null}
+              onPick={setChapterNumber}
+            />
           ) : (
             <VerseList
               chapter={chapter.chapter}

@@ -1,6 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { Check, Pencil, Plus, Trash2 } from "lucide-react";
-import { memo } from "react";
+import { memo, useState } from "react";
+import { thumbnailUrl } from "@shared/lib/asset-url";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -35,6 +36,7 @@ export const LibraryMediaRow = memo(function LibraryMediaRow({
   onDelete,
 }: Props) {
   const { icon: Icon, color } = ENTRY_ICONS[entry.icon];
+  const [hasPreviewFailed, setHasPreviewFailed] = useState(false);
   const data: LibraryDragData = { type: "library", entry };
   const { setNodeRef, listeners, isDragging } = useDraggable({
     id: `library:${entry.id}`,
@@ -56,25 +58,16 @@ export const LibraryMediaRow = memo(function LibraryMediaRow({
           title={`${entry.title}: doble clic para mostrarlo en pantalla${isAdded ? " (ya está en el servicio)" : ", o arrástralo al servicio"}`}
         >
           <span className="relative aspect-video w-20 shrink-0 overflow-hidden rounded-md bg-surface ring-1 ring-line">
-            {entry.previewUrl ? (
-              entry.icon === "video" ? (
-                // The first frame: metadata only, a hair in so it isn't black.
-                <video
-                  src={`${entry.previewUrl}#t=0.1`}
-                  preload="metadata"
-                  muted
-                  playsInline
-                  aria-label={entry.title}
-                  className="pointer-events-none size-full object-cover"
-                />
-              ) : (
-                <img
-                  src={entry.previewUrl}
-                  alt={entry.title}
-                  draggable={false}
-                  className="pointer-events-none size-full object-cover"
-                />
-              )
+            {entry.previewUrl && !hasPreviewFailed ? (
+              <img
+                // A video is the system's still (no video element per row); an image is itself.
+                src={entry.icon === "video" ? thumbnailUrl(entry.id) : entry.previewUrl}
+                alt={entry.title}
+                decoding="async"
+                draggable={false}
+                onError={() => setHasPreviewFailed(true)}
+                className="pointer-events-none size-full object-cover"
+              />
             ) : (
               <span className="grid size-full place-items-center">
                 <Icon aria-hidden className="size-6" style={{ color }} />

@@ -110,6 +110,25 @@ export function parseReference(input: string): BibleReference | null {
   return { book, chapter, from, to };
 }
 
+const IN_BOOK = /^\s*(\d{1,3})(?:\s*[:.,\s]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?)?\s*$/;
+
+/**
+ * Like `parseReference`, but "20:8" (no book) is read in `book`, the one shown last: the preacher
+ * moves within the same book and the operator only types the chapter and verse.
+ */
+export function parseReferenceIn(input: string, book: BibleBookInfo | null): BibleReference | null {
+  const full = parseReference(input);
+  if (full || !book) return full;
+  const match = IN_BOOK.exec(input);
+  if (!match) return null;
+  const chapter = Number(match[1]);
+  if (chapter < 1 || chapter > book.chapterCount) return null;
+  const from = match[2] ? Number(match[2]) : null;
+  const to = match[3] ? Number(match[3]) : from;
+  if (from !== null && (from < 1 || to! < from)) return null;
+  return { book, chapter, from, to };
+}
+
 /** A passage of the plan (contract §15): `rvr1960:JHN.3.16-18`. */
 export type Passage = { code: string; bookId: string; chapter: number; from: number; to: number };
 

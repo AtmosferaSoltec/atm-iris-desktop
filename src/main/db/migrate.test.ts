@@ -92,3 +92,16 @@ it("upgrades an existing RVR1960 Bible without losing text or attribution", () =
   repository.replace(parseBibleXml(bibleSampleXml().replace("Spanish RVR 1960", "NVI")));
   expect(repository.status().selectedTranslation).toBe("rvr1960");
 });
+
+it("moves the lyrics size to 60-200, keeping a size above 200 as 200", () => {
+  const db = new SqliteDatabase(":memory:");
+  resources.push(() => db.close());
+  migrate(db, undefined, MIGRATIONS.slice(0, 12));
+  db.exec(
+    "INSERT INTO projection_settings (id,font_size_pt,created_at,updated_at) VALUES (1,240,'t','t') ON CONFLICT(id) DO UPDATE SET font_size_pt=240",
+  );
+  migrate(db);
+  expect(db.prepare("SELECT font_size_pt FROM projection_settings").get()?.font_size_pt).toBe(200);
+  expect(() => db.exec("UPDATE projection_settings SET font_size_pt=60")).not.toThrow();
+  expect(() => db.exec("UPDATE projection_settings SET font_size_pt=59")).toThrow();
+});

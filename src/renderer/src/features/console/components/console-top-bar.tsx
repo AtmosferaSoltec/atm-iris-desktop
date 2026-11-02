@@ -3,7 +3,11 @@ import { ProjectionButton } from "@renderer/features/projection/projection-butto
 import { BackgroundPicker } from "../backgrounds/background-picker";
 import { IrisWordmark } from "@renderer/components/brand/iris-mark";
 import { ToolsButton } from "../tools/tools-button";
-import { ButtonLink } from "@renderer/components/ui/button";
+import { Settings } from "lucide-react";
+import { ButtonLink, IconButton } from "@renderer/components/ui/button";
+import { toast } from "@renderer/components/ui/toaster";
+import { invoke } from "@renderer/lib/ipc";
+import { errorMessage } from "@shared/errors";
 import type { LiveConsole } from "../use-live-console";
 
 export function ConsoleTopBar({
@@ -27,13 +31,21 @@ export function ConsoleTopBar({
         <ButtonLink href="/times" variant="ghost">
           Tiempos
         </ButtonLink>
-        <ButtonLink href="/settings" variant="ghost">
-          Configuración
-        </ButtonLink>
         <BibleButton ctrl={ctrl} />
         <ToolsButton ctrl={ctrl} />
         <BackgroundPicker ctrl={ctrl} />
         <ProjectionButton />
+        {/* A gear at the end, out of the way: it opens its own window, the console stays put. */}
+        <IconButton
+          label="Configuración"
+          onClick={() =>
+            void invoke("window:open-settings", undefined).catch((error) =>
+              toast.error(errorMessage(error)),
+            )
+          }
+        >
+          <Settings />
+        </IconButton>
       </div>
     </header>
   );

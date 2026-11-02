@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { silentMp3 } from "./audio-fixture";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 test("shows the first unused files and opens the whole list with search", async () => {
   const instance = await launchApp();
@@ -11,11 +11,11 @@ test("shows the first unused files and opens the whole list with search", async 
       await writeFile(join(instance.home, "Audio", `pista ${index}.mp3`), silentMp3());
     const page = await instance.app.firstWindow();
     await page.evaluate(() => window.iris["media:scan"](undefined));
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await expect(page.getByRole("button", { name: "Mostrar todos (8)" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Quitar" })).toHaveCount(5);
-    await page.getByRole("button", { name: "Mostrar todos (8)" }).click();
-    const dialog = page.getByRole("dialog", { name: "Archivos sin uso" });
+    const settings = await openSettings(instance.app, page);
+    await expect(settings.getByRole("button", { name: "Mostrar todos (8)" })).toBeVisible();
+    await expect(settings.getByRole("button", { name: "Quitar" })).toHaveCount(5);
+    await settings.getByRole("button", { name: "Mostrar todos (8)" }).click();
+    const dialog = settings.getByRole("dialog", { name: "Archivos sin uso" });
     await expect(dialog.getByText("pista 8", { exact: true })).toBeVisible();
     await dialog.getByLabel("Buscar archivo").fill("pista 3");
     await expect(dialog.getByText("pista 3", { exact: true })).toBeVisible();
@@ -36,12 +36,12 @@ test("copies the chosen file types to a folder, each in its own subfolder", asyn
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });
     }, destination);
     const page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await page.getByRole("button", { name: "Copiar archivos a una carpeta" }).click();
-    const dialog = page.getByRole("dialog", { name: "Copiar archivos" });
+    const settings = await openSettings(instance.app, page);
+    await settings.getByRole("button", { name: "Copiar archivos a una carpeta" }).click();
+    const dialog = settings.getByRole("dialog", { name: "Copiar archivos" });
     await dialog.getByRole("checkbox", { name: "Videos" }).uncheck();
     await dialog.getByRole("button", { name: "Elegir carpeta y copiar" }).click();
-    await expect(page.getByText("Se copiaron 2 archivos")).toBeVisible();
+    await expect(settings.getByText("Se copiaron 2 archivos")).toBeVisible();
     expect((await readdir(destination)).sort()).toEqual(["Fondos", "Pistas"]);
     expect(await readdir(join(destination, "Pistas"))).toEqual(["uno.mp3"]);
   } finally {

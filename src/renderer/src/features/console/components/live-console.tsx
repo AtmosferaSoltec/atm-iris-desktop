@@ -30,6 +30,11 @@ export function LiveConsolePage() {
       }),
     [client],
   );
+  // Back from the settings window: the church name, Bibles or imported songs may have changed.
+  useEffect(
+    () => window.iris.onEvent("settings:changed", () => void client.invalidateQueries()),
+    [client],
+  );
   if (query.isPending)
     return (
       <main className="grid min-h-dvh place-items-center">

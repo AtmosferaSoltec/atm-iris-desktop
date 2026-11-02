@@ -3,3 +3,8 @@ export function localAssetUrl(asset: { id: string; fileModifiedAt?: string | nul
   const version = asset.fileModifiedAt ? Date.parse(asset.fileModifiedAt) : NaN;
   return `iris-media://asset/${asset.id}${Number.isFinite(version) ? `?v=${version}` : ""}`;
 }
+
+/** A still JPEG of an image or video, made by main from the file (never a path). */
+export function thumbnailUrl(id: string): string {
+  return `iris-media://thumb/${id}`;
+}

@@ -116,7 +116,12 @@ test("from the iPad: choose the service, set a leader, show library media and a 
     });
 
     socket = new WebSocket(`ws://127.0.0.1:${status.port}/remote`);
-    const received: (Message & { id?: string; books?: unknown[]; verses?: unknown[] })[] = [];
+    const received: (Message & {
+      id?: string;
+      books?: unknown[];
+      verses?: unknown[];
+      image?: string;
+    })[] = [];
     socket.on("message", (data) => received.push(JSON.parse(data.toString())));
     await new Promise<void>((resolve, reject) => {
       socket!.once("open", () => resolve());
@@ -183,6 +188,27 @@ test("from the iPad: choose the service, set a leader, show library media and a 
     await expect.poll(() => received.filter((m) => m.type === "response").length).toBe(2);
     expect(received.find((m) => m.id === "b")!.books).toHaveLength(66);
     expect(received.find((m) => m.id === "c")!.verses!.length).toBeGreaterThan(0);
+
+    // The library image's picture, made by the computer and sent as a JPEG.
+    socket.send(
+      JSON.stringify({
+        type: "request",
+        id: "t",
+        request: { kind: "thumbnail", id: first.library[0]!.id },
+      }),
+    );
+    await expect.poll(() => received.some((m) => m.id === "t")).toBe(true);
+    const thumbnail = received.find((m) => m.id === "t") as { image?: string };
+    expect(Buffer.from(thumbnail.image!, "base64").subarray(0, 2)).toEqual(
+      Buffer.from([0xff, 0xd8]),
+    );
+
+    send({ type: "countdown", action: "start", seconds: 300, label: "Empezamos en" });
+    expect((await latest((state) => state.countdown !== null)).countdown!.label).toBe(
+      "Empezamos en",
+    );
+    send({ type: "countdown", action: "hide" });
+    await latest((state) => state.countdown === null);
 
     send({
       type: "present-bible",

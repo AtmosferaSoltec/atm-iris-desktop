@@ -45,6 +45,10 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
+  /* Slide cards in the console: many at once, read at a glance (Windows scaling enlarges them). */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.35;
+
   --tracking-eyebrow: 0.18em;
   --tracking-tight: -0.02em;
 

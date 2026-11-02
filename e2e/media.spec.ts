@@ -141,7 +141,8 @@ test("a video served by iris-media can seek", async () => {
       .getByRole("region", { name: "Biblioteca", exact: true })
       .getByTitle(/^fixture:/);
     await expect(videoRow.getByText("fixture", { exact: true })).toBeVisible();
-    await expect(videoRow.locator("video")).toBeVisible();
+    // A still, never a video element per row (it would load every video of the library).
+    await expect(videoRow.locator("video")).toHaveCount(0);
     await page.getByTitle(/^fixture:/).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Ver y editar", exact: true }).click();
     const video = page.getByRole("dialog", { name: "fixture", exact: true }).locator("video");

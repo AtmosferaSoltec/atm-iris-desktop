@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { BIBLE_BOOK_BY_ID } from "@shared/domain/bible-books";
 import {
   completeBookName,
   findBook,
   parsePassageId,
   parseReference,
+  parseReferenceIn,
   passageId,
   passageLabel,
 } from "./bible-reference";
@@ -67,4 +69,20 @@ it("completes unambiguous book names while preserving aliases and full chapter n
   for (const input of ["salmos 96", "salm96", "sal 96"])
     expect(parseReference(input)).toMatchObject({ book: { id: "PSA" }, chapter: 96, from: null });
   expect(parseReference("salm 96:13")).toMatchObject({ chapter: 96, from: 13, to: 13 });
+});
+
+it("reads a bare chapter and verse in the book shown last", () => {
+  const luke = BIBLE_BOOK_BY_ID.get("LUK")!;
+  expect(parseReferenceIn("20:8", luke)).toMatchObject({
+    book: { id: "LUK" },
+    chapter: 20,
+    from: 8,
+    to: 8,
+  });
+  expect(parseReferenceIn("20", luke)).toMatchObject({ chapter: 20, from: null });
+  expect(parseReferenceIn("3:16-18", luke)).toMatchObject({ chapter: 3, from: 16, to: 18 });
+  // A book typed wins; a chapter the book does not have, or no book shown, is nothing.
+  expect(parseReferenceIn("Juan 3:16", luke)).toMatchObject({ book: { id: "JHN" } });
+  expect(parseReferenceIn("25:1", luke)).toBeNull();
+  expect(parseReferenceIn("20:8", null)).toBeNull();
 });

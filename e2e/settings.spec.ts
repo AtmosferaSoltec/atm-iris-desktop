@@ -2,15 +2,14 @@ import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 test("creates the Iris home and retains church settings across restarts", async () => {
   const home = await mkdtemp(join(tmpdir(), "iris-settings-"));
   let instance: Awaited<ReturnType<typeof launchApp>> | undefined;
   try {
     instance = await launchApp({ home });
-    let page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
+    let page = await openSettings(instance.app, await instance.app.firstWindow());
     await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("Mi iglesia");
     expect(await readdir(home)).toEqual(
       expect.arrayContaining([
@@ -30,8 +29,7 @@ test("creates the Iris home and retains church settings across restarts", async 
     await instance.close();
     instance = undefined;
     instance = await launchApp({ home });
-    page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
+    page = await openSettings(instance.app, await instance.app.firstWindow());
     await expect(page.getByLabel("Nombre", { exact: true })).toHaveValue("Iglesia Vida Nueva");
     const invalid = await page.evaluate(() =>
       window.iris["settings:update-church"]({ name: "", timezone: "bad" }),

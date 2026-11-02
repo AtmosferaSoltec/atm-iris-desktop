@@ -22,6 +22,8 @@ export const remoteItemSchema = z.object({
   /** Has a track or a video the iPad can play/pause. */
   isPlayable: z.boolean(),
   backgroundId: z.string().max(80).nullable(),
+  /** An image or video element: ask for its picture with a `thumbnail` request. */
+  thumbnailId: z.string().max(80).nullable(),
 });
 
 const remoteBlockSchema = z.object({
@@ -61,6 +63,9 @@ export const remoteStateSchema = z.object({
         id: z.string().max(80),
         name: z.string().max(120),
         colors: z.array(z.string().max(16)).max(8),
+        /** A church background (an image or a video file); the built-in ones are only colors. */
+        kind: z.enum(["gradient", "image", "video"]),
+        thumbnailId: z.string().max(80).nullable(),
       }),
     )
     .max(200),
@@ -168,11 +173,14 @@ export const remoteRequestSchema = z.discriminatedUnion("kind", [
     bookId: z.string().max(8),
     chapter: z.number().int().min(1).max(150),
   }),
+  /** A still JPEG (base64) of an image or video of the library, a background or an element. */
+  z.object({ kind: z.literal("thumbnail"), id: z.string().max(80) }),
 ]);
 export type RemoteRequest = z.infer<typeof remoteRequestSchema>;
 export type RemoteResponse =
   | { books: { id: string; name: string; testament: "old" | "new"; chapterCount: number }[] }
-  | { verses: { number: number; text: string }[] };
+  | { verses: { number: number; text: string }[] }
+  | { image: string };
 export type RemoteCommand = z.infer<typeof remoteCommandSchema>;
 
 // ----- Messages on the wire -----

@@ -12,3 +12,12 @@ export async function saveTypography(input: ProjectionTypography): Promise<{ err
     return { error: errorMessage(error) };
   }
 }
+
+export async function saveSlideTextSize(size: number): Promise<{ error?: string }> {
+  try {
+    await invoke("settings:set-slide-text-size", size);
+    return {};
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+}

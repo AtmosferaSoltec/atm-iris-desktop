@@ -65,6 +65,8 @@ export function useLiveConsole(data: ConsoleData) {
     fontItalic: data.projection.fontItalic ?? false,
     uppercase: data.projection.uppercase ?? false,
   }));
+  // The slide cards' text size, for this computer's operator (changed from "Texto").
+  const [slideTextSize, setSlideTextSize] = useState(data.slideTextSize);
   const [room] = useState(() => new RoomAudio());
   const [volume, setVolume] = useState(1);
   useEffect(() => room.setVolume(volume), [room, volume]);
@@ -589,6 +591,8 @@ export function useLiveConsole(data: ConsoleData) {
     removeBackground,
     typography,
     setTypography,
+    slideTextSize,
+    setSlideTextSize,
     updateRef,
     setSongBackground,
     dropRef,

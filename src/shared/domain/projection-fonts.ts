@@ -21,4 +21,5 @@ export const PROJECTION_FONT_KEYS = PROJECTION_FONTS.map((font) => font.key) as 
   ...ProjectionFontKey[],
 ];
 
-export const PROJECTION_FONT_SIZE = { min: 100, max: 250, default: 100 } as const;
+/** Measured on a 1920-wide screen; 60 fits a long verse, 200 a few words from far away. */
+export const PROJECTION_FONT_SIZE = { min: 60, max: 200, default: 100 } as const;

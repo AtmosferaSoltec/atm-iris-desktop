@@ -44,7 +44,7 @@ test("shows thirty compact slides in four or five columns while keeping full liv
         .toBe(columns);
       const bounds = await first.boundingBox();
       expect(bounds!.height).toBeLessThanOrEqual(100);
-      await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "12px");
+      await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "11px");
       const visible = await cards.evaluateAll((buttons) => {
         const container = buttons[0].closest("ol")!.parentElement!.getBoundingClientRect();
         return buttons.filter((button) => {
@@ -85,6 +85,26 @@ test("shows thirty compact slides in four or five columns while keeping full liv
     await expect(
       page.getByRole("button", { name: "Limpiar pantalla (B)", exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
+    // Cleared screens keep the slide marked, and choosing another one moves the mark.
+    await expect(cards.nth(28)).toHaveAttribute("aria-current", "true");
+    await cards.nth(4).click();
+    await expect(cards.nth(4)).toHaveAttribute("aria-current", "true");
+
+    // The operator's card text size is set in "Texto" and kept after a restart.
+    await page.getByRole("button", { name: "Herramientas", exact: true }).click();
+    await page.getByRole("button", { name: "Texto", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Texto", exact: true });
+    await dialog
+      .getByRole("slider", { name: "Tamaño del texto de las diapositivas", exact: true })
+      .fill("14");
+    await dialog.getByRole("button", { name: "Aplicar", exact: true }).click();
+    await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "14px");
+    await page.reload();
+    await page
+      .getByRole("region", { name: "Biblioteca", exact: true })
+      .getByText("Canción de treinta diapositivas", { exact: true })
+      .dblclick();
+    await expect(first.getByText(texts[0], { exact: true })).toHaveCSS("font-size", "14px");
   } finally {
     await instance.close();
   }

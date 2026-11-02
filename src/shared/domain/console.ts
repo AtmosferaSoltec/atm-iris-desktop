@@ -72,4 +72,18 @@ export type ConsoleData = {
   inProgress: ServiceRecord | null;
   /** The service chosen but not started yet (a cookie): survives a reload until it ends. */
   selectedServiceTypeId: string | null;
+  /** Pixels of the slide cards' text, for whoever runs this computer (not the screens). */
+  slideTextSize: number;
 };
+
+/** The console's slide cards: small enough for many at once, never too small to read. */
+export const SLIDE_TEXT_SIZE = { min: 10, max: 16, default: 11 } as const;
+
+export function slideTextSize(value: unknown): number {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= SLIDE_TEXT_SIZE.min &&
+    value <= SLIDE_TEXT_SIZE.max
+    ? value
+    : SLIDE_TEXT_SIZE.default;
+}

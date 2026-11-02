@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- Fondos y biblioteca: los videos se muestran como una imagen fija (con el ícono de video) en lugar de reproducirse todos a la vez, para no cargar la computadora.
+- Biblia: al volver a abrirla queda en el último libro, con el capítulo marcado, para cambiar de capítulo sin buscar el libro otra vez. También se puede escribir solo «20:8» y se entiende en ese libro. Igual en el iPad.
+- Configuración es ahora una tuerca al final de la barra superior y se abre en su propia ventana: la consola sigue ahí detrás y se cierra la ventana para volver. Lo que cambies se ve en el servicio al volver a él.
+- Texto: el tamaño de la letra en las pantallas va de 60 a 200 (antes 100 a 250); si tenías más de 200 queda en 200. En el mismo diálogo se elige el tamaño del texto de las diapositivas de la consola (de 10 a 16), que solo ve quien la maneja.
+- Diapositivas de la consola: texto más pequeño de fábrica (caben hasta 5 líneas por tarjeta).
+- «Limpiar pantalla» ya no desmarca la diapositiva: sigue marcada la que elegiste, y al tocar otra se marca aunque la pantalla esté limpia.
+- Control desde iPad: vista previa de fondos, imágenes y videos; texto opcional en el cronómetro; botón «Desconectar» con confirmación.
+
 ## 1.2.1
 
 - Incluye todo lo de 1.2.0, que no llegó a publicarse. La barra de bloques cabe en pantallas angostas: «Agregar bloque» es el botón «+» junto a «Comenzar» y «Siguiente».

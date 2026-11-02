@@ -1,5 +1,5 @@
 import { localAssetUrl } from "@shared/lib/asset-url";
-import type { ConsoleData, ConsoleItem } from "@shared/domain/console";
+import { slideTextSize, type ConsoleData, type ConsoleItem } from "@shared/domain/console";
 import type { PlanItemKind } from "@shared/domain/models";
 import { MEDIA_BACKGROUND_COLORS } from "@shared/domain/projection";
 import { mediaEntry, songEntry, sortEntries } from "@shared/domain/library-entries";
@@ -123,7 +123,11 @@ export class ConsoleService {
       inProgress:
         this.timing?.repository.records().find((record) => record.status === "inProgress") ?? null,
       selectedServiceTypeId: this.timing?.selectedService() ?? null,
+      slideTextSize: slideTextSize(this.settings.getPreference("slideTextSize", null)),
     };
+  }
+  setSlideTextSize(size: number): void {
+    this.settings.setPreference("slideTextSize", slideTextSize(size));
   }
   setDefaultBackground(id: string | null): void {
     if (id !== null) {

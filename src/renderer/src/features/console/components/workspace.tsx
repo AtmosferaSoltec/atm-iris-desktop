@@ -67,9 +67,16 @@ function EmptyHint() {
   );
 }
 
+/** As many lines as fit the fixed card at the chosen text size (one fewer with a footnote). */
+function slideLines(size: number, hasFootnote: boolean): number {
+  const lines = Math.floor(76 / (size * 1.35));
+  return Math.max(2, hasFootnote ? lines - 1 : lines);
+}
+
 /** Compact operator cards use normal UI text; projection typography belongs to the live preview. */
 function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
-  const liveIndex = ctrl.live?.key === item.planItemId && !ctrl.isCleared ? ctrl.live.slide : -1;
+  // Still marked while the screens are cleared: the operator sees which slide comes back.
+  const liveIndex = ctrl.live?.key === item.planItemId ? ctrl.live.slide : -1;
   const liveCard = useRef<HTMLLIElement>(null);
 
   const [editing, setEditing] = useState<number | null>(null);
@@ -130,17 +137,20 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
                   : "ring-1 ring-line hover:ring-line-strong",
               )}
             >
-              <span className="flex h-24 flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-xs leading-snug text-white">
+              <span
+                className="flex h-24 flex-col justify-center gap-1 overflow-hidden bg-black px-2.5 py-2 text-left text-2xs text-white"
+                style={{ fontSize: ctrl.slideTextSize }}
+              >
                 <span
-                  className={cn(
-                    "break-words whitespace-pre-line",
-                    slide.footnote ? "line-clamp-3" : "line-clamp-4",
-                  )}
+                  className="line-clamp-5 break-words whitespace-pre-line"
+                  style={{
+                    WebkitLineClamp: slideLines(ctrl.slideTextSize, Boolean(slide.footnote)),
+                  }}
                 >
                   {slide.text}
                 </span>
                 {slide.footnote && (
-                  <span className="truncate text-xs text-ink-2">{slide.footnote}</span>
+                  <span className="truncate text-2xs text-ink-2">{slide.footnote}</span>
                 )}
               </span>
             </button>
@@ -166,7 +176,7 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
 function MediaStage({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
   const isActive =
     item.kind === "image"
-      ? ctrl.live?.key === item.planItemId && !ctrl.isCleared
+      ? ctrl.live?.key === item.planItemId
       : ctrl.playback?.key === item.planItemId && ctrl.playback.playing;
 
   const preview = useMemo<ProjectionFrame>(() => {

@@ -2,7 +2,7 @@ import { ProjectionDisplay } from "./features/projection/display";
 import { LiveConsolePage } from "./features/console/components/live-console";
 import { ChurchSettingsPage } from "./features/church/church-settings";
 import { createHashRouter } from "react-router";
-import { AppLayout } from "./components/app-layout";
+import { AppLayout, SettingsWindowLayout } from "./components/app-layout";
 import { PageHeader } from "./components/ui/page-header";
 import { BackLink } from "./components/ui/back-link";
 import { OnboardingGate } from "./features/onboarding/onboarding-gate";
@@ -16,16 +16,22 @@ export const router = createHashRouter([
       { path: "/", element: <LiveConsolePage /> },
       {
         element: <AppLayout />,
-        children: [
-          { path: "/times", element: <TimesPage /> },
-          { path: "/settings", element: <ChurchSettingsPage /> },
-        ],
+        children: [{ path: "/times", element: <TimesPage /> }],
       },
     ],
   },
   {
     path: "/display",
     element: <ProjectionDisplay />,
+  },
+  // Its own window (main opens it from the console's gear): no tour, no "back to the service".
+  {
+    path: "/settings",
+    element: (
+      <SettingsWindowLayout>
+        <ChurchSettingsPage />
+      </SettingsWindowLayout>
+    ),
   },
   ...(import.meta.env.DEV
     ? [

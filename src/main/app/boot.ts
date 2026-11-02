@@ -17,6 +17,9 @@ import { SqliteTimingRepository } from "../repositories/sqlite/timing-repository
 import { hostname } from "node:os";
 import { app, BrowserWindow, protocol, shell } from "electron";
 import { RemoteServer } from "../remote/remote-server";
+import { openSettingsWindow } from "../windows/settings-window";
+import { Thumbnails } from "../files/thumbnails";
+import { createThumbnailRenderer } from "../files/electron-thumbnails";
 import { advertiseOnNetwork } from "../remote/discovery";
 import { remoteHandlers } from "../ipc/remote-handlers";
 import { BIBLE_BOOKS } from "@shared/domain/bible-books";
@@ -61,7 +64,10 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       () => broadcast("media:changed", undefined),
       (progress) => broadcast("media:import-progress", progress),
     );
-    protocol.handle("iris-media", (request) => mediaResponse(request, mediaRepository, home));
+    const thumbnails = new Thumbnails(mediaRepository, home, createThumbnailRenderer());
+    protocol.handle("iris-media", (request) =>
+      mediaResponse(request, mediaRepository, home, thumbnails),
+    );
     const songsRepository = new SqliteSongsRepository(db, mediaRepository);
     const songsService = new SongsService(songsRepository, mediaRepository, media);
     const timing = new TimingService(new SqliteTimingRepository(db), repository);
@@ -120,16 +126,21 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
       onCommand: (command) => broadcast("remote:command", command),
       changed: (status) => broadcast("remote:changed", status),
       log: logMessage,
-      onRequest: async (request) =>
-        request.kind === "bible-books"
-          ? { books: [...BIBLE_BOOKS] }
-          : {
-              verses: bible.chapter({
-                translation: request.translation,
-                bookId: request.bookId,
-                chapter: request.chapter,
-              }).verses,
-            },
+      onRequest: async (request) => {
+        if (request.kind === "bible-books") return { books: [...BIBLE_BOOKS] };
+        if (request.kind === "thumbnail") {
+          const image = await thumbnails.get(request.id);
+          if (!image) throw new Error("Sin vista previa.");
+          return { image: image.toString("base64") };
+        }
+        return {
+          verses: bible.chapter({
+            translation: request.translation,
+            bookId: request.bookId,
+            chapter: request.chapter,
+          }).verses,
+        };
+      },
     });
     if (!env.isE2e && repository.getPreference("remoteEnabled", false))
       void remote.start().catch(logError);
@@ -139,6 +150,8 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
         ...remoteHandlers(remote, (isEnabled) =>
           repository.setPreference("remoteEnabled", isEnabled),
         ),
+        "window:open-settings": () => openSettingsWindow(),
+        "settings:set-slide-text-size": (size) => consoleService.setSlideTextSize(size),
         "updates:status": () => updates.status(),
         "updates:retry": () => updates.retry(),
         "updates:download": () => updates.download(),

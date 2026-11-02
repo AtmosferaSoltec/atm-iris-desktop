@@ -1,11 +1,13 @@
 import { BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LiveConsole } from "../use-live-console";
-import { BibleDialog } from "./bible-dialog";
+import { BibleDialog, type BiblePlace } from "./bible-dialog";
 
 /** "Biblia", always at hand: the button, or V anywhere in the console. */
 export function BibleButton({ ctrl }: { ctrl: Pick<LiveConsole, "presentPassage"> }) {
   const [isOpen, setIsOpen] = useState(false);
+  // The book and chapter shown last: the next verse is usually in the same book.
+  const [place, setPlace] = useState<BiblePlace | null>(null);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -31,7 +33,14 @@ export function BibleButton({ ctrl }: { ctrl: Pick<LiveConsole, "presentPassage"
         <BookOpen aria-hidden className="size-4 text-violet" />
         Biblia
       </button>
-      {isOpen && <BibleDialog ctrl={ctrl} onClose={() => setIsOpen(false)} />}
+      {isOpen && (
+        <BibleDialog
+          ctrl={ctrl}
+          place={place}
+          onProjected={setPlace}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
     </>
   );
 }

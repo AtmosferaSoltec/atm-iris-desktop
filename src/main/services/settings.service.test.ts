@@ -43,8 +43,8 @@ describe("settings repository and service", () => {
     ])
       expect(() => service.updateChurch(input)).toThrow();
     for (const input of [
-      { fontSizePt: 99 },
-      { fontSizePt: 251 },
+      { fontSizePt: 59 },
+      { fontSizePt: 201 },
       { fontSizePt: 100.5 },
       { fontFamily: "unknown" },
       { fontBold: 1 },

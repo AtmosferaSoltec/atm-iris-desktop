@@ -8,6 +8,7 @@ import type { SqliteDatabase } from "../db/sqlite";
 import { SqliteMediaRepository } from "../repositories/sqlite/media-repository";
 import { MediaService } from "../services/media-service";
 import { mediaResponse, parseRange } from "./protocol";
+import { Thumbnails } from "./thumbnails";
 
 let root: string;
 let home: IrisHome;
@@ -73,6 +74,21 @@ describe("iris-media protocol", () => {
     repository.update({ ...entry, relativePath: "Videos/escape.mp4" });
     expect(
       (await mediaResponse(new Request(`iris-media://asset/${id}`), repository, home)).status,
+    ).toBe(404);
+  });
+  it("serves a video's thumbnail as a JPEG, and 404 when there is none", async () => {
+    const thumbnails = new Thumbnails(repository, home, async () => Buffer.from("jpeg"));
+    const response = await mediaResponse(
+      new Request(`iris-media://thumb/${id}`),
+      repository,
+      home,
+      thumbnails,
+    );
+    expect(response.headers.get("content-type")).toBe("image/jpeg");
+    expect(Buffer.from(await response.arrayBuffer()).toString()).toBe("jpeg");
+    const none = new Thumbnails(repository, home, async () => null);
+    expect(
+      (await mediaResponse(new Request(`iris-media://thumb/${id}`), repository, home, none)).status,
     ).toBe(404);
   });
 });

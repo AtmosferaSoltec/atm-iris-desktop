@@ -26,7 +26,7 @@ import {
   projectionStartSchema,
   videoTimeSchema,
 } from "../schemas/projection";
-import type { ConsoleData, ConsoleItem } from "../domain/console";
+import { SLIDE_TEXT_SIZE, type ConsoleData, type ConsoleItem } from "../domain/console";
 import { planTargetSchema, planMoveSchema, planIdSchema, slideEditSchema } from "../schemas/plan";
 import type { Song, SongSummary } from "../domain/models";
 import {
@@ -201,6 +201,12 @@ export const contract = {
     z.custom<ProjectionStatus>(),
   ),
   "projection:stop": defineChannel("projection:stop", z.void(), z.custom<ProjectionStatus>()),
+  "window:open-settings": defineChannel("window:open-settings", z.void(), z.void()),
+  "settings:set-slide-text-size": defineChannel(
+    "settings:set-slide-text-size",
+    z.number().int().min(SLIDE_TEXT_SIZE.min).max(SLIDE_TEXT_SIZE.max),
+    z.void(),
+  ),
   "projection:get-status": defineChannel(
     "projection:get-status",
     z.void(),

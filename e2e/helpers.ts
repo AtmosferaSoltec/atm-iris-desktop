@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { _electron, type ElectronApplication } from "@playwright/test";
+import { _electron, type ElectronApplication, type Page } from "@playwright/test";
 
 export async function launchApp(
   options: { home?: string; rendererUrl?: string; updates?: string; onboarding?: boolean } = {},
@@ -50,4 +50,14 @@ export async function launchApp(
     if (!options.home) await rm(home, { recursive: true, force: true });
     throw error;
   }
+}
+
+/** The gear opens "Configuración" in its own window; closing it goes back to the console. */
+export async function openSettings(app: ElectronApplication, console: Page): Promise<Page> {
+  const [settings] = await Promise.all([
+    app.waitForEvent("window"),
+    console.getByRole("button", { name: "Configuración", exact: true }).click(),
+  ]);
+  await settings.getByRole("heading", { name: "Ajustes" }).waitFor();
+  return settings;
 }

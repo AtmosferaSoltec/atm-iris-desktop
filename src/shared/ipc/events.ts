@@ -13,6 +13,8 @@ export const eventContract = {
   "projection:video-time": videoTimeSchema,
   "monitors:changed": z.custom<Monitor[]>(),
   "media:changed": z.void(),
+  /** The settings window lost focus or closed: the console reloads what it shows. */
+  "settings:changed": z.void(),
   "remote:changed": z.custom<RemoteStatus>(),
   "remote:command": remoteCommandSchema,
   "media:import-progress": z.object({

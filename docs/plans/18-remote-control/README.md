@@ -43,9 +43,12 @@ nothing and cannot add, remove or edit content.
 - `pnpm check`, `pnpm build` and `pnpm test:e2e` pass.
 - With the switch off nothing listens; with it on, a wrong code never gets state; a command before pairing is ignored.
 
+6. Thumbnails (1.3.0): main makes one still JPEG per image or video (`src/main/files/thumbnails.ts`, drawn by
+   Chromium in a hidden window, memory cache only) and serves it as `iris-media://thumb/<id>` to the console and as a
+   `thumbnail` request to the iPad. The console's background swatches and library rows no longer hold a video element.
+
 ## Out of scope / pending
 
-- Image and video background thumbnails (the iPad shows the gradient colors only).
 - Windows firewall: the first run prompts the user; the panel explains it.
 
 ## Deviations

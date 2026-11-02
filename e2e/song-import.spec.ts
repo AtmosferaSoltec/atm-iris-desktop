@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 const exported = [
   {
@@ -32,23 +32,23 @@ test("previews a Holyrics export and imports only the new songs", async () => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] });
     }, path);
     const page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await page.getByRole("button", { name: "Importar canciones" }).click();
-    const dialog = page.getByRole("dialog", { name: "Importar canciones" });
+    const settings = await openSettings(instance.app, page);
+    await settings.getByRole("button", { name: "Importar canciones" }).click();
+    const dialog = settings.getByRole("dialog", { name: "Importar canciones" });
     await expect(dialog.getByText("A ti me rindo")).toBeVisible();
     await expect(dialog.getByText("No tiene letra.")).toBeVisible();
     await dialog.getByRole("button", { name: "Importar 1 canción" }).click();
     await expect(
-      page.getByText("Se importaron 1 canción; 1 no se pudieron importar"),
+      settings.getByText("Se importaron 1 canción; 1 no se pudieron importar"),
     ).toBeVisible();
 
-    const list = await page.evaluate(() =>
+    const list = await settings.evaluate(() =>
       window.iris["songs:list"]({ page: 1, limit: 20, sort: "title", search: "", archived: false }),
     );
     if (!list.ok) throw new Error(list.error.message);
     expect(list.data.data.map((song) => song.title)).toEqual(["A ti me rindo"]);
     const [summary] = list.data.data;
-    const song = await page.evaluate((id) => window.iris["songs:get"](id), summary!.id);
+    const song = await settings.evaluate((id) => window.iris["songs:get"](id), summary!.id);
     if (!song.ok) throw new Error(song.error.message);
     expect(song.data.sections.map((section) => section.label)).toEqual([null, "CORO"]);
   } finally {
@@ -79,12 +79,12 @@ test("imports a whole folder of song files in one go", async () => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] });
     }, folder);
     const page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await page.getByRole("button", { name: "Importar carpeta" }).click();
-    const dialog = page.getByRole("dialog", { name: "Importar canciones" });
+    const settings = await openSettings(instance.app, page);
+    await settings.getByRole("button", { name: "Importar carpeta" }).click();
+    const dialog = settings.getByRole("dialog", { name: "Importar canciones" });
     await expect(dialog.getByText("canciones · 3 canciones nuevas")).toBeVisible();
     await dialog.getByRole("button", { name: "Importar 3 canciones" }).click();
-    await expect(page.getByText("Se importaron 3 canciones")).toBeVisible();
+    await expect(settings.getByText("Se importaron 3 canciones")).toBeVisible();
   } finally {
     await instance.close();
   }

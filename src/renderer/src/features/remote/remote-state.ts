@@ -46,6 +46,8 @@ export function buildRemoteState(input: RemoteStateInput): RemoteState {
       slides: item.slides.map((slide) => ({ label: slide.label, text: slide.text })),
       isPlayable: Boolean(item.file || item.youTubeId),
       backgroundId: item.backgroundId ?? null,
+      thumbnailId:
+        (item.kind === "image" || item.kind === "video") && item.file ? item.file.id : null,
     })),
     openId: input.openItem?.planItemId ?? null,
     live: input.live ? { id: input.live.key, slide: input.live.slide } : null,
@@ -73,6 +75,8 @@ export function buildRemoteState(input: RemoteStateInput): RemoteState {
       id: background.id,
       name: background.name,
       colors: background.colors,
+      kind: background.videoUrl ? "video" : background.imageUrl ? "image" : "gradient",
+      thumbnailId: background.videoUrl || background.imageUrl ? background.id : null,
     })),
     sounds: input.sounds.map((sound) => ({ id: sound.id, title: sound.title })),
     countdown: countdown

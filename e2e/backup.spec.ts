@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 test("exports and reimports without duplicates, snapshots and erases with typed confirmation", async () => {
   const instance = await launchApp();
@@ -21,8 +21,10 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
       });
       if (!result.ok) throw new Error(result.error.message);
     });
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await page.getByRole("button", { name: "Descargar canciones (letras)", exact: true }).click();
+    const settings = await openSettings(instance.app, page);
+    await settings
+      .getByRole("button", { name: "Descargar canciones (letras)", exact: true })
+      .click();
     await expect
       .poll(async () => {
         try {
@@ -32,32 +34,34 @@ test("exports and reimports without duplicates, snapshots and erases with typed 
         }
       })
       .toBe(1);
-    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
-    const preview = page.getByRole("dialog", { name: "Importar canciones" });
+    await settings.getByRole("button", { name: "Importar canciones", exact: true }).click();
+    const preview = settings.getByRole("dialog", { name: "Importar canciones" });
     await expect(preview.getByText("Ya existe una canción igual.")).toBeVisible();
     await expect(preview.getByRole("button", { name: "No hay canciones nuevas" })).toBeDisabled();
     await preview.getByRole("button", { name: "Cancelar" }).click();
-    await page.getByRole("button", { name: "Crear respaldo ahora", exact: true }).click();
-    await expect(page.getByText("Respaldo creado", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Crear respaldo ahora", exact: true }).click();
+    await expect(settings.getByText("Respaldo creado", { exact: true })).toBeVisible();
     expect(
       (await readdir(join(instance.home, "Backups"))).filter((name) => name.startsWith("iris-")),
     ).toHaveLength(2);
-    await page.getByRole("checkbox", { name: "Eliminar canciones", exact: true }).check();
-    await page.getByRole("button", { name: "Eliminar lo elegido", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Eliminar todo", exact: true })).toBeDisabled();
-    await page.getByLabel("Escribe ELIMINAR para confirmar").fill("ELIMINAR");
-    await page.getByRole("button", { name: "Eliminar todo", exact: true }).click();
-    await expect(page.getByText(/Se eliminó todo lo elegido \(1 canciones/)).toBeVisible();
-    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
-    await page
+    await settings.getByRole("checkbox", { name: "Eliminar canciones", exact: true }).check();
+    await settings.getByRole("button", { name: "Eliminar lo elegido", exact: true }).click();
+    await expect(
+      settings.getByRole("button", { name: "Eliminar todo", exact: true }),
+    ).toBeDisabled();
+    await settings.getByLabel("Escribe ELIMINAR para confirmar").fill("ELIMINAR");
+    await settings.getByRole("button", { name: "Eliminar todo", exact: true }).click();
+    await expect(settings.getByText(/Se eliminó todo lo elegido \(1 canciones/)).toBeVisible();
+    await settings.getByRole("button", { name: "Importar canciones", exact: true }).click();
+    await settings
       .getByRole("dialog", { name: "Importar canciones" })
       .getByRole("button", { name: "Importar 1 canción" })
       .click();
-    await expect(page.getByText(/Se importaron 1 canción/)).toBeVisible();
+    await expect(settings.getByText(/Se importaron 1 canción/)).toBeVisible();
     await writeFile(path, "not a backup");
-    await page.getByRole("button", { name: "Importar canciones", exact: true }).click();
+    await settings.getByRole("button", { name: "Importar canciones", exact: true }).click();
     await expect(
-      page.getByText("Ese archivo no parece un archivo de canciones (JSON).", {
+      settings.getByText("Ese archivo no parece un archivo de canciones (JSON).", {
         exact: true,
       }),
     ).toBeVisible();

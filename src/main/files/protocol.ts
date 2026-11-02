@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { IrisHome } from "./iris-home";
 import type { MediaRepository } from "../repositories/types";
+import type { Thumbnails } from "./thumbnails";
 
 export function parseRange(
   header: string | null,
@@ -28,11 +29,25 @@ export async function mediaResponse(
   request: Request,
   repository: MediaRepository,
   home: IrisHome,
+  thumbnails?: Thumbnails,
 ): Promise<Response> {
   try {
     const url = new URL(request.url);
     const match = /^\/([0-9a-f-]{36})$/.exec(url.pathname);
     const hasValidVersion = !url.search || /^\?v=-?\d+$/.test(url.search);
+    // `iris-media://thumb/<id>`: a still JPEG of an image or video (see `Thumbnails`).
+    if (url.protocol === "iris-media:" && url.hostname === "thumb" && match && thumbnails) {
+      const image = await thumbnails.get(match[1]);
+      if (!image) return new Response(null, { status: 404 });
+      return new Response(new Uint8Array(image), {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-cache",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
     if (url.protocol !== "iris-media:" || url.hostname !== "asset" || !hasValidVersion || !match)
       return new Response(null, { status: 404 });
     const entry = repository.get(match[1]);

@@ -64,7 +64,7 @@ it.each([8, 9, 10])(
       ).toEqual([]);
       expect(readFileSync(file)).toEqual(bytes);
       const backup = readdirSync(home.backupsDir).find((name) => !backupsBefore.has(name))!;
-      expect(backup).toContain(`pre-migration-${version}-to-12-`);
+      expect(backup).toContain(`pre-migration-${version}-to-${MIGRATIONS.at(-1)!.version}-`);
       expect(readFileSync(join(home.backupsDir, backup))).toEqual(oldBytes);
       if (version >= 9)
         expect(new SqliteBibleRepository(db).chapter("rvr1960", "JHN", 3).verses[0].text).toBe(
@@ -107,7 +107,7 @@ it("retires links from schema 11 while preserving songs, sections, plan order an
       { id: "song-plan", position: 0 },
     ]);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
-    expect(db.prepare("PRAGMA user_version").get()?.user_version).toBe(12);
+    expect(db.prepare("PRAGMA user_version").get()?.user_version).toBe(MIGRATIONS.at(-1)!.version);
   } finally {
     db.close();
   }

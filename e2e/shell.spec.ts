@@ -1,14 +1,18 @@
 import { test, expect } from "@playwright/test";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
-test("secondary pages return to the service and display has no shell", async () => {
+test("settings open in their own window, secondary pages return to the service and display has no shell", async () => {
   const instance = await launchApp();
   try {
     const page = await instance.app.firstWindow();
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
-    await page.getByRole("link", { name: "Volver al servicio" }).click();
+    const settings = await openSettings(instance.app, page);
+    await expect(settings.getByRole("link", { name: "Volver al servicio" })).toHaveCount(0);
+    // The console never left: closing the settings window is the way back.
     await expect(page.getByRole("heading", { name: "Biblioteca", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Configuración", exact: true }).click();
+    expect(instance.app.windows()).toHaveLength(2);
+    await settings.close();
+    await expect.poll(() => instance.app.windows().length).toBe(1);
     await page.getByRole("link", { name: "Tiempos", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Tiempos", exact: true })).toBeVisible();
     await page.evaluate(() => {

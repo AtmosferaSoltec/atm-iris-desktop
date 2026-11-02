@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { silentMp3 } from "./audio-fixture";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 test("assigns the MP3s dropped in Iris/Audio to the songs with the same name", async () => {
   const instance = await launchApp();
@@ -25,19 +25,19 @@ test("assigns the MP3s dropped in Iris/Audio to the songs with the same name", a
       }
       return created;
     });
-    await page.getByRole("link", { name: "Configuración" }).click();
-    await expect(page.getByRole("button", { name: "Abrir carpeta de audios" })).toBeVisible();
-    await page.getByRole("button", { name: "Buscar coincidencias" }).click();
-    const dialog = page.getByRole("dialog", { name: "Asignar audios" });
+    const settings = await openSettings(instance.app, page);
+    await expect(settings.getByRole("button", { name: "Abrir carpeta de audios" })).toBeVisible();
+    await settings.getByRole("button", { name: "Buscar coincidencias" }).click();
+    const dialog = settings.getByRole("dialog", { name: "Asignar audios" });
     await expect(dialog.getByText("01 - HOSANNA.mp3")).toBeVisible();
     await expect(dialog.getByText("bendito jesus.mp3")).toBeVisible();
     // "Sin audio" has no file with a similar name: it is joined by hand with "suelto.mp3".
     await dialog.getByRole("button", { name: "Sin asignar" }).click();
-    await page.getByRole("option", { name: "suelto.mp3" }).click();
+    await settings.getByRole("option", { name: "suelto.mp3" }).click();
     await dialog.getByRole("button", { name: "Asignar 3 audios" }).click();
-    await expect(page.getByText("Se asignaron 3 audios")).toBeVisible();
+    await expect(settings.getByText("Se asignaron 3 audios")).toBeVisible();
 
-    const audios = await page.evaluate(async (songIds) => {
+    const audios = await settings.evaluate(async (songIds) => {
       const files: (string | null)[] = [];
       for (const id of songIds) {
         const song = await window.iris["songs:get"](id);
