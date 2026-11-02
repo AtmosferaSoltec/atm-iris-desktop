@@ -14,6 +14,11 @@ export type TimerBlock = {
   startedAt: number | null;
   endedAt: number | null;
   isSkipped: boolean;
+  /**
+   * Added during this service ("Agregar bloque"): it can still be renamed, moved or removed until
+   * it starts. Kept in memory only, so a service resumed after a restart treats it as any other.
+   */
+  isExtra: boolean;
 };
 
 export type ServiceTimer = {
@@ -51,6 +56,7 @@ export function timerFor(type: ServiceType, newId: () => string): ServiceTimer {
       startedAt: null,
       endedAt: null,
       isSkipped: false,
+      isExtra: false,
     })),
     phase: "notStarted",
     current: null,
@@ -78,6 +84,7 @@ export function resumeTimer(record: ServiceRecord): ServiceTimer | null {
       startedAt: block.startedAt ? Date.parse(block.startedAt) : null,
       endedAt: block.status === "running" || !block.endedAt ? null : Date.parse(block.endedAt),
       isSkipped: block.status === "skipped",
+      isExtra: false,
     })),
     phase: "running",
     current,
@@ -162,11 +169,45 @@ export function insertBlock(
     startedAt: null,
     endedAt: null,
     isSkipped: false,
+    isExtra: true,
   };
   return {
     ...timer,
     blocks: [...timer.blocks.slice(0, index), added, ...timer.blocks.slice(index)],
   };
+}
+
+/** An extra block that has not started yet: the only kind that can still change. */
+export function isEditable(block: TimerBlock): boolean {
+  return block.isExtra && block.startedAt === null && !block.isSkipped;
+}
+
+/**
+ * Corrects an extra block: its name, minutes and place. `at` is its index among the other blocks
+ * (as if it were taken out), clamped to the blocks still to come.
+ */
+export function updateBlock(
+  timer: ServiceTimer,
+  id: string,
+  change: { name: string; plannedSeconds: number },
+  at: number,
+): ServiceTimer {
+  const block = timer.blocks.find((candidate) => candidate.id === id);
+  if (!block || !isEditable(block) || timer.phase === "finished") return timer;
+  const others = timer.blocks.filter((candidate) => candidate !== block);
+  const rest = { ...timer, blocks: others };
+  const index = Math.min(Math.max(at, firstInsertIndex(rest)), others.length);
+  return {
+    ...timer,
+    blocks: [...others.slice(0, index), { ...block, ...change }, ...others.slice(index)],
+  };
+}
+
+/** Takes out an extra block that has not started (it was added by mistake). */
+export function removeBlock(timer: ServiceTimer, id: string): ServiceTimer {
+  const block = timer.blocks.find((candidate) => candidate.id === id);
+  if (!block || !isEditable(block) || timer.phase === "finished") return timer;
+  return { ...timer, blocks: timer.blocks.filter((candidate) => candidate !== block) };
 }
 
 /** Changes the leader of a block (a correction, not a template change). */

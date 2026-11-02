@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1
+
+- «Agregar bloque»: en vez de elegir «Antes de…», se ve la lista de bloques del servicio y el nuevo se arrastra a su lugar (arriba va primero, abajo al final; también con las flechas). Mientras no empiece, el bloque agregado se puede tocar en la lista de bloques para cambiarle el nombre, los minutos o el lugar, o quitarlo.
+
 ## 1.3.0
 
 - Fondos y biblioteca: los videos se muestran como una imagen fija (con el ícono de video) en lugar de reproducirse todos a la vez, para no cargar la computadora.

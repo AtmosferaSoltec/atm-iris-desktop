@@ -5,11 +5,13 @@ import {
   finish,
   insertBlock,
   recordInput,
+  removeBlock,
   resumeTimer,
   skipNext,
   startNext,
   timerFor,
   totals,
+  updateBlock,
 } from "./block-timer";
 
 const culto: ServiceType = {
@@ -87,6 +89,40 @@ describe("block timer", () => {
       ["Prédica", "skipped", 0],
     ]);
     expect(insertBlock(timer, { name: "Tarde", plannedSeconds: 60 }, 4, newId)).toBe(timer);
+  });
+
+  it("corrects an extra block until it starts: name, minutes and place, or takes it out", () => {
+    let timer = startNext(timerFor(culto, newId), ana, T0);
+    timer = insertBlock(timer, { name: "Santa cena", plannedSeconds: 900 }, 1, newId);
+    const extra = timer.blocks[1];
+    expect(extra.isExtra).toBe(true);
+    expect(timer.blocks[2].isExtra).toBe(false);
+    // Moved past "Prédica" and renamed; asking for a place before the running block is clamped.
+    timer = updateBlock(timer, extra.id, { name: "Cena del Señor", plannedSeconds: 600 }, 3);
+    expect(timer.blocks.map((block) => block.name)).toEqual([
+      "Bienvenida",
+      "Alabanzas",
+      "Prédica",
+      "Cena del Señor",
+    ]);
+    timer = updateBlock(timer, extra.id, { name: "Cena del Señor", plannedSeconds: 600 }, 0);
+    expect(timer.blocks.map((block) => block.name)).toEqual([
+      "Bienvenida",
+      "Cena del Señor",
+      "Alabanzas",
+      "Prédica",
+    ]);
+    expect(timer.current).toBe(0);
+    // The service's own blocks never change from here.
+    expect(updateBlock(timer, timer.blocks[2].id, { name: "X", plannedSeconds: 60 }, 3)).toBe(
+      timer,
+    );
+    expect(removeBlock(timer, timer.blocks[2].id)).toBe(timer);
+    // Once it starts it is a block like the others.
+    const started = startNext(timer, ana, T0 + minutes(10));
+    expect(removeBlock(started, extra.id)).toBe(started);
+    timer = removeBlock(timer, extra.id);
+    expect(timer.blocks.map((block) => block.name)).toEqual(["Bienvenida", "Alabanzas", "Prédica"]);
   });
 
   it("adds a block anywhere before the service starts, and at the end past the last one", () => {

@@ -9,10 +9,12 @@ import {
   finish,
   insertBlock,
   recordInput,
+  removeBlock,
   resumeTimer,
   setLeader,
   startNext,
   timerFor,
+  updateBlock,
   type ServiceTimer,
 } from "./block-timer";
 
@@ -130,6 +132,9 @@ export function useServiceTimer({
     /** An extra block for this service only; the service type keeps its blocks. */
     addBlock: (block: { name: string; plannedSeconds: number }, at: number) =>
       apply((current) => insertBlock(current, block, at, newId)),
+    updateBlock: (id: string, block: { name: string; plannedSeconds: number }, at: number) =>
+      apply((current) => updateBlock(current, id, block, at)),
+    removeBlock: (id: string) => apply((current) => removeBlock(current, id)),
     finish: () => {
       if (!latest.current) return;
       apply((current) => finish(current, Date.now()));

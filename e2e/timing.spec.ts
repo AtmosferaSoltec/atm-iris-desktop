@@ -89,13 +89,32 @@ test("adds a block during the service: saved in Tiempos, not in the service", as
     await expect(dialog.getByText("Escribe el nombre del bloque.")).toBeVisible();
     await dialog.getByLabel("Nombre", { exact: true }).fill("Santa cena");
     await dialog.getByLabel("Minutos", { exact: true }).fill("15");
-    // Right after the running block by default.
-    await expect(dialog.getByRole("combobox", { name: "Ubicación" })).toHaveText(
-      "Antes de Mensaje",
-    );
+    const order = dialog.getByRole("list", { name: "Orden de los bloques" }).getByRole("listitem");
+    // Right after the running block by default; dragged below "Mensaje" it goes last.
+    await expect(order).toHaveText([/Bienvenida/, /Santa cena/, /Mensaje/]);
+    const draft = dialog.getByRole("button", { name: "Mover «Santa cena»" });
+    const target = (await order.nth(2).boundingBox())!;
+    await draft.hover();
+    await page.mouse.down();
+    await page.mouse.move(target.x + 40, target.y + target.height * 0.9, { steps: 12 });
+    await page.mouse.up();
+    await expect(order).toHaveText([/Bienvenida/, /Mensaje/, /Santa cena/]);
+    await page.screenshot({ path: test.info().outputPath("add-block.png") });
     await dialog.getByRole("button", { name: "Agregar", exact: true }).click();
-    await page.getByRole("button", { name: "Siguiente: Santa cena →" }).click();
     await expect(page.getByRole("button", { name: "Siguiente: Mensaje →" })).toBeVisible();
+    await expect(dialog).toHaveCount(0);
+
+    // Placed by mistake: corrected from the block list before it starts.
+    await page.getByRole("button", { name: "Editar el bloque Santa cena" }).click();
+    const editor = page.getByRole("dialog", { name: "Editar bloque" });
+    await expect(editor.getByLabel("Minutos", { exact: true })).toHaveValue("15");
+    await editor.getByRole("button", { name: "Subir", exact: true }).click();
+    await editor.getByLabel("Nombre", { exact: true }).fill("Santa Cena");
+    await editor.getByRole("button", { name: "Guardar", exact: true }).click();
+    await page.getByRole("button", { name: "Siguiente: Santa Cena →" }).click();
+    await expect(page.getByRole("button", { name: "Siguiente: Mensaje →" })).toBeVisible();
+    // Once it runs it is a block like the others.
+    await expect(page.getByRole("button", { name: /^Editar el bloque/ })).toHaveCount(0);
 
     await expect
       .poll(() =>
@@ -114,7 +133,7 @@ test("adds a block during the service: saved in Tiempos, not in the service", as
       .toEqual({
         record: [
           ["Bienvenida", 300],
-          ["Santa cena", 900],
+          ["Santa Cena", 900],
           ["Mensaje", 1800],
         ],
         template: 2,
