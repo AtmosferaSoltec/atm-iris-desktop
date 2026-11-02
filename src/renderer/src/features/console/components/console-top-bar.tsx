@@ -20,7 +20,7 @@ export function ConsoleTopBar({
   serviceName: string | null;
 }) {
   return (
-    <header className="flex h-[68px] shrink-0 items-center gap-4 px-6">
+    <header className="flex h-14 shrink-0 items-center gap-4 px-5">
       <IrisWordmark height={24} />
       <span aria-hidden className="h-7 w-px bg-line" />
       <div className="min-w-0">

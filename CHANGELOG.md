@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2
+
+- Consola más compacta para pantallas chicas (como 1366×768): el servicio muestra casi el doble de elementos. Cada elemento ocupa una sola línea (título, autor y duración de la pista); los botones de mover y quitar aparecen al pasar el mouse. El reproductor, «Limpiar pantalla» y el volumen van en una sola fila, y la barra de la pista es una línea delgada con sus botones. La vista previa en vivo se puede plegar (queda una línea con lo que está en pantalla) y se recuerda en esa computadora. La barra superior es más baja.
+- El ícono de Iris tiene el mismo tamaño que el de las demás apps (con su margen, como esperan Windows y macOS) en vez de verse más grande.
+- Los textos ya no se pintan como selección al hacer doble clic o arrastrar (como en una página web); solo los campos donde se escribe y las direcciones del control desde iPad se pueden seleccionar.
+- Tiempos: cada bloque muestra su hora de inicio y de fin en formato de 12 horas («de 8:01 p. m. a 8:09 p. m.»), también en el Excel descargado.
+- Tiempos: «Intercambiar con otro bloque…» en el menú «…» de un bloque, para cuando un bloque se cronometró con el nombre de otro (por ejemplo, Consagración se hizo donde estaba Anuncios). Las horas quedan donde pasaron; cambian el nombre y el tiempo previsto, y opcionalmente los responsables.
+
 ## 1.3.1
 
 - «Agregar bloque»: en vez de elegir «Antes de…», se ve la lista de bloques del servicio y el nuevo se arrastra a su lugar (arriba va primero, abajo al final; también con las flechas). Mientras no empiece, el bloque agregado se puede tocar en la lista de bloques para cambiarle el nombre, los minutos o el lugar, o quitarlo.

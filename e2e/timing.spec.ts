@@ -142,3 +142,60 @@ test("adds a block during the service: saved in Tiempos, not in the service", as
     await running.close();
   }
 });
+
+test("Tiempos shows each block's start and end on a 12-hour clock and swaps two blocks", async () => {
+  const running = await launchApp();
+  try {
+    const page = await running.app.firstWindow();
+    await page.evaluate(async () => {
+      // Lima is UTC−5: 01:01 UTC is 8:01 p. m. the evening before.
+      const at = (minute: number): string =>
+        new Date(Date.UTC(2026, 10, 2, 1, minute)).toISOString();
+      type BlockInput = Parameters<
+        (typeof window.iris)["records:save"]
+      >[0]["input"]["blocks"][number];
+      const block = (name: string, planned: number, from: number, to: number): BlockInput => ({
+        id: crypto.randomUUID(),
+        name,
+        plannedSeconds: planned,
+        actualSeconds: (to - from) * 60,
+        personId: null,
+        personName: null,
+        status: "completed" as const,
+        startedAt: at(from),
+        endedAt: at(to),
+      });
+      const result = await window.iris["records:save"]({
+        id: crypto.randomUUID(),
+        input: {
+          status: "finished",
+          date: at(1),
+          serviceTypeId: null,
+          serviceTypeName: "Culto general",
+          blocks: [block("Anuncios", 600, 1, 9), block("Consagración", 300, 9, 17)],
+        },
+      });
+      if (!result.ok) throw new Error(result.error.message);
+      location.hash = "/times";
+    });
+    const detail = page.getByRole("article");
+    await expect(detail.getByText("de 8:01 p. m. a 8:09 p. m.")).toBeVisible();
+    await detail.getByRole("button", { name: "Opciones del bloque Anuncios" }).click();
+    await page.getByRole("menuitem", { name: "Intercambiar con otro bloque…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Intercambiar bloques" });
+    await expect(dialog.getByText("Consagración · 8:01 p. m.")).toBeVisible();
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((animation) => animation.finished)),
+    );
+    await page.screenshot({ path: test.info().outputPath("swap-blocks.png") });
+    await dialog.getByRole("button", { name: "Intercambiar", exact: true }).click();
+    await expect(page.getByText("Bloques intercambiados")).toBeVisible();
+    const names = detail.getByRole("region", { name: "Bloques" }).getByRole("listitem");
+    await expect(names.first()).toContainText("Consagración");
+    await expect(names.first()).toContainText("de 8:01 p. m. a 8:09 p. m.");
+    await expect(names.nth(1)).toContainText("Anuncios");
+    await expect(names.nth(1)).toContainText("previsto 10:00");
+  } finally {
+    await running.close();
+  }
+});

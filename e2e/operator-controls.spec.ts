@@ -68,6 +68,18 @@ test("keeps clear-screen active across songs and controls local audio volume", a
     await expect(clear).toHaveAttribute("aria-pressed", "true");
     await clear.click();
     await expect(live.getByText("Letra segunda", { exact: true })).toBeVisible();
+    // Folded, the preview leaves one line with what the screens show; it stays folded after a reload.
+    await live.getByRole("button", { name: "Ocultar la vista previa", exact: true }).click();
+    await expect(
+      live.getByRole("button", { name: "Mostrar la vista previa", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(live.getByText("Letra segunda", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(
+      live.getByRole("button", { name: "Mostrar la vista previa", exact: true }),
+    ).toBeVisible();
+    await live.getByRole("button", { name: "Mostrar la vista previa", exact: true }).click();
+    await service.getByText("Segunda", { exact: true }).click();
     await live.getByRole("button", { name: "Volumen", exact: true }).click();
     await page.getByRole("slider", { name: "Volumen", exact: true }).fill("25");
     await expect(page.getByText("25 %", { exact: true })).toBeVisible();

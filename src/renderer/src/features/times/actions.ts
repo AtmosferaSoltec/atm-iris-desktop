@@ -30,6 +30,17 @@ export function changeBlockLeader(
   return update(() => invoke("records:change-leader", { recordId, blockId, personId }));
 }
 
+export function swapBlocks(
+  recordId: string,
+  blockId: string,
+  otherBlockId: string,
+  swapLeaders: boolean,
+): Promise<{ error?: string }> {
+  return update(() =>
+    invoke("records:swap-blocks", { recordId, blockId, otherBlockId, swapLeaders }),
+  );
+}
+
 export function deleteRecord(id: string): Promise<{ error?: string }> {
   return update(() => invoke("records:delete", id));
 }

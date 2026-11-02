@@ -120,6 +120,45 @@ describe("service timing", () => {
       service.changeStart(timer.recordId, message.id, new Date(at(29)).toISOString()),
     ).toThrow("posterior al inicio");
   });
+  it("swaps two blocks timed under each other's name: the times stay where they happened", () => {
+    const paquita = service.savePerson(null, "Paquita");
+    const jersson = service.savePerson(null, "Jersson");
+    const type = service.saveServiceType(null, {
+      name: "Culto",
+      blocks: [
+        { name: "Anuncios", plannedMinutes: 10 },
+        { name: "Consagración", plannedMinutes: 5 },
+      ],
+    });
+    const at = (minute: number): number => Date.UTC(2026, 10, 1, 1, minute);
+    let timer = startNext(timerFor(type, createId), paquita, at(1));
+    timer = startNext(timer, jersson, at(9));
+    const [first, second] = timer.blocks;
+    service.saveRecord(timer.recordId, recordInput(timer));
+    expect(() => service.swapBlocks(timer.recordId, first.id, second.id, false)).toThrow(
+      "sigue en curso",
+    );
+    timer = finish(timer, at(17));
+    service.saveRecord(timer.recordId, recordInput(timer));
+
+    const swapped = service.swapBlocks(timer.recordId, first.id, second.id, false);
+    expect(
+      swapped.blocks.map((block) => [
+        block.name,
+        block.plannedSeconds,
+        block.personName,
+        block.actualSeconds,
+      ]),
+    ).toEqual([
+      ["Consagración", 300, "Paquita", 480],
+      ["Anuncios", 600, "Jersson", 480],
+    ]);
+    const withLeaders = service.swapBlocks(timer.recordId, first.id, second.id, true);
+    expect(withLeaders.blocks.map((block) => [block.name, block.personName])).toEqual([
+      ["Anuncios", "Jersson"],
+      ["Consagración", "Paquita"],
+    ]);
+  });
 });
 
 it("rejects skipping and starting a later block while the first is pending", () => {

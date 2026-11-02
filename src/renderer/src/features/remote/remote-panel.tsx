@@ -85,7 +85,7 @@ export function RemotePanel() {
             </Button>
           </div>
           {status.addresses.length > 0 && (
-            <p className="text-xs text-ink-2">
+            <p className="text-xs text-ink-2 select-text">
               Si el iPad no encuentra esta computadora, escribe su dirección en el iPad:{" "}
               {status.addresses
                 .slice(0, 3)

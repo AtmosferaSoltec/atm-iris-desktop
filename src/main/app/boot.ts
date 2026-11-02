@@ -179,6 +179,8 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
           timing.changeStart(recordId, blockId, startedAt),
         "records:change-leader": ({ recordId, blockId, personId }) =>
           timing.changeLeader(recordId, blockId, personId),
+        "records:swap-blocks": ({ recordId, blockId, otherBlockId, swapLeaders }) =>
+          timing.swapBlocks(recordId, blockId, otherBlockId, swapLeaders),
         "times:load": () => timing.loadTimes(),
         "sounds:list": () => media.sounds(),
         "projection:report-error": (message) => broadcast("projection:error", message),

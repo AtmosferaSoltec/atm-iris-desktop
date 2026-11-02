@@ -1,4 +1,4 @@
-import { Clock, Ellipsis, Timer, Trash2, UserRound } from "lucide-react";
+import { ArrowLeftRight, Clock, Ellipsis, Timer, Trash2, UserRound } from "lucide-react";
 import { useState, useTransition } from "react";
 import { TimeBar } from "@renderer/components/service/time-bar";
 import { Button, IconButton } from "@renderer/components/ui/button";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@renderer/components/ui/dropdown-menu";
 import { Select } from "@renderer/components/ui/select";
+import { Switch } from "@renderer/components/ui/switch";
 import { TextField } from "@renderer/components/ui/text-field";
 import { toast } from "@renderer/components/ui/toaster";
 import type { BlockRecord, Person, ServiceRecord, ServiceType } from "@shared/domain/models";
@@ -22,10 +23,16 @@ import {
   serviceName,
 } from "@shared/domain/time-statistics";
 import { cn } from "@renderer/lib/cn";
-import { clock, longDate, overtime, timeOfDay } from "@shared/lib/format";
+import { clock, clockTime, longDate, overtime } from "@shared/lib/format";
 import { zonedParts, zonedTimeToUtc } from "@shared/lib/zoned-time";
 import { compareNames } from "@shared/lib/text";
-import { adjustBlockDuration, changeBlockLeader, changeBlockStart, deleteRecord } from "../actions";
+import {
+  adjustBlockDuration,
+  changeBlockLeader,
+  changeBlockStart,
+  deleteRecord,
+  swapBlocks,
+} from "../actions";
 
 type Props = {
   record: ServiceRecord;
@@ -39,6 +46,7 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
   const [adjusting, setAdjusting] = useState<BlockRecord | null>(null);
   const [reassigning, setReassigning] = useState<BlockRecord | null>(null);
   const [restarting, setRestarting] = useState<BlockRecord | null>(null);
+  const [swapping, setSwapping] = useState<BlockRecord | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
   const [isDeleting, startDelete] = useTransition();
@@ -106,7 +114,12 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
                     <p className="text-sm text-ink-2">
                       <span>{leaderName(block, people)}</span>
                       {block.startedAt && !skipped && (
-                        <span> · inició {startLabel(block.startedAt, timeZone)}</span>
+                        <span>
+                          {" · "}
+                          {block.endedAt
+                            ? `de ${timeLabel(block.startedAt, timeZone)} a ${timeLabel(block.endedAt, timeZone)}`
+                            : `inició ${timeLabel(block.startedAt, timeZone)}`}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -139,6 +152,12 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
                         <UserRound aria-hidden />
                         Cambiar responsable
                       </DropdownMenuItem>
+                      {record.blocks.length > 1 && (
+                        <DropdownMenuItem onSelect={() => setSwapping(block)}>
+                          <ArrowLeftRight aria-hidden />
+                          Intercambiar con otro bloque…
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -187,6 +206,15 @@ export function RecordDetail({ record, types, people, timeZone, onDeleted }: Pro
           block={restarting}
           timeZone={timeZone}
           onClose={() => setRestarting(null)}
+        />
+      )}
+      {swapping && (
+        <SwapBlocksDialog
+          record={record}
+          block={swapping}
+          people={people}
+          timeZone={timeZone}
+          onClose={() => setSwapping(null)}
         />
       )}
       {reassigning && (
@@ -315,9 +343,9 @@ function AdjustDurationDialog({
   );
 }
 
-function startLabel(instant: string, timeZone: string): string {
+function timeLabel(instant: string, timeZone: string): string {
   const { hour, minute } = zonedParts(new Date(instant), timeZone);
-  return timeOfDay(hour, minute);
+  return clockTime(hour, minute);
 }
 
 /** The block really began earlier or later than the click: it lasts until it ended. */
@@ -363,7 +391,7 @@ function ChangeStartDialog({
       onClose={onClose}
       size="sm"
       title="Cambiar hora de inicio"
-      description={`${block.name} · terminó a las ${startLabel(block.endedAt!, timeZone)}`}
+      description={`${block.name} · terminó a las ${timeLabel(block.endedAt!, timeZone)}`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -391,6 +419,122 @@ function ChangeStartDialog({
         <p className="text-xs text-ink-2">
           El bloque durará hasta que terminó. Si hay un bloque antes, terminará a esa hora.
         </p>
+      </div>
+    </Dialog>
+  );
+}
+
+/**
+ * Two blocks were timed under each other's name (it happens when the order changes during the
+ * service): each takes the other's name and planned time; the real times stay where they happened.
+ */
+function SwapBlocksDialog({
+  record,
+  block,
+  people,
+  timeZone,
+  onClose,
+}: {
+  record: ServiceRecord;
+  block: BlockRecord;
+  people: Person[];
+  timeZone: string;
+  onClose: () => void;
+}) {
+  const others = record.blocks.filter((candidate) => candidate.id !== block.id);
+  const [otherId, setOtherId] = useState(others[0]!.id);
+  const [swapLeaders, setSwapLeaders] = useState(false);
+  const [error, setError] = useState<string>();
+  const [isPending, startTransition] = useTransition();
+  const other = others.find((candidate) => candidate.id === otherId)!;
+  // In the service's order: each place keeps its time and takes the other's name.
+  const slots: [BlockRecord, BlockRecord][] =
+    record.blocks.indexOf(block) < record.blocks.indexOf(other)
+      ? [
+          [block, other],
+          [other, block],
+        ]
+      : [
+          [other, block],
+          [block, other],
+        ];
+  const when = (candidate: BlockRecord): string =>
+    candidate.startedAt && candidate.status !== "skipped"
+      ? ` · ${timeLabel(candidate.startedAt, timeZone)}`
+      : "";
+  const leader = (candidate: BlockRecord): string =>
+    candidate.personId || candidate.personName ? ` · ${leaderName(candidate, people)}` : "";
+
+  function save() {
+    startTransition(async () => {
+      const result = await swapBlocks(record.id, block.id, otherId, swapLeaders);
+      if (result.error) setError(result.error);
+      else {
+        toast.success("Bloques intercambiados");
+        onClose();
+      }
+    });
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="sm"
+      title="Intercambiar bloques"
+      description="Para cuando un bloque se cronometró con el nombre de otro. Las horas quedan donde pasaron: cambian el nombre y el tiempo previsto."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} isLoading={isPending}>
+            Intercambiar
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4 pb-2">
+        {error && (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {error}
+          </p>
+        )}
+        <Select
+          id="swap-with"
+          label={`Intercambiar «${block.name}»${when(block)} con`}
+          value={otherId}
+          onValueChange={setOtherId}
+          options={others.map((candidate) => ({
+            value: candidate.id,
+            label: `${candidate.name}${when(candidate)}`,
+          }))}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm">
+            También los responsables
+            <span className="block text-xs text-ink-2">
+              Si cada uno se fue con su bloque y no con su hora.
+            </span>
+          </span>
+          <Switch
+            label="Intercambiar también los responsables"
+            checked={swapLeaders}
+            onCheckedChange={setSwapLeaders}
+          />
+        </div>
+        <div className="rounded-md bg-surface px-4 py-3 text-sm ring-1 ring-line ring-inset">
+          <p className="text-xs text-ink-2">Quedará así</p>
+          {slots.map(([slot, partner]) => (
+            <p key={slot.id} className="mt-1">
+              {partner.name}
+              <span className="text-ink-2">
+                {when(slot)}
+                {leader(swapLeaders ? partner : slot)}
+              </span>
+            </p>
+          ))}
+        </div>
       </div>
     </Dialog>
   );

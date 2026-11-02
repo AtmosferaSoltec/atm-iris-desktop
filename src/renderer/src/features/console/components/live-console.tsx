@@ -57,18 +57,18 @@ export function LiveConsole({ data }: { data: ConsoleData }) {
   return (
     <ConsoleDnd ctrl={ctrl}>
       <div className="fixed inset-0 z-10 flex flex-col bg-canvas" aria-label="Servicio en vivo">
-        <PanelBoundary name="la barra superior" className="flex h-[68px] items-center gap-3 px-6">
+        <PanelBoundary name="la barra superior" className="flex h-14 items-center gap-3 px-5">
           <ConsoleTopBar
             ctrl={ctrl}
             churchName={data.churchName}
             serviceName={service.serviceType?.name ?? null}
           />
         </PanelBoundary>
-        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_340px] gap-4 px-4 pb-4 2xl:grid-cols-[340px_minmax(0,1fr)_380px]">
+        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_340px] gap-3 px-3 pb-3 2xl:grid-cols-[340px_minmax(0,1fr)_380px] 2xl:gap-4 2xl:px-4 2xl:pb-4">
           <PanelBoundary name="la biblioteca">
             <LibraryPanel ctrl={ctrl} library={library} />
           </PanelBoundary>
-          <div className="flex min-h-0 flex-col gap-4">
+          <div className="flex min-h-0 flex-col gap-3 2xl:gap-4">
             <PanelBoundary name="los tiempos">
               <BlockTimerBar service={service} people={data.people} />
             </PanelBoundary>

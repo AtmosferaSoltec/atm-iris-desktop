@@ -22,6 +22,12 @@ export function timeOfDay(hour: number, minute: number): string {
   return `${hour}:${String(minute).padStart(2, "0")}`;
 }
 
+/** "8:01 p. m.", "12:30 a. m.": a clock time as the church reads it (12-hour). */
+export function clockTime(hour: number, minute: number): string {
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "a. m." : "p. m."}`;
+}
+
 /** "Domingo · 10:00". */
 export function scheduleSummary(schedule: Schedule): string {
   return `${weekdayName(schedule.weekday)} · ${timeOfDay(schedule.hour, schedule.minute)}`;

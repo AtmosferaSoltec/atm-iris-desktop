@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clock,
+  clockTime,
   fileSize,
   greeting,
   longDate,
@@ -42,6 +43,15 @@ describe("dates in the church's zone", () => {
     expect(relativeTime("2026-09-28T15:00:00Z", LIMA, now)).toBe("hace 3 días");
     expect(relativeTime("2026-09-30T15:00:00Z", LIMA, now)).toBe("ayer");
     expect(relativeTime("2026-10-01T14:55:00Z", LIMA, now)).toBe("hace 5 minutos");
+  });
+});
+
+describe("clockTime", () => {
+  it("reads a time of day on a 12-hour clock", () => {
+    expect(clockTime(20, 1)).toBe("8:01 p. m.");
+    expect(clockTime(0, 30)).toBe("12:30 a. m.");
+    expect(clockTime(12, 0)).toBe("12:00 p. m.");
+    expect(clockTime(9, 5)).toBe("9:05 a. m.");
   });
 });
 

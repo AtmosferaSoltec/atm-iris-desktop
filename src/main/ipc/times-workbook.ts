@@ -68,8 +68,8 @@ export async function timesWorkbook(data: ExportData): Promise<Buffer> {
     });
     added.height = 18;
     added.getCell("date").numFmt = "dd/mm/yyyy";
-    added.getCell("startTime").numFmt = "hh:mm:ss";
-    added.getCell("endTime").numFmt = "hh:mm:ss";
+    added.getCell("startTime").numFmt = "h:mm:ss AM/PM";
+    added.getCell("endTime").numFmt = "h:mm:ss AM/PM";
     added.getCell("overtime").numFmt = OVERTIME;
     added.eachCell((cell, column) => {
       cell.font = { name: "Calibri", color: { argb: INK } };

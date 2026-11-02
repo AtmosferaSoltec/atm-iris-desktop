@@ -3,6 +3,8 @@ import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ChevronDown,
+  ChevronUp,
   Eraser,
   Trash2,
   Volume2,
@@ -26,6 +28,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@renderer/components/ui
 import { cn } from "@renderer/lib/cn";
 import { clock } from "@shared/lib/format";
 import { plural } from "@shared/lib/text";
+import type { ProjectionFrame } from "@renderer/features/projection/model";
 import type { ConsoleItem } from "../model";
 import { elapsedOf, type LiveConsole } from "../use-live-console";
 import { FileStatus } from "./file-status";
@@ -35,17 +38,22 @@ import { ENTRY_ICONS, itemIconKey } from "../library/entry-icons";
 /** SERVICIO over EN VIVO (IRIS_SPEC §6.2, column 1 of the iPad; right column on the desktop). */
 export function ServicePanel({ ctrl }: { ctrl: LiveConsole }) {
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
+  const [isPreviewHidden, setIsPreviewHidden] = useState(readPreviewHidden);
+  function setPreviewHidden(value: boolean) {
+    setIsPreviewHidden(value);
+    writePreviewHidden(value);
+  }
   // The whole list is a drop target for what is dragged from the library.
   const { setNodeRef, isOver } = useDroppable({ id: SERVICE_DROP_ID });
   const { active } = useDndContext();
   const isReceiving = isOver || (active?.data.current?.type === "library" && !!active);
 
   return (
-    <div className="flex min-h-0 flex-col gap-4">
+    <div className="flex min-h-0 flex-col gap-3 2xl:gap-4">
       <Surface
         role="region"
         aria-label="Servicio"
-        className="flex min-h-0 flex-1 flex-col gap-2 p-4"
+        className="flex min-h-0 flex-1 flex-col gap-1.5 p-3"
       >
         <div className="flex items-center justify-between gap-2 px-1">
           <h2 className="eyebrow text-ink-2">
@@ -103,26 +111,40 @@ export function ServicePanel({ ctrl }: { ctrl: LiveConsole }) {
         </div>
       </Surface>
 
-      <Surface role="region" aria-label="Pantalla en vivo" className="flex flex-col gap-3 p-3">
-        <div className="relative overflow-hidden rounded-md ring-1 ring-line-strong">
-          <ProjectionCanvas
-            frame={ctrl.liveFrame}
-            transitions
-            playsVideo
-            onVideoTime={(time) => ctrl.followVideo(time.id, time.position, time.duration)}
-            onVideoError={(message) => {
-              if (ctrl.liveFrame.content.kind === "video")
-                ctrl.reportPlaybackError(ctrl.liveFrame.content.id, message);
-            }}
+      <Surface role="region" aria-label="Pantalla en vivo" className="flex flex-col gap-2.5 p-3">
+        {isPreviewHidden ? (
+          <LiveStrip frame={ctrl.liveFrame} isCleared={ctrl.isCleared} />
+        ) : (
+          <div className="relative overflow-hidden rounded-md ring-1 ring-line-strong">
+            <ProjectionCanvas
+              frame={ctrl.liveFrame}
+              transitions
+              playsVideo
+              onVideoTime={(time) => ctrl.followVideo(time.id, time.position, time.duration)}
+              onVideoError={(message) => {
+                if (ctrl.liveFrame.content.kind === "video")
+                  ctrl.reportPlaybackError(ctrl.liveFrame.content.id, message);
+              }}
+            />
+            <span className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-white uppercase backdrop-blur">
+              <span className="size-1.5 animate-pulse-live rounded-full bg-live" />
+              En vivo
+            </span>
+          </div>
+        )}
+        {/* One row for the player and the screen's buttons: the service list keeps the height. */}
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            {ctrl.playback ? <NowPlaying ctrl={ctrl} /> : <OpenTrack ctrl={ctrl} />}
+          </div>
+          <PreviewControls
+            ctrl={ctrl}
+            isPreviewHidden={isPreviewHidden}
+            onTogglePreview={() => setPreviewHidden(!isPreviewHidden)}
           />
-          <span className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-white uppercase backdrop-blur">
-            <span className="size-1.5 animate-pulse-live rounded-full bg-live" />
-            En vivo
-          </span>
         </div>
-        <PreviewControls ctrl={ctrl} />
-        {ctrl.playback && <NowPlaying ctrl={ctrl} />}
-        <OpenTrack ctrl={ctrl} />
+        {ctrl.playback && <PlaybackBar ctrl={ctrl} />}
+        {ctrl.playback && <OpenTrack ctrl={ctrl} />}
       </Surface>
 
       <ConfirmDialog
@@ -175,8 +197,8 @@ function ServiceRow({
       {...dragListener(listeners, "onPointerDown")}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
-        "group relative flex items-center gap-3 rounded-md py-2 pr-1 pl-3 transition-colors",
-        isOpen ? "bg-surface-raised" : "hover:bg-surface",
+        "group relative flex items-center gap-2.5 rounded-md py-1 pr-2 pl-2.5 transition-colors",
+        isOpen ? "bg-surface-raised" : "hover:bg-surface-raised",
         isDragging &&
           "relative z-10 cursor-grabbing bg-surface-raised opacity-90 shadow-xl ring-1 ring-line-strong",
       )}
@@ -184,13 +206,14 @@ function ServiceRow({
       {isOpen && (
         <span
           aria-hidden
-          className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-accent"
+          className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-accent"
         />
       )}
       <button
         type="button"
         onClick={onOpen}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+        title={item.subtitle ? `${item.title} · ${item.subtitle}` : item.title}
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left"
         onKeyDown={(event) => {
           if (event.key === "Delete" || event.key === "Backspace") onRemove();
         }}
@@ -199,55 +222,58 @@ function ServiceRow({
           {String(index + 1).padStart(2, "0")}
         </span>
         <span
-          className="grid size-9 shrink-0 place-items-center rounded-sm"
+          className="grid size-7 shrink-0 place-items-center rounded-sm"
           style={{ color, backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)` }}
         >
-          <Icon aria-hidden className="size-4" />
+          <Icon aria-hidden className="size-3.5" />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-semibold">{item.title}</span>
-            {isLive && (
-              <span aria-label="En vivo" className="size-1.5 shrink-0 rounded-full bg-live" />
-            )}
-          </span>
-          {(item.subtitle || ((item.kind === "song" || item.kind === "track") && item.file)) && (
-            <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
-              <span className="truncate">{item.subtitle}</span>
-              {(item.kind === "song" || item.kind === "track") && item.file && (
-                <>
-                  <Music role="img" aria-label="Audio MP3" className="size-3.5 shrink-0" />
-                  {item.file.durationSeconds !== null && (
-                    <span className="shrink-0 font-mono tabular-nums">
-                      {clock(item.file.durationSeconds)}
-                    </span>
-                  )}
-                </>
-              )}
+        {/* One line per element: the title, then the author dimmed, then the track's length. */}
+        <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <span className="max-w-full shrink-0 truncate text-sm font-semibold">{item.title}</span>
+          {isLive && (
+            <span
+              aria-label="En vivo"
+              className="size-1.5 shrink-0 self-center rounded-full bg-live"
+            />
+          )}
+          {item.subtitle && (
+            <span className="min-w-0 shrink-[100] truncate text-xs text-ink-2">
+              {item.subtitle}
             </span>
           )}
         </span>
+        {(item.kind === "song" || item.kind === "track") && item.file && (
+          <span className="flex shrink-0 items-center gap-1 text-xs text-ink-2">
+            <Music role="img" aria-label="Audio MP3" className="size-3.5" />
+            {item.file.durationSeconds !== null && (
+              <span className="font-mono tabular-nums">{clock(item.file.durationSeconds)}</span>
+            )}
+          </span>
+        )}
         {(item.kind === "image" || item.kind === "video") && item.file && (
           <FileStatus state={fileState(item.file.id)} className="mr-1" />
         )}
       </button>
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...dragListener(listeners, "onKeyDown")}
-        aria-label={`Mover «${item.title}»`}
-        className="grid size-7 shrink-0 cursor-grab place-items-center rounded-full text-ink-2 opacity-0 transition group-hover:opacity-100 hover:text-ink focus-visible:opacity-100"
-      >
-        <GripVertical aria-hidden className="size-4" />
-      </button>
-      <IconButton
-        label={`Quitar «${item.title}»`}
-        className="size-7 shrink-0 opacity-0 ring-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-danger"
-        onClick={onRemove}
-      >
-        <X />
-      </IconButton>
+      {/* Over the row's end, only on hover or focus: hidden, they take no room from the title. */}
+      <span className="pointer-events-none absolute inset-y-0 right-1 flex items-center gap-0.5 rounded-r-md bg-gradient-to-l from-surface-raised from-70% pl-6 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...dragListener(listeners, "onKeyDown")}
+          aria-label={`Mover «${item.title}»`}
+          className="pointer-events-auto grid size-6 shrink-0 cursor-grab place-items-center rounded-full text-ink-2 hover:text-ink"
+        >
+          <GripVertical aria-hidden className="size-4" />
+        </button>
+        <IconButton
+          label={`Quitar «${item.title}»`}
+          className="pointer-events-auto size-6 shrink-0 ring-0 hover:text-danger"
+          onClick={onRemove}
+        >
+          <X />
+        </IconButton>
+      </span>
     </li>
   );
 }
@@ -276,15 +302,15 @@ function OpenTrack({ ctrl }: { ctrl: LiveConsole }) {
     );
   }
   return (
-    <div className="flex items-center gap-3 px-1">
+    <div className="flex items-center gap-2.5">
       <button
         type="button"
         aria-label={`Reproducir la pista de «${item.title}»`}
         title="Reproducir la pista (P)"
         onClick={ctrl.toggleTrack}
-        className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95"
+        className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95"
       >
-        <Play aria-hidden className="ml-0.5 size-5" fill="currentColor" />
+        <Play aria-hidden className="ml-0.5 size-4.5" fill="currentColor" />
       </button>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold">{item.title}</span>
@@ -296,8 +322,54 @@ function OpenTrack({ ctrl }: { ctrl: LiveConsole }) {
   );
 }
 
-/** Mini player (IRIS_SPEC §6.2): only while a track or a video is loaded. */
+/** Mini player (IRIS_SPEC §6.2): only while a track or a video is loaded. The main button and what plays. */
 function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
+  const playback = ctrl.playback!;
+  const isTrack = playback.kind === "track";
+  return (
+    <div className="flex items-center gap-2.5">
+      {/* The main control: always the same solid button, only its icon changes. */}
+      <button
+        type="button"
+        aria-label={playback.playing ? "Pausar" : "Reproducir"}
+        title={playback.playing ? "Pausar (Espacio)" : "Reproducir (Espacio)"}
+        disabled={Boolean(playback.error)}
+        onClick={ctrl.togglePlay}
+        className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {playback.playing ? (
+          <Pause aria-hidden className="size-4.5" fill="currentColor" />
+        ) : (
+          <Play aria-hidden className="ml-0.5 size-4.5" fill="currentColor" />
+        )}
+      </button>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">{playback.title}</span>
+        <span className="flex items-center gap-1.5 text-xs text-ink-2">
+          <span
+            className={cn(
+              "size-1.5 shrink-0 rounded-full",
+              playback.error ? "bg-danger" : isTrack ? "bg-success" : "bg-rose",
+              playback.playing && !playback.error && "animate-pulse-live",
+            )}
+          />
+          <span className="truncate">
+            {playback.error
+              ? "Reproducción no disponible"
+              : !playback.playing
+                ? "En pausa"
+                : isTrack
+                  ? "Sonando en el salón"
+                  : "Reproduciendo en la pantalla"}
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** Where the track or video goes, and the rest of its buttons, in one thin row under the player. */
+function PlaybackBar({ ctrl }: { ctrl: LiveConsole }) {
   const playback = ctrl.playback!;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -311,85 +383,52 @@ function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
   const isTrack = playback.kind === "track";
 
   return (
-    <div className="flex flex-col gap-2 px-1">
-      <div className="flex items-center gap-2.5">
-        <span
-          className={cn(
-            "size-2 shrink-0 rounded-full",
-            playback.error ? "bg-danger" : isTrack ? "bg-success" : "bg-rose",
-            playback.playing && !playback.error && "animate-pulse-live",
-          )}
-        />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">{playback.title}</span>
-          <span className="block text-xs text-ink-2">
-            {playback.error
-              ? "Reproducción no disponible"
-              : !playback.playing
-                ? "En pausa"
-                : isTrack
-                  ? "Sonando en el salón"
-                  : "Reproduciendo en la pantalla"}
-          </span>
-        </span>
-      </div>
+    <div className="flex flex-col gap-2">
       {playback.error && (
         <Banner tone="error">
           La pista no está disponible. Puedes seguir proyectando la letra. Edita la canción para
           elegir otra pista o un archivo local.
         </Banner>
       )}
-      <input
-        type="range"
-        disabled={Boolean(playback.error)}
-        aria-label="Posición"
-        min={0}
-        max={Math.max(playback.duration, 1)}
-        step={0.5}
-        value={elapsed}
-        onChange={(event) => ctrl.seek(Number(event.target.value))}
-        className="w-full accent-coral"
-      />
-      <div className="flex items-center justify-between font-mono text-[11px] text-ink-2 tabular-nums">
-        <span>{clock(Math.floor(elapsed))}</span>
-        <span>-{clock(Math.ceil(remaining))}</span>
-      </div>
-      <div className="flex items-center justify-center gap-2">
-        <IconButton label="Desde el inicio" onClick={() => ctrl.seek(0)}>
+      <div className="flex items-center gap-1.5">
+        <IconButton label="Desde el inicio" className="size-7" onClick={() => ctrl.seek(0)}>
           <SkipBack />
         </IconButton>
-        {/* The main control: always the same solid button, only its icon changes. */}
-        <button
-          type="button"
-          aria-label={playback.playing ? "Pausar" : "Reproducir"}
-          title={playback.playing ? "Pausar (Espacio)" : "Reproducir (Espacio)"}
+        <span className="w-9 shrink-0 text-right font-mono text-[11px] text-ink-2 tabular-nums">
+          {clock(Math.floor(elapsed))}
+        </span>
+        <input
+          type="range"
           disabled={Boolean(playback.error)}
-          onClick={ctrl.togglePlay}
-          className="grid size-11 cursor-pointer place-items-center rounded-full bg-coral text-ink-inverse transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {playback.playing ? (
-            <Pause aria-hidden className="size-5" fill="currentColor" />
-          ) : (
-            <Play aria-hidden className="ml-0.5 size-5" fill="currentColor" />
-          )}
-        </button>
+          aria-label="Posición"
+          min={0}
+          max={Math.max(playback.duration, 1)}
+          step={0.5}
+          value={elapsed}
+          onChange={(event) => ctrl.seek(Number(event.target.value))}
+          className="min-w-0 flex-1 accent-coral"
+        />
+        <span className="w-10 shrink-0 font-mono text-[11px] text-ink-2 tabular-nums">
+          -{clock(Math.ceil(remaining))}
+        </span>
         {!isTrack && (
           <IconButton
             label="Silenciar en pantalla"
+            className="size-7"
             aria-pressed={ctrl.isScreenMuted}
             onClick={() => ctrl.setIsScreenMuted(!ctrl.isScreenMuted)}
           >
             <Music />
           </IconButton>
         )}
-        <IconButton label="Detener" onClick={ctrl.stopPlayback}>
+        <IconButton label="Detener" className="size-7" onClick={ctrl.stopPlayback}>
           <Square />
         </IconButton>
         <IconButton
           label="Repetir"
           aria-pressed={playback.loop}
           onClick={ctrl.toggleLoop}
-          className={playback.loop ? "bg-coral/15 text-coral ring-coral/40" : undefined}
+          className={cn("size-7", playback.loop && "bg-coral/15 text-coral ring-coral/40")}
         >
           <Repeat />
         </IconButton>
@@ -398,9 +437,17 @@ function NowPlaying({ ctrl }: { ctrl: LiveConsole }) {
   );
 }
 
-function PreviewControls({ ctrl }: { ctrl: LiveConsole }) {
+function PreviewControls({
+  ctrl,
+  isPreviewHidden,
+  onTogglePreview,
+}: {
+  ctrl: LiveConsole;
+  isPreviewHidden: boolean;
+  onTogglePreview: () => void;
+}) {
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex shrink-0 items-center gap-1.5">
       <IconButton
         label="Limpiar pantalla (B)"
         aria-pressed={ctrl.isCleared}
@@ -435,6 +482,59 @@ function PreviewControls({ ctrl }: { ctrl: LiveConsole }) {
           <span className="text-xs text-ink-2 tabular-nums">{Math.round(ctrl.volume * 100)} %</span>
         </PopoverContent>
       </Popover>
+      <IconButton
+        label={isPreviewHidden ? "Mostrar la vista previa" : "Ocultar la vista previa"}
+        aria-pressed={isPreviewHidden}
+        onClick={onTogglePreview}
+      >
+        {isPreviewHidden ? <ChevronUp /> : <ChevronDown />}
+      </IconButton>
     </div>
   );
+}
+
+/** The preview folded away: one line with what the screens show, so the service list gets the room. */
+function LiveStrip({ frame, isCleared }: { frame: ProjectionFrame; isCleared: boolean }) {
+  const content = frame.content;
+  const text = isCleared
+    ? "Pantalla limpia"
+    : content.kind === "text"
+      ? content.text.split("\n")[0]!
+      : content.kind === "image"
+        ? "Imagen"
+        : content.kind === "video"
+          ? "Video"
+          : content.kind === "youtube"
+            ? "YouTube"
+            : content.kind === "timer"
+              ? "Cronómetro"
+              : "Solo el fondo";
+  return (
+    <p className="flex min-w-0 items-center gap-2 rounded-md bg-black px-3 py-2 text-sm text-white ring-1 ring-line-strong">
+      <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-bold tracking-[0.12em] uppercase">
+        <span className="size-1.5 animate-pulse-live rounded-full bg-live" />
+        En vivo
+      </span>
+      <span className="truncate">{text}</span>
+    </p>
+  );
+}
+
+const PREVIEW_HIDDEN_KEY = "iris.preview-hidden";
+
+/** Folding the preview is this computer's choice; it is only a convenience, so a failure is ignored. */
+function readPreviewHidden(): boolean {
+  try {
+    return localStorage.getItem(PREVIEW_HIDDEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writePreviewHidden(value: boolean): void {
+  try {
+    localStorage.setItem(PREVIEW_HIDDEN_KEY, value ? "1" : "0");
+  } catch {
+    // The preview still folds for this session.
+  }
 }

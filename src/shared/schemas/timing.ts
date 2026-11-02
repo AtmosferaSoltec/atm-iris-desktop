@@ -84,6 +84,15 @@ export const blockLeaderSchema = z.object({
   blockId: timingIdSchema,
   personId: timingIdSchema.nullable(),
 });
+/** Two blocks that were timed under each other's name (the times stay, the names move). */
+export const blockSwapSchema = z
+  .object({
+    recordId: timingIdSchema,
+    blockId: timingIdSchema,
+    otherBlockId: timingIdSchema,
+    swapLeaders: z.boolean(),
+  })
+  .refine((input) => input.blockId !== input.otherBlockId, "Elige otro bloque.");
 export const blockStartSchema = z.object({
   recordId: timingIdSchema,
   blockId: timingIdSchema,

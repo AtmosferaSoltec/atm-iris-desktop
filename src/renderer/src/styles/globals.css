@@ -146,6 +146,15 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* A desktop app, not a page: double clicks and drags never paint text as a selection. */
+    user-select: none;
+  }
+
+  /* What is typed, and what is meant to be copied (`select-text`), can still be selected. */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
   }
 
   ::selection {

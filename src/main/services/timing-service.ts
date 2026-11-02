@@ -263,6 +263,47 @@ export class TimingService {
       personName: person?.name ?? null,
     }));
   }
+  /**
+   * Two blocks were timed under each other's name (one ran where the other was planned): each
+   * takes the other's name and planned time, and the leaders too when asked. The real times stay
+   * where they happened.
+   */
+  swapBlocks(
+    recordId: string,
+    blockId: string,
+    otherBlockId: string,
+    swapLeaders: boolean,
+  ): ServiceRecord {
+    const record = this.repository.record(recordId);
+    const first = record?.blocks.find((block) => block.id === blockId);
+    const second = record?.blocks.find((block) => block.id === otherBlockId);
+    if (!record || !first || !second || first === second)
+      throw new AppError("NOT_FOUND", "No encontramos el registro.");
+    if (record.status === "inProgress")
+      throw new AppError(
+        "CONFLICT",
+        "El servicio sigue en curso. Finalízalo antes de ajustar sus tiempos.",
+      );
+    const takeFrom = (
+      block: ServiceRecord["blocks"][number],
+      other: ServiceRecord["blocks"][number],
+    ): ServiceRecord["blocks"][number] => ({
+      ...block,
+      name: other.name,
+      plannedSeconds: other.plannedSeconds,
+      ...(swapLeaders ? { personId: other.personId, personName: other.personName } : {}),
+    });
+    return this.saveRecord(recordId, {
+      ...record,
+      blocks: record.blocks.map((block) =>
+        block === first
+          ? takeFrom(first, second)
+          : block === second
+            ? takeFrom(second, first)
+            : block,
+      ),
+    });
+  }
   private changeBlock(
     recordId: string,
     blockId: string,

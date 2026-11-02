@@ -17,6 +17,7 @@ import {
   recordSaveSchema,
   blockAdjustmentSchema,
   blockLeaderSchema,
+  blockSwapSchema,
 } from "../schemas/timing";
 import type { Person, ServiceType, ServiceRecord } from "../domain/models";
 import type { Monitor, ProjectionStatus } from "../domain/monitors";
@@ -166,6 +167,11 @@ export const contract = {
   "records:change-leader": defineChannel(
     "records:change-leader",
     blockLeaderSchema,
+    z.custom<ServiceRecord>(),
+  ),
+  "records:swap-blocks": defineChannel(
+    "records:swap-blocks",
+    blockSwapSchema,
     z.custom<ServiceRecord>(),
   ),
   "times:load": defineChannel(
