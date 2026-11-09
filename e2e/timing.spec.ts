@@ -148,6 +148,12 @@ test("Tiempos shows each block's start and end on a 12-hour clock and swaps two 
   try {
     const page = await running.app.firstWindow();
     await page.evaluate(async () => {
+      // The church's zone is set here: the computer's own (UTC on CI) would move every time.
+      const church = await window.iris["settings:update-church"]({
+        name: "Iglesia de prueba",
+        timezone: "America/Lima",
+      });
+      if (!church.ok) throw new Error(church.error.message);
       // Lima is UTC−5: 01:01 UTC is 8:01 p. m. the evening before.
       const at = (minute: number): string =>
         new Date(Date.UTC(2026, 10, 2, 1, minute)).toISOString();

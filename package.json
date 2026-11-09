@@ -1,6 +1,6 @@
 {
   "name": "atm-iris-desktop",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Consola local de proyección y tiempos para iglesias",
   "main": "./out/main/index.js",
   "author": "Atmosfera",
