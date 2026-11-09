@@ -644,6 +644,7 @@ export function useLiveConsole(data: ConsoleData) {
     liveFrame,
     isCleared,
     toggleCleared: () => setIsCleared((value) => !value),
+    uncover: () => setIsCleared(false),
     backgrounds,
     backgroundId,
     setBackgroundId,

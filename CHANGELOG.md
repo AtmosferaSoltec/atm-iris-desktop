@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3
+
+- Diapositivas: con doble clic se muestra la diapositiva aunque «Limpiar pantalla» esté activo (la pantalla se destapa y la muestra).
+
 ## 1.4.2
 
 - Cronómetro del servicio: si presionas «Siguiente» sin querer, aparece «Volver a «bloque»» y el servicio regresa a ese bloque, que sigue contando desde que realmente empezó (se puede repetir si fueron dos veces). Además, «Siguiente» descansa un momento después de cada presión para que un doble clic no salte dos bloques.

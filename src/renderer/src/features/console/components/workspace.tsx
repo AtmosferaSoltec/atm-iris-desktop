@@ -115,6 +115,11 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
             <button
               type="button"
               onClick={() => ctrl.presentSlide(index)}
+              onDoubleClick={() => {
+                // Double click: show it even when "Limpiar pantalla" is on.
+                ctrl.presentSlide(index);
+                ctrl.uncover();
+              }}
               onContextMenu={
                 item.kind === "song"
                   ? (event) => {
@@ -125,7 +130,7 @@ function SlideGrid({ ctrl, item }: { ctrl: LiveConsole; item: ConsoleItem }) {
               }
               title={
                 item.kind === "song"
-                  ? `${slide.text}\n\nClic derecho para editar o dividir`
+                  ? `${slide.text}\n\nDoble clic para mostrar aunque la pantalla esté limpia\nClic derecho para editar o dividir`
                   : slide.text
               }
               aria-label={`Enviar a la pantalla: ${slide.label ?? `diapositiva ${index + 1}`}`}
