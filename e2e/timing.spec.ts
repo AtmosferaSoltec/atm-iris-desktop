@@ -199,3 +199,50 @@ test("Tiempos shows each block's start and end on a 12-hour clock and swaps two 
     await running.close();
   }
 });
+
+test("a mistaken «Siguiente» is undone while the service runs, and it survives a restart", async () => {
+  const home = await mkdtemp(join(tmpdir(), "iris-timing-back-"));
+  let instance = await launchApp({ home });
+  try {
+    let page = await instance.app.firstWindow();
+    await page.getByRole("button", { name: "Seleccionar servicio", exact: true }).click();
+    await page.getByLabel("Nombre", { exact: true }).fill("Culto de prueba");
+    await page.getByLabel("Nombre del bloque 1").fill("Alabanzas");
+    await page.getByRole("button", { name: "Agregar bloque", exact: true }).click();
+    await page.getByLabel("Nombre del bloque 2").fill("Mensaje");
+    await page.getByRole("button", { name: "Agregar bloque", exact: true }).click();
+    await page.getByLabel("Nombre del bloque 3").fill("Anuncios");
+    await page.getByRole("button", { name: "Crear y seleccionar" }).click();
+    await page.getByRole("button", { name: "Comenzar", exact: true }).click();
+    await expect(page.getByRole("button", { name: /^Volver a/ })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Siguiente: Mensaje →" }).click();
+    // The button rests a moment after a press, so a quick second press cannot slip through.
+    await expect(page.getByRole("button", { name: "Siguiente: Anuncios →" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Siguiente: Anuncios →" })).toBeEnabled();
+    await page.getByRole("button", { name: "Siguiente: Anuncios →" }).click();
+    await expect(
+      page.getByRole("button", { name: "Finalizar servicio", exact: true }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Volver a «Mensaje»" }).click();
+    await expect(page.getByRole("button", { name: "Siguiente: Anuncios →" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Volver a «Alabanzas»" })).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const result = await window.iris["times:load"](undefined);
+          return result.ok ? result.data.records[0]?.blocks.map((block) => block.status) : null;
+        }),
+      )
+      .toEqual(["completed", "running", "pending"]);
+
+    await instance.close();
+    instance = await launchApp({ home });
+    page = await instance.app.firstWindow();
+    await expect(page.getByRole("button", { name: "Siguiente: Anuncios →" })).toBeVisible();
+  } finally {
+    await instance.close();
+    await rm(home, { recursive: true, force: true });
+  }
+});

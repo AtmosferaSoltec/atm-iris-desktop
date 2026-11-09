@@ -3,7 +3,9 @@ import type { ServiceType } from "@shared/domain/models";
 import {
   clockState,
   finish,
+  goBack,
   insertBlock,
+  previousIndex,
   recordInput,
   removeBlock,
   resumeTimer,
@@ -32,6 +34,42 @@ const newId = (): string => `id-${++sequence}`;
 const T0 = Date.parse("2026-10-19T15:00:00.000Z");
 const ana = { id: "p-ana", name: "Ana" };
 const minutes = (value: number): number => value * 60_000;
+
+describe("going back after a slip", () => {
+  it("reopens the previous block with its real start and frees the one that just began", () => {
+    let timer = startNext(timerFor(culto, newId), ana, T0);
+    timer = startNext(timer, ana, T0 + minutes(10)); // Alabanzas
+    timer = startNext(timer, ana, T0 + minutes(30)); // Prédica, started by mistake
+    expect(previousIndex(timer)).toBe(1);
+    const back = goBack(timer);
+    expect(back.current).toBe(1);
+    expect(back.blocks[1]).toMatchObject({ startedAt: T0 + minutes(10), endedAt: null });
+    expect(back.blocks[2]).toMatchObject({ startedAt: null, endedAt: null });
+    // What is saved is valid: one running block, the ones after it waiting.
+    expect(recordInput(back)!.blocks.map((block) => block.status)).toEqual([
+      "completed",
+      "running",
+      "pending",
+    ]);
+  });
+
+  it("undoes two presses in a row and stops at the first block", () => {
+    let timer = startNext(timerFor(culto, newId), ana, T0);
+    timer = startNext(timer, ana, T0 + minutes(10));
+    timer = startNext(timer, ana, T0 + minutes(10) + 2_000);
+    timer = goBack(goBack(timer));
+    expect(timer.current).toBe(0);
+    expect(previousIndex(timer)).toBeNull();
+    expect(goBack(timer)).toBe(timer);
+  });
+
+  it("does nothing before the service starts or after it ends", () => {
+    const fresh = timerFor(culto, newId);
+    expect(goBack(fresh)).toBe(fresh);
+    const ended = finish(startNext(fresh, ana, T0), T0 + minutes(5));
+    expect(goBack(ended)).toBe(ended);
+  });
+});
 
 describe("block timer", () => {
   it("warns at 90 percent and marks the planned boundary as over", () => {

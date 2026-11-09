@@ -1,4 +1,4 @@
-import { ChevronDown, CircleCheck, Pencil, Play, Plus, Timer, Trash2 } from "lucide-react";
+import { ChevronDown, CircleCheck, Pencil, Undo2, Play, Plus, Timer, Trash2 } from "lucide-react";
 import { useState, useTransition, type ReactNode } from "react";
 import { Banner } from "@renderer/components/ui/banner";
 import { Button, IconButton } from "@renderer/components/ui/button";
@@ -18,6 +18,7 @@ import {
   isEditable,
   MAX_RECORD_BLOCKS,
   nextIndex,
+  previousIndex,
   totals,
   type ClockState,
   type ServiceTimer,
@@ -112,6 +113,7 @@ export function BlockTimerBar({
           onChangeLeader={() => setChangingLeader(timer.current)}
           onAddBlock={() => setIsAddingBlock(true)}
           onNext={service.startNext}
+          onBack={service.goBack}
           onFinish={() => setIsConfirmingFinish(true)}
         />
       ) : (
@@ -230,6 +232,7 @@ function Running({
   onChangeLeader,
   onAddBlock,
   onNext,
+  onBack,
   onFinish,
 }: {
   timer: ServiceTimer;
@@ -238,8 +241,12 @@ function Running({
   onChangeLeader: () => void;
   onAddBlock: () => void;
   onNext: () => void;
+  onBack: () => void;
   onFinish: () => void;
 }) {
+  // A second press right after the first is almost always a slip: the button rests a moment.
+  const [isResting, setIsResting] = useState(false);
+  const previous = previousIndex(timer);
   const block = timer.blocks[timer.current!];
   const elapsed = elapsedSeconds(block, now);
   const state = clockState(elapsed, block.plannedSeconds);
@@ -283,9 +290,27 @@ function Running({
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {previous !== null && (
+            <Button
+              variant="ghost"
+              icon={<Undo2 className="size-4" />}
+              onClick={onBack}
+              title="Presionaste «Siguiente» sin querer: vuelve a este bloque y sigue contando desde que empezó"
+            >
+              Volver a «{timer.blocks[previous].name}»
+            </Button>
+          )}
           <AddBlockButton timer={timer} onClick={onAddBlock} />
           {next !== null ? (
-            <Button className="min-w-[220px]" onClick={onNext}>
+            <Button
+              className="min-w-[220px]"
+              disabled={isResting}
+              onClick={() => {
+                setIsResting(true);
+                setTimeout(() => setIsResting(false), 1500);
+                onNext();
+              }}
+            >
               Siguiente: {timer.blocks[next].name} →
             </Button>
           ) : (

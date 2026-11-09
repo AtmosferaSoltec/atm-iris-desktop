@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Cronómetro del servicio: si presionas «Siguiente» sin querer, aparece «Volver a «bloque»» y el servicio regresa a ese bloque, que sigue contando desde que realmente empezó (se puede repetir si fueron dos veces). Además, «Siguiente» descansa un momento después de cada presión para que un doble clic no salte dos bloques.
+
 ## 1.4.0
 
 - Control desde iPad con QR: ya no hay código ni dirección que escribir. En Herramientas → iPad aparece un QR (y el control se enciende solo si estaba apagado); el iPad lo escanea y se conecta. Sale de Ajustes y de la búsqueda automática en la red, que era lo que fallaba en muchas redes.

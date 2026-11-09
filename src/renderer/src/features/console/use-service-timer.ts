@@ -7,6 +7,7 @@ import type { ServiceRecord, ServiceType } from "@shared/domain/models";
 import { saveServiceRecord } from "./actions";
 import {
   finish,
+  goBack,
   insertBlock,
   recordInput,
   removeBlock,
@@ -127,6 +128,8 @@ export function useServiceTimer({
     clear,
     /** Closes the current block (if any) and starts the next one right away; the leader is set after. */
     startNext: () => apply((current) => startNext(current, NO_LEADER, Date.now())),
+    /** "Siguiente" pressed by mistake: the block before runs again, with its real start. */
+    goBack: () => apply((current) => goBack(current)),
     setLeader: (index: number, leader: Leader) =>
       apply((current) => setLeader(current, index, leader)),
     /** An extra block for this service only; the service type keeps its blocks. */

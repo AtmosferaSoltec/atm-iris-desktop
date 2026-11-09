@@ -128,6 +128,38 @@ export function startNext(
   return { ...timer, blocks, phase: "running", current: next };
 }
 
+/** The block that was running before this one (the last that started), or null at the first. */
+export function previousIndex(timer: ServiceTimer): number | null {
+  if (timer.phase !== "running" || timer.current === null) return null;
+  for (let index = timer.current - 1; index >= 0; index--) {
+    const block = timer.blocks[index];
+    if (block.startedAt !== null && !block.isSkipped) return index;
+  }
+  return null;
+}
+
+/**
+ * Undoes the last "Siguiente" (pressed by mistake): the block before the current one runs again
+ * and keeps counting from when it really began, so the seconds of the slip are part of it. The
+ * block that had just started goes back to waiting its turn, as if it never began.
+ */
+export function goBack(timer: ServiceTimer): ServiceTimer {
+  const previous = previousIndex(timer);
+  if (previous === null || timer.current === null) return timer;
+  const current = timer.current;
+  return {
+    ...timer,
+    current: previous,
+    blocks: timer.blocks.map((block, index) => {
+      if (index === previous) return { ...block, endedAt: null };
+      // Blocks between the two were never started: they wait too.
+      if (index > previous && index <= current)
+        return { ...block, startedAt: null, endedAt: null, isSkipped: false };
+      return block;
+    }),
+  };
+}
+
 /** Skips the block that would run next (it stays in the record, without time). */
 export function skipNext(timer: ServiceTimer): ServiceTimer {
   const next = nextIndex(timer);
