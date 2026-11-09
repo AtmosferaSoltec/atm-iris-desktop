@@ -31,7 +31,7 @@ export function ConsoleTopBar({
         <ButtonLink href="/times" variant="ghost">
           Tiempos
         </ButtonLink>
-        <BibleButton ctrl={ctrl} />
+        <BibleButton />
         <ToolsButton ctrl={ctrl} />
         <BackgroundPicker ctrl={ctrl} />
         <ProjectionButton />

@@ -32,3 +32,22 @@ export const typographySchema = z.object({
 export const projectionSchema = typographySchema.extend({
   defaultBackgroundId: z.string().max(64).nullable(),
 });
+
+/** The Bible's own look: a background (or none) and, once chosen, its own lettering. */
+export const bibleAppearanceSchema = z.object({
+  backgroundId: z.string().max(64).nullable(),
+  typography: typographySchema.nullable(),
+});
+
+/** A passage the Bible window puts on the screens (the console builds the slides). */
+export const biblePresentSchema = z.object({
+  translation: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[a-z0-9]+$/),
+  bookId: z.string().min(1).max(10),
+  chapter: z.number().int().min(1).max(150),
+  from: z.number().int().min(1).max(200),
+  to: z.number().int().min(1).max(200),
+});

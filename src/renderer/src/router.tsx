@@ -1,5 +1,6 @@
 import { ProjectionDisplay } from "./features/projection/display";
 import { LiveConsolePage } from "./features/console/components/live-console";
+import { BibleWindow } from "./features/console/bible/bible-window";
 import { ChurchSettingsPage } from "./features/church/church-settings";
 import { createHashRouter } from "react-router";
 import { AppLayout, SettingsWindowLayout } from "./components/app-layout";
@@ -33,6 +34,8 @@ export const router = createHashRouter([
       </SettingsWindowLayout>
     ),
   },
+  // Its own window too: pick a verse and it goes to the screens; closing it ends the presentation.
+  { path: "/bible", element: <BibleWindow /> },
   ...(import.meta.env.DEV
     ? [
         {

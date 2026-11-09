@@ -1,5 +1,4 @@
 import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import { networkInterfaces } from "node:os";
 import { WebSocketServer, type WebSocket } from "ws";
 import {
@@ -13,6 +12,7 @@ import {
   type RemoteStatus,
   type ServerMessage,
 } from "@shared/remote/protocol";
+import { pairingLink } from "@shared/remote/pairing-link";
 import { PairingGate } from "./pairing-gate";
 
 const PREFERRED_PORT = 47_831;
@@ -32,7 +32,6 @@ const MESSAGES: Record<RemoteErrorCode, string> = {
 type Dependencies = {
   computerName: string;
   /** Makes the computer findable on the network; returns what stops it. */
-  advertise: (port: number) => () => void;
   onCommand: (command: RemoteCommand) => void;
   /** Answers what the iPad asks to browse (the Bible's books and verses). */
   onRequest?: (request: RemoteRequest) => Promise<RemoteResponse>;
@@ -53,7 +52,6 @@ export class RemoteServer {
   private readonly gate: PairingGate;
   private http: Server | null = null;
   private sockets: WebSocketServer | null = null;
-  private stopAdvertising: (() => void) | null = null;
   private heartbeat: ReturnType<typeof setInterval> | null = null;
   private rotation: ReturnType<typeof setTimeout> | null = null;
   private readonly paired = new Set<WebSocket>();
@@ -85,7 +83,6 @@ export class RemoteServer {
     await listen(http, this.deps.port ?? PREFERRED_PORT).catch(() => listen(http, 0));
     this.http = http;
     this.sockets = sockets;
-    this.stopAdvertising = this.deps.advertise((http.address() as AddressInfo).port);
     this.heartbeat = setInterval(() => this.ping(), HEARTBEAT_MS);
     this.heartbeat.unref();
     this.gate.rotate();
@@ -101,8 +98,6 @@ export class RemoteServer {
     this.sockets = null;
     if (this.heartbeat) clearInterval(this.heartbeat);
     if (this.rotation) clearTimeout(this.rotation);
-    this.stopAdvertising?.();
-    this.stopAdvertising = null;
     this.say([...this.paired], { type: "bye", reason: "disabled" });
     this.gate.revokeAll();
     this.paired.clear();
@@ -116,17 +111,27 @@ export class RemoteServer {
   status(): RemoteStatus {
     const isEnabled = this.http !== null;
     const address = this.http?.address();
+    const port = isEnabled && address && typeof address === "object" ? address.port : null;
+    const addresses = isEnabled ? localAddresses() : [];
     return {
       isEnabled,
-      code: isEnabled ? this.gate.code : null,
-      codeExpiresAt: isEnabled ? new Date(this.gate.expiresAt).toISOString() : null,
-      port: isEnabled && address && typeof address === "object" ? address.port : null,
-      addresses: isEnabled ? localAddresses() : [],
+      pairingLink:
+        port === null
+          ? null
+          : pairingLink({
+              secret: this.gate.code,
+              port,
+              computerName: this.deps.computerName,
+              addresses,
+            }),
+      port,
+      addresses,
       deviceCount: this.paired.size,
     };
   }
 
-  newCode(): void {
+  /** A fresh QR: the one on screen stops working. */
+  newLink(): void {
     if (!this.http) return;
     this.gate.rotate();
     this.scheduleRotation();
@@ -238,7 +243,7 @@ export class RemoteServer {
     }
   }
 
-  /** The code shown on the console is always a live one. */
+  /** The QR shown on the console is always a live one. */
   private scheduleRotation(): void {
     if (this.rotation) clearTimeout(this.rotation);
     this.rotation = setTimeout(

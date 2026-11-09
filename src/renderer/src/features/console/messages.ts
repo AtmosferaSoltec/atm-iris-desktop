@@ -16,7 +16,12 @@ export const FOLDER_LABELS = {
   video: "Abrir carpeta de videos",
 };
 
-export const TOOL_LABELS = { text: "Texto", timer: "Temporizador", sounds: "Sonidos" };
+export const TOOL_LABELS = {
+  text: "Texto",
+  timer: "Temporizador",
+  sounds: "Sonidos",
+  ipad: "iPad",
+};
 export const SOUND_ICON_LABELS = {
   volume: "Sonido",
   applause: "Aplausos",

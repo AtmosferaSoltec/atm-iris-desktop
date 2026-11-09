@@ -2,44 +2,50 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@renderer/lib/ipc";
 import { Banner } from "@renderer/components/ui/banner";
 import { Select } from "@renderer/components/ui/select";
-
 import { ChevronRight, CornerDownLeft, Search } from "lucide-react";
-import { useState, useTransition } from "react";
-import { Dialog } from "@renderer/components/ui/dialog";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
 import { BIBLE_BOOK_BY_ID, type BibleBookInfo } from "@shared/domain/bible-books";
 import { cn } from "@renderer/lib/cn";
-import { completeBookName, parseReferenceIn, passageId } from "@shared/lib/bible-reference";
-import type { LiveConsole } from "../use-live-console";
+import { completeBookName, parseReferenceIn } from "@shared/lib/bible-reference";
 import { BookList, type BookOrder } from "./book-list";
 import { ChapterGrid } from "./chapter-grid";
-import { passageItem } from "./passage-item";
+import { BibleLook } from "./bible-look";
 import { loadChapter, useChapter } from "./use-chapter";
 import { VerseList } from "./verse-list";
 
-/** The one key the quick passage uses: a new one replaces the last. */
-const QUICK_KEY = "bible-live";
+/** Where the last passage came from; the window opens there next time. */
+type BiblePlace = { bookId: string; chapter: number };
+const PLACE_KEY = "iris.bible.place";
 
-/** Where the last passage came from; the dialog opens there next time. */
-export type BiblePlace = { bookId: string; chapter: number };
+function readPlace(): BiblePlace | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLACE_KEY) ?? "null") as BiblePlace | null;
+    return saved && BIBLE_BOOK_BY_ID.has(saved.bookId) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+function savePlace(place: BiblePlace): void {
+  try {
+    localStorage.setItem(PLACE_KEY, JSON.stringify(place));
+  } catch {
+    // Not remembering the place is harmless.
+  }
+}
+
+/** The verse on the screens now, to mark it and to step from it with the arrow keys. */
+type LiveVerse = { bookId: string; chapter: number; verse: number };
 
 /**
- * "Biblia" (V): when the preacher says "Juan 3:16", type it and press Enter: the verse is on
- * the screens at once, without going through the service. Or pick book → chapter → verse.
- * It reopens on the chapters of the last book, so "now chapter 20" is one click, or "20:8" typed.
+ * "Biblia" (V) in its own window, apart from the console: type "Juan 3:16" and press Enter, or
+ * pick book → chapter → verse, and it is on the screens at once, without going through the
+ * service. It stays open for the next verse; closing the window ends the presentation. It
+ * opens on the last book's chapters, so "now chapter 20" is one click, or "20:8" typed.
  */
-export function BibleDialog({
-  ctrl,
-  place,
-  onProjected,
-  onClose,
-}: {
-  ctrl: Pick<LiveConsole, "presentPassage">;
-  place: BiblePlace | null;
-  onProjected: (place: BiblePlace) => void;
-  onClose: () => void;
-}) {
+export function BibleWindow() {
+  const [place, setPlace] = useState(readPlace);
   const lastBook = place ? (BIBLE_BOOK_BY_ID.get(place.bookId) ?? null) : null;
   const status = useQuery({
     queryKey: ["bible", "status"],
@@ -62,6 +68,7 @@ export function BibleDialog({
   const [order, setOrder] = useState<BookOrder>("canonical");
   const [error, setError] = useState<string | null>(null);
   const [isProjecting, startProject] = useTransition();
+  const [liveVerse, setLiveVerse] = useState<LiveVerse | null>(null);
   const chapter = useChapter(selected, book?.id ?? null, chapterNumber);
 
   function search(text: string) {
@@ -92,16 +99,49 @@ export function BibleDialog({
         setError("Ese versículo no existe.");
         return;
       }
-      const passage = { code: selected, bookId, chapter: chapterNo, from, to };
-      const item = passageItem(found, passage, {
-        planItemId: QUICK_KEY,
-        refId: passageId(passage),
-      });
-      ctrl.presentPassage(item, item.focus?.first ?? 0);
-      onProjected({ bookId, chapter: chapterNo });
-      onClose();
+      try {
+        await invoke("bible:present", {
+          translation: selected,
+          bookId,
+          chapter: chapterNo,
+          from,
+          to,
+        });
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : "No pudimos proyectarlo.");
+        return;
+      }
+      const next = { bookId, chapter: chapterNo };
+      setPlace(next);
+      savePlace(next);
+      setLiveVerse({ bookId, chapter: chapterNo, verse: from });
+      setError(null);
     });
   }
+
+  // ← / →: the verse before or after the one on the screens (the console's own keys work in
+  // the console; here the focus is on this window).
+  useEffect(() => {
+    if (!liveVerse || !selected) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable=true], [role=combobox]"))
+        return;
+      event.preventDefault();
+      const offset = event.key === "ArrowRight" ? 1 : -1;
+      void loadChapter(selected, liveVerse.bookId, liveVerse.chapter).then((found) => {
+        const numbers = (found?.verses ?? [])
+          .filter((verse) => verse.text.trim())
+          .map((verse) => verse.number);
+        const next = numbers[numbers.indexOf(liveVerse.verse) + offset];
+        if (next !== undefined) project(liveVerse.bookId, liveVerse.chapter, next);
+      });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   function goTo(level: "books" | "chapters") {
     setVerse(null);
@@ -114,26 +154,24 @@ export function BibleDialog({
 
   if (!status.data?.isImported)
     return (
-      <Dialog open onClose={onClose} title="Biblia" size="md">
-        <div className="flex flex-col gap-5 pb-6">
+      <Shell>
+        <div className="flex flex-col gap-5 p-6">
           {status.isPending ? (
             <Spinner />
           ) : status.isError ? (
             <Banner tone="error">{status.error.message}</Banner>
           ) : (
-            <>
-              <p className="text-sm text-ink-2">
-                No hay Biblias importadas. Ve a Configuración → Biblias para importar un archivo
-                XML. Después podrás consultar y proyectar sus versículos sin internet.
-              </p>
-            </>
+            <p className="text-sm text-ink-2">
+              No hay Biblias importadas. Ve a Configuración → Biblias para importar un archivo XML.
+              Después podrás consultar y proyectar sus versículos sin internet.
+            </p>
           )}
         </div>
-      </Dialog>
+      </Shell>
     );
   return (
-    <Dialog open onClose={onClose} title="Biblia" size="lg">
-      <div className="flex flex-col gap-3 pb-4">
+    <Shell look={<BibleLook />}>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -251,7 +289,7 @@ export function BibleDialog({
           )}
         </nav>
 
-        <div className="h-[46vh] overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {!book ? (
             <BookList query={query} order={order} onPick={setBook} />
           ) : !chapterNumber ? (
@@ -266,6 +304,11 @@ export function BibleDialog({
               isLoading={chapter.isLoading}
               isMissing={chapter.isMissing}
               selected={verse?.from ?? null}
+              live={
+                liveVerse?.bookId === book.id && liveVerse.chapter === chapterNumber
+                  ? liveVerse.verse
+                  : null
+              }
               onPick={(number) => project(book.id, chapterNumber, number)}
             />
           )}
@@ -274,6 +317,19 @@ export function BibleDialog({
           <p className="border-t border-line pt-3 text-xs text-ink-2">{translation.copyright}</p>
         )}
       </div>
-    </Dialog>
+    </Shell>
+  );
+}
+
+/** The window's frame: its heading (with the Bible's own look controls) over the content. */
+function Shell({ children, look }: { children: ReactNode; look?: ReactNode }) {
+  return (
+    <div className="flex h-dvh flex-col bg-canvas text-ink">
+      <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+        <h1 className="font-serif text-xl font-medium tracking-tight">Biblia</h1>
+        {look}
+      </header>
+      {children}
+    </div>
   );
 }

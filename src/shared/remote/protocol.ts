@@ -5,9 +5,7 @@ import { z } from "@shared/zod";
  * versioned: a different `PROTOCOL_VERSION` is refused at the greeting so neither side guesses.
  */
 export const PROTOCOL_VERSION = 1;
-export const REMOTE_SERVICE_TYPE = "iris";
 export const REMOTE_PATH = "/remote";
-export const CODE_LENGTH = 6;
 
 // ----- What the iPad sees (the console publishes it; main only relays it) -----
 
@@ -185,12 +183,12 @@ export type RemoteCommand = z.infer<typeof remoteCommandSchema>;
 
 // ----- Messages on the wire -----
 
-/** First message of every connection: a one-time code, or the token of a session still open. */
+/** First message of every connection: the one-time secret of the QR, or the token of a session still open. */
 export const clientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("pair"),
     protocol: z.number().int(),
-    code: z.string().regex(/^\d+$/).max(12),
+    code: z.string().regex(/^[\w-]{6,64}$/),
     deviceName: z.string().max(60).optional(),
   }),
   z.object({ type: z.literal("resume"), protocol: z.number().int(), token: z.string().max(100) }),
@@ -221,11 +219,10 @@ export type ServerMessage =
 
 export type RemoteStatus = {
   isEnabled: boolean;
-  /** The one-time code to type on the iPad; null while disabled. */
-  code: string | null;
-  codeExpiresAt: string | null;
+  /** What the QR says (`iris://pair?…`, with a one-time secret); null while disabled. */
+  pairingLink: string | null;
   port: number | null;
-  /** Local addresses, for the manual fallback. */
+  /** Local addresses, to check from the iPad's browser that the computer can be reached. */
   addresses: string[];
   deviceCount: number;
 };

@@ -3,6 +3,7 @@ import type { Monitor, ProjectionStatus } from "../domain/monitors";
 import type { ProjectionFrame } from "../domain/projection";
 import { projectionFrameSchema, videoTimeSchema } from "../schemas/projection";
 import { z } from "@shared/zod";
+import { bibleAppearanceSchema, biblePresentSchema } from "../schemas/settings";
 import { remoteCommandSchema, type RemoteStatus } from "../remote/protocol";
 
 export const eventContract = {
@@ -15,6 +16,12 @@ export const eventContract = {
   "media:changed": z.void(),
   /** The settings window lost focus or closed: the console reloads what it shows. */
   "settings:changed": z.void(),
+  /** The Bible window picked a passage: the console puts it on the screens. */
+  "bible:present": biblePresentSchema,
+  /** The Bible's background or lettering changed in its window. */
+  "bible:appearance": bibleAppearanceSchema,
+  /** The Bible window closed: a passage still on the screens leaves them. */
+  "bible:closed": z.void(),
   "remote:changed": z.custom<RemoteStatus>(),
   "remote:command": remoteCommandSchema,
   "media:import-progress": z.object({

@@ -11,6 +11,8 @@ export type RemoteStateInput = {
   items: ConsoleItem[];
   /** The element selected on the console; it may be a Bible passage that is not in the service. */
   openItem: ConsoleItem | null;
+  /** What is on the screens, which may be a Bible passage that is neither open nor in the service. */
+  liveItem: ConsoleItem | null;
   live: { key: string; slide: number } | null;
   isCleared: boolean;
   playback: Playback | null;
@@ -32,10 +34,9 @@ export type RemoteStateInput = {
 /** What the iPad needs to draw the console, and nothing it could use to reach a file. */
 export function buildRemoteState(input: RemoteStateInput): RemoteState {
   const { now, playback, countdown, service } = input;
-  const shown =
-    input.openItem && !input.items.some((item) => item.planItemId === input.openItem?.planItemId)
-      ? [...input.items, input.openItem]
-      : input.items;
+  const shown = [...input.items];
+  for (const extra of [input.openItem, input.liveItem])
+    if (extra && !shown.some((item) => item.planItemId === extra.planItemId)) shown.push(extra);
   return {
     churchName: input.churchName,
     items: shown.map((item) => ({

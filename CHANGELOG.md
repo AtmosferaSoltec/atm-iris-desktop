@@ -1,7 +1,11 @@
 # Changelog
 
-## 1.3.2
+## 1.4.0
 
+- Control desde iPad con QR: ya no hay código ni dirección que escribir. En Herramientas → iPad aparece un QR (y el control se enciende solo si estaba apagado); el iPad lo escanea y se conecta. Sale de Ajustes y de la búsqueda automática en la red, que era lo que fallaba en muchas redes.
+- Biblia en su propia ventana: «Biblia» (o la tecla V) abre una ventana aparte con todo (buscar, libros, capítulos y versículos). Al elegir un versículo sale directo a las pantallas, sin pasar por el área de trabajo, y la ventana sigue abierta para el siguiente (también con ← y →). Al cerrar la ventana, el versículo deja de proyectarse.
+- Biblia: botón «Fondo» en su ventana para asignar un fondo propio a los versículos; cada versículo sale ya con él. Sin fondo propio usa el de la consola.
+- Biblia: botón «Texto» con su propia letra (tipo, tamaño, negrita, cursiva y mayúsculas), aparte de la de las canciones, para que los versículos largos quepan sin cambiar las canciones.
 - Consola más compacta para pantallas chicas (como 1366×768): el servicio muestra casi el doble de elementos. Cada elemento ocupa una sola línea (título, autor y duración de la pista); los botones de mover y quitar aparecen al pasar el mouse. El reproductor, «Limpiar pantalla» y el volumen van en una sola fila, y la barra de la pista es una línea delgada con sus botones. La vista previa en vivo se puede plegar (queda una línea con lo que está en pantalla) y se recuerda en esa computadora. La barra superior es más baja.
 - El ícono de Iris tiene el mismo tamaño que el de las demás apps (con su margen, como esperan Windows y macOS) en vez de verse más grande.
 - Los textos ya no se pintan como selección al hacer doble clic o arrastrar (como en una página web); solo los campos donde se escribe y las direcciones del control desde iPad se pueden seleccionar.

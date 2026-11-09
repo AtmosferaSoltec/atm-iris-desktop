@@ -1,14 +1,14 @@
 import { BookOpen } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { LiveConsole } from "../use-live-console";
-import { BibleDialog, type BiblePlace } from "./bible-dialog";
+import { useEffect } from "react";
+import { toast } from "@renderer/components/ui/toaster";
+import { invoke } from "@renderer/lib/ipc";
 
-/** "Biblia", always at hand: the button, or V anywhere in the console. */
-export function BibleButton({ ctrl }: { ctrl: Pick<LiveConsole, "presentPassage"> }) {
-  const [isOpen, setIsOpen] = useState(false);
-  // The book and chapter shown last: the next verse is usually in the same book.
-  const [place, setPlace] = useState<BiblePlace | null>(null);
+function openBible(): void {
+  void invoke("window:open-bible", undefined).catch((error: Error) => toast.error(error.message));
+}
 
+/** "Biblia", always at hand: the button, or V anywhere in the console. It opens its own window. */
+export function BibleButton() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "v" && event.key !== "V") return;
@@ -16,31 +16,21 @@ export function BibleButton({ ctrl }: { ctrl: Pick<LiveConsole, "presentPassage"
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable=true], [role=dialog]")) return;
       event.preventDefault();
-      setIsOpen(true);
+      openBible();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        title="Proyectar un versículo (V)"
-        className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full px-4 text-sm font-medium text-ink ring-1 ring-line transition ring-inset hover:bg-surface"
-      >
-        <BookOpen aria-hidden className="size-4 text-violet" />
-        Biblia
-      </button>
-      {isOpen && (
-        <BibleDialog
-          ctrl={ctrl}
-          place={place}
-          onProjected={setPlace}
-          onClose={() => setIsOpen(false)}
-        />
-      )}
-    </>
+    <button
+      type="button"
+      onClick={openBible}
+      title="Proyectar un versículo (V)"
+      className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full px-4 text-sm font-medium text-ink ring-1 ring-line transition ring-inset hover:bg-surface"
+    >
+      <BookOpen aria-hidden className="size-4 text-violet" />
+      Biblia
+    </button>
   );
 }

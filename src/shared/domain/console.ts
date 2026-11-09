@@ -1,4 +1,10 @@
-import type { Person, ProjectionSettings, ServiceRecord, ServiceType } from "./models";
+import type {
+  BibleAppearance,
+  Person,
+  ProjectionSettings,
+  ServiceRecord,
+  ServiceType,
+} from "./models";
 import type { ProjectionBackground } from "./projection";
 
 /** One element of the service in the console (IRIS_SPEC §6.2). */
@@ -74,6 +80,8 @@ export type ConsoleData = {
   selectedServiceTypeId: string | null;
   /** Pixels of the slide cards' text, for whoever runs this computer (not the screens). */
   slideTextSize: number;
+  /** The Bible's own background and lettering (apart from the songs'). */
+  bibleAppearance: BibleAppearance;
 };
 
 /** The console's slide cards: small enough for many at once, never too small to read. */

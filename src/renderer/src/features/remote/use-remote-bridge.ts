@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Person } from "@shared/domain/models";
-import { passageId } from "@shared/lib/bible-reference";
 import { findOrAddPerson } from "@renderer/features/people/actions";
-import { passageItem } from "../console/bible/passage-item";
+import { loadPassage } from "../console/bible/passage-source";
 import type { LibraryEntry } from "../console/model";
 import { errorMessage } from "@shared/errors";
 import type { RemoteCommand, RemoteState } from "@shared/remote/protocol";
@@ -43,8 +42,18 @@ export function useRemoteBridge(
   const deviceCount = status?.deviceCount ?? 0;
   const last = useRef<{ state: RemoteState; at: number } | null>(null);
 
-  const { items, openItem, live, isCleared, playback, volume, backgroundId, backgrounds, sounds } =
-    ctrl;
+  const {
+    items,
+    openItem,
+    liveItem,
+    live,
+    isCleared,
+    playback,
+    volume,
+    backgroundId,
+    backgrounds,
+    sounds,
+  } = ctrl;
   const countdown = ctrl.timer;
   const serviceName = service.serviceType?.name ?? null;
   const serviceTimer = service.timer;
@@ -61,6 +70,7 @@ export function useRemoteBridge(
       churchName,
       items,
       openItem,
+      liveItem,
       live,
       isCleared,
       playback,
@@ -91,6 +101,7 @@ export function useRemoteBridge(
     churchName,
     items,
     openItem,
+    liveItem,
     live,
     isCleared,
     playback,
@@ -241,23 +252,14 @@ async function presentBible(
   ctrl: LiveConsole,
 ): Promise<void> {
   try {
-    const chapter = await invoke("bible:chapter", {
+    const item = await loadPassage({
       translation: command.translation,
       bookId: command.bookId,
       chapter: command.chapter,
-    });
-    const passage = {
-      code: command.translation,
-      bookId: command.bookId,
-      chapter: command.chapter,
       from: command.from,
-      to: Math.max(command.to, command.from),
-    };
-    if (!chapter.verses.some((verse) => verse.number === passage.from)) return;
-    const item = passageItem(chapter, passage, {
-      planItemId: "bible-live",
-      refId: passageId(passage),
+      to: command.to,
     });
+    if (!item) return;
     ctrl.presentPassage(item, item.focus?.first ?? 0);
   } catch (error) {
     toast.error(errorMessage(error));

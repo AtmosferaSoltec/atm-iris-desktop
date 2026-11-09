@@ -61,3 +61,13 @@ export async function openSettings(app: ElectronApplication, console: Page): Pro
   await settings.getByRole("heading", { name: "Ajustes" }).waitFor();
   return settings;
 }
+
+/** "Biblia" opens its own window; closing it ends the presentation. */
+export async function openBible(app: ElectronApplication, console: Page): Promise<Page> {
+  const [bible] = await Promise.all([
+    app.waitForEvent("window"),
+    console.getByRole("button", { name: "Biblia", exact: true }).click(),
+  ]);
+  await bible.getByRole("heading", { name: "Biblia", exact: true }).waitFor();
+  return bible;
+}

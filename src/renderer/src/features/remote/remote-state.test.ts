@@ -18,6 +18,7 @@ function input(overrides: Partial<RemoteStateInput> = {}): RemoteStateInput {
     churchName: "Iglesia",
     items: [SONG],
     openItem: SONG,
+    liveItem: null,
     live: null,
     isCleared: false,
     playback: null,
@@ -75,6 +76,16 @@ describe("buildRemoteState", () => {
     const state = buildRemoteState(input({ openItem: passage }));
     expect(state.items.map((item) => item.id)).toEqual(["row-1", "quick:1"]);
     expect(state.openId).toBe("quick:1");
+  });
+
+  it("adds a passage that is on the screens without being open or in the service", () => {
+    const passage: ConsoleItem = { ...SONG, planItemId: "bible-live", kind: "bible", file: null };
+    const state = buildRemoteState(
+      input({ liveItem: passage, live: { key: "bible-live", slide: 0 } }),
+    );
+    expect(state.items.map((item) => item.id)).toEqual(["row-1", "bible-live"]);
+    expect(state.openId).toBe("row-1");
+    expect(state.live?.id).toBe("bible-live");
   });
 
   it("moves the playback position forward to the moment it is built", () => {

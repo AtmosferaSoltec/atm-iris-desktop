@@ -1,8 +1,9 @@
 import { TOOL_LABELS } from "../messages";
-import { ArrowLeft, Timer, Type, Volume2, Wrench, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Tablet, Timer, Type, Volume2, Wrench, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { IconButton } from "@renderer/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@renderer/components/ui/popover";
+import { RemoteDialog } from "@renderer/features/remote/remote-dialog";
 import { SoundsPanel } from "../sounds/sounds-panel";
 import { TimerPanel } from "../timer/timer-panel";
 import { TypographyDialog } from "../typography/typography-dialog";
@@ -44,6 +45,13 @@ export const TOOLS: Tool[] = [
     tint: "text-rose",
     panel: (ctrl) => <SoundsPanel ctrl={ctrl} />,
   },
+  {
+    id: "ipad",
+    label: TOOL_LABELS.ipad,
+    icon: Tablet,
+    tint: "text-violet",
+    dialog: (_ctrl, onClose) => <RemoteDialog onClose={onClose} />,
+  },
 ];
 
 /** "Herramientas": a grid of tool cards; choosing one closes it and opens that tool. */
@@ -73,7 +81,7 @@ export function ToolsButton({ ctrl }: { ctrl: LiveConsole }) {
         <PopoverTrigger asChild>
           <button
             type="button"
-            title="Texto, temporizador, sonidos…"
+            title="Texto, temporizador, sonidos, iPad…"
             className={`flex h-10 cursor-pointer items-center gap-2.5 rounded-full px-4 text-sm font-medium text-ink ring-1 ring-line transition ring-inset hover:bg-surface data-[state=open]:bg-surface ${ctrl.timer ? "bg-coral/10" : ""}`}
           >
             <Wrench aria-hidden className="size-4 text-indigo" />

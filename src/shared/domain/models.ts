@@ -16,6 +16,18 @@ export type ProjectionSettings = {
   defaultBackgroundId: string | null;
 };
 
+/**
+ * How a Bible passage looks on the screens, apart from the songs: its own background and its
+ * own lettering. `typography` null = the same as the songs until the church sets one.
+ */
+export type BibleAppearance = {
+  backgroundId: string | null;
+  typography: Pick<
+    ProjectionSettings,
+    "fontFamily" | "fontSizePt" | "fontBold" | "fontItalic" | "uppercase"
+  > | null;
+};
+
 export type Person = {
   id: Id;
   name: string;

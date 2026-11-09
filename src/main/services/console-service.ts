@@ -1,6 +1,9 @@
 import { localAssetUrl } from "@shared/lib/asset-url";
 import { slideTextSize, type ConsoleData, type ConsoleItem } from "@shared/domain/console";
-import type { PlanItemKind } from "@shared/domain/models";
+import type { BibleAppearance, PlanItemKind } from "@shared/domain/models";
+import type { ProjectionBackground } from "@shared/domain/projection";
+import { bibleAppearanceSchema } from "@shared/schemas/settings";
+import { parseInput } from "@shared/errors";
 import { MEDIA_BACKGROUND_COLORS } from "@shared/domain/projection";
 import { mediaEntry, songEntry, sortEntries } from "@shared/domain/library-entries";
 import { songListSchema } from "@shared/schemas/songs";
@@ -105,16 +108,7 @@ export class ConsoleService {
           .filter((asset) => asset.role === "library" && !asset.isMissing)
           .map((asset) => mediaEntry(asset, asset.isMissing ? null : localAssetUrl(asset))),
       ]),
-      backgrounds: assets
-        .filter((asset) => asset.isBackground && !asset.isMissing && !asset.needsMeasures)
-        .map((asset) => ({
-          id: asset.id,
-          name: asset.title,
-          colors: MEDIA_BACKGROUND_COLORS,
-          ...(asset.kind === "video"
-            ? { videoUrl: localAssetUrl(asset), durationSeconds: asset.durationSeconds }
-            : { imageUrl: localAssetUrl(asset) }),
-        })),
+      backgrounds: this.backgrounds(),
       sounds: assets
         .filter((asset) => asset.role === "sound" && !asset.isMissing)
         .map((asset) => ({ id: asset.id, title: asset.title, icon: asset.soundIcon ?? "music" })),
@@ -124,7 +118,44 @@ export class ConsoleService {
         this.timing?.repository.records().find((record) => record.status === "inProgress") ?? null,
       selectedServiceTypeId: this.timing?.selectedService() ?? null,
       slideTextSize: slideTextSize(this.settings.getPreference("slideTextSize", null)),
+      bibleAppearance: this.bibleAppearance(),
     };
+  }
+  /** The church's own backgrounds (images and videos marked as such). */
+  backgrounds(): ProjectionBackground[] {
+    return this.media
+      .all()
+      .map((entry) => entry.asset)
+      .filter((asset) => asset.isBackground && !asset.isMissing && !asset.needsMeasures)
+      .map((asset) => ({
+        id: asset.id,
+        name: asset.title,
+        colors: MEDIA_BACKGROUND_COLORS,
+        ...(asset.kind === "video"
+          ? { videoUrl: localAssetUrl(asset), durationSeconds: asset.durationSeconds }
+          : { imageUrl: localAssetUrl(asset) }),
+      }));
+  }
+  /** A deleted background is forgotten here: the Bible goes back to the console's own. */
+  bibleAppearance(): BibleAppearance {
+    const saved = bibleAppearanceSchema.safeParse(
+      this.settings.getPreference("bibleAppearance", null),
+    );
+    const appearance = saved.success ? saved.data : { backgroundId: null, typography: null };
+    const exists = this.backgrounds().some(
+      (background) => background.id === appearance.backgroundId,
+    );
+    return exists ? appearance : { ...appearance, backgroundId: null };
+  }
+  setBibleAppearance(input: unknown): BibleAppearance {
+    const appearance = parseInput(bibleAppearanceSchema, input);
+    if (appearance.backgroundId !== null) {
+      const entry = this.media.get(appearance.backgroundId);
+      if (!entry || !entry.asset.isBackground || entry.asset.isMissing || entry.asset.needsMeasures)
+        throw new AppError("NOT_FOUND", "Ese fondo no existe.");
+    }
+    this.settings.setPreference("bibleAppearance", appearance);
+    return appearance;
   }
   setSlideTextSize(size: number): void {
     this.settings.setPreference("slideTextSize", slideTextSize(size));

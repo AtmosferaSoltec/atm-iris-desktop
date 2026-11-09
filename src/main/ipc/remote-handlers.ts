@@ -9,7 +9,7 @@ export function remoteHandlers(
   IpcHandlers,
   | "remote:status"
   | "remote:set-enabled"
-  | "remote:new-code"
+  | "remote:new-link"
   | "remote:disconnect-all"
   | "remote:publish-state"
 > {
@@ -21,8 +21,8 @@ export function remoteHandlers(
       remember(isEnabled);
       return server.status();
     },
-    "remote:new-code": () => {
-      server.newCode();
+    "remote:new-link": () => {
+      server.newLink();
       return server.status();
     },
     "remote:disconnect-all": () => {

@@ -4,7 +4,7 @@ import type { RemoteState } from "@shared/remote/protocol";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { bibleSampleXml } from "../src/shared/domain/test-fixtures/bible-sample";
-import { launchApp } from "./helpers";
+import { launchApp, openSettings } from "./helpers";
 
 type Message = { type: string; state?: RemoteState; code?: string };
 
@@ -35,7 +35,10 @@ test("an iPad pairs with the code, sees the service and drives the console", asy
       return result.data;
     });
     expect(status.isEnabled).toBe(true);
-    expect(status.code).toMatch(/^\d{6}$/);
+    const link = new URL(status.pairingLink!);
+    expect(link.protocol).toBe("iris:");
+    expect(link.searchParams.get("p")).toBe(String(status.port));
+    const secret = link.searchParams.get("c")!;
 
     socket = new WebSocket(`ws://127.0.0.1:${status.port}/remote`);
     const received: Message[] = [];
@@ -51,7 +54,7 @@ test("an iPad pairs with the code, sees the service and drives the console", asy
       return received.filter((m) => m.state && isWanted(m.state)).at(-1)!.state!;
     };
 
-    socket.send(JSON.stringify({ type: "pair", protocol: 1, code: status.code }));
+    socket.send(JSON.stringify({ type: "pair", protocol: 1, code: secret }));
     const first = await latest((state) => state.items.length === 1);
     expect(received[0]!.type).toBe("paired");
     expect(first.items[0]!.slides.map((slide) => slide.text)).toEqual([
@@ -114,6 +117,7 @@ test("from the iPad: choose the service, set a leader, show library media and a 
       if (!result.ok) throw new Error(result.error.message);
       return result.data;
     });
+    const secret = new URL(status.pairingLink!).searchParams.get("c")!;
 
     socket = new WebSocket(`ws://127.0.0.1:${status.port}/remote`);
     const received: (Message & {
@@ -136,7 +140,7 @@ test("from the iPad: choose the service, set a leader, show library media and a 
       return received.filter((m) => m.state && isWanted(m.state)).at(-1)!.state!;
     };
 
-    socket.send(JSON.stringify({ type: "pair", protocol: 1, code: status.code }));
+    socket.send(JSON.stringify({ type: "pair", protocol: 1, code: secret }));
     const first = await latest(
       (state) => state.serviceTypes.length === 1 && state.bibles.length === 1,
     );
@@ -229,9 +233,36 @@ test("from the iPad: choose the service, set a leader, show library media and a 
     // Shown once: neither the passage nor the image joined the service.
     const plan = await page.evaluate(() => window.iris["console:load"](undefined));
     expect(plan.ok && plan.data.items).toEqual([]);
-    expect(passage.openId).toBe("bible-live");
+    // On the screens only: the workspace keeps what was open.
+    expect(passage.openId).not.toBe("bible-live");
   } finally {
     socket?.terminate();
+    await instance.close();
+  }
+});
+
+test("Herramientas → iPad turns the remote on and shows the QR, with nothing about it in Ajustes", async () => {
+  const instance = await launchApp();
+  try {
+    const page = await instance.app.firstWindow();
+    await page.getByRole("button", { name: "Herramientas", exact: true }).click();
+    await page.getByRole("button", { name: "iPad", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Control desde iPad", exact: true });
+    await expect(
+      dialog.getByRole("img", { name: "Código QR para conectar el iPad" }),
+    ).toBeVisible();
+    const status = await page.evaluate(async () => {
+      const result = await window.iris["remote:status"](undefined);
+      if (!result.ok) throw new Error(result.error.message);
+      return result.data;
+    });
+    expect(status.isEnabled).toBe(true);
+    expect(status.pairingLink).toMatch(/^iris:\/\/pair\?/);
+    await dialog.getByRole("button", { name: "Apagar el control", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    const settings = await openSettings(instance.app, page);
+    await expect(settings.getByText("Control desde iPad")).toHaveCount(0);
+  } finally {
     await instance.close();
   }
 });

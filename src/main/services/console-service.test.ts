@@ -54,3 +54,28 @@ it("rejects missing targets and atomically clears the plan", async () => {
   service.clear();
   expect(plan.list()).toEqual([]);
 });
+it("keeps the Bible's own lettering apart from the songs' and refuses a missing background", () => {
+  expect(service.bibleAppearance()).toEqual({ backgroundId: null, typography: null });
+  expect(service.load().bibleAppearance.typography).toBeNull();
+  const typography = {
+    fontFamily: "lora",
+    fontSizePt: 70,
+    fontBold: false,
+    fontItalic: true,
+    uppercase: false,
+  };
+  expect(service.setBibleAppearance({ backgroundId: null, typography })).toEqual({
+    backgroundId: null,
+    typography,
+  });
+  expect(service.bibleAppearance().typography).toEqual(typography);
+  expect(() => service.setBibleAppearance({ backgroundId: "missing", typography })).toThrow(
+    "Ese fondo no existe.",
+  );
+  expect(() =>
+    service.setBibleAppearance({
+      backgroundId: null,
+      typography: { ...typography, fontSizePt: 10 },
+    }),
+  ).toThrow();
+});

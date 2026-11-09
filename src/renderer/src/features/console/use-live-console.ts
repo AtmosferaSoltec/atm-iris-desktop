@@ -14,6 +14,7 @@ import {
 } from "@renderer/features/projection/model";
 import { clearPlan, movePlanItem, removePlanItem } from "@renderer/features/service-plan/actions";
 import { addToService, quickItem } from "./actions";
+import { BIBLE_LIVE_KEY, loadPassage } from "./bible/passage-source";
 import { RoomAudio } from "./room-audio";
 import type { ConsoleData, ConsoleItem, LibraryEntry, SoundEntry } from "./model";
 
@@ -65,6 +66,8 @@ export function useLiveConsole(data: ConsoleData) {
     fontItalic: data.projection.fontItalic ?? false,
     uppercase: data.projection.uppercase ?? false,
   }));
+  // The Bible's own background and lettering: a passage on the screens uses these, not the songs'.
+  const [bibleAppearance, setBibleAppearance] = useState(data.bibleAppearance);
   // The slide cards' text size, for this computer's operator (changed from "Texto").
   const [slideTextSize, setSlideTextSize] = useState(data.slideTextSize);
   const [room] = useState(() => new RoomAudio());
@@ -134,16 +137,30 @@ export function useLiveConsole(data: ConsoleData) {
     [isCleared, timer, live, itemByKey, playback],
   );
 
+  const isBibleLive = live?.key === BIBLE_LIVE_KEY && liveContent.kind === "text";
+  const bibleBackground = isBibleLive
+    ? (backgrounds.find((candidate) => candidate.id === bibleAppearance.backgroundId) ?? null)
+    : null;
+
   const liveFrame = useMemo<ProjectionFrame>(
     () => ({
-      background,
+      background: bibleBackground ?? background,
       content:
         liveContent.kind === "video" || liveContent.kind === "youtube"
           ? { ...liveContent, muted: isScreenMuted, volume }
           : liveContent,
-      typography,
+      typography: isBibleLive ? (bibleAppearance.typography ?? typography) : typography,
     }),
-    [background, liveContent, typography, isScreenMuted, volume],
+    [
+      bibleBackground,
+      background,
+      liveContent,
+      typography,
+      isBibleLive,
+      bibleAppearance.typography,
+      isScreenMuted,
+      volume,
+    ],
   );
 
   // ----- Talking to the screens -----
@@ -337,13 +354,35 @@ export function useLiveConsole(data: ConsoleData) {
     setLive(position);
   }, []);
 
+  // A passage goes straight to the screens; the service's workspace keeps what was open.
   const presentPassage = useCallback(
     (item: ConsoleItem, slide: number) => {
       setQuickItemState(item);
-      setOpenKey(item.planItemId);
       show({ key: item.planItemId, slide });
     },
     [show],
+  );
+
+  // The Bible window (apart from this one) picks passages, its look and when it is closed.
+  useEffect(
+    () =>
+      window.iris.onEvent("bible:present", (reference) => {
+        void loadPassage(reference)
+          .then((item) => {
+            if (item) presentPassage(item, item.focus?.first ?? 0);
+            else toast.error("Ese versículo no existe.");
+          })
+          .catch((error) => toast.error(errorMessage(error)));
+      }),
+    [presentPassage],
+  );
+  useEffect(() => window.iris.onEvent("bible:appearance", setBibleAppearance), []);
+  useEffect(
+    () =>
+      window.iris.onEvent("bible:closed", () =>
+        setLive((current) => (current?.key === BIBLE_LIVE_KEY ? null : current)),
+      ),
+    [],
   );
 
   /** Local playback follows the console timeline. */
@@ -598,6 +637,7 @@ export function useLiveConsole(data: ConsoleData) {
     dropRef,
     items,
     openItem,
+    liveItem: live ? (itemByKey.get(live.key) ?? null) : null,
     openKey,
     setOpenKey,
     live,

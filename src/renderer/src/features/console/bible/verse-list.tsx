@@ -9,6 +9,7 @@ export const VerseList = memo(function VerseList({
   isLoading,
   isMissing,
   selected,
+  live = null,
   onPick,
 }: {
   chapter: BibleChapter | null;
@@ -16,6 +17,8 @@ export const VerseList = memo(function VerseList({
   isMissing: boolean;
   /** The verse a typed reference points at. */
   selected: number | null;
+  /** The verse on the screens now. */
+  live?: number | null;
   onPick: (verse: number) => void;
 }) {
   const target = useRef<HTMLLIElement>(null);
@@ -45,12 +48,14 @@ export const VerseList = memo(function VerseList({
             <button
               type="button"
               onClick={() => onPick(verse.number)}
-              aria-current={verse.number === selected ? "true" : undefined}
+              aria-current={verse.number === selected || verse.number === live ? "true" : undefined}
               className={cn(
                 "grid size-14 cursor-pointer place-items-center rounded-lg font-mono text-lg tabular-nums ring-1 transition ring-inset",
-                verse.number === selected
-                  ? "bg-violet/18 ring-violet/50"
-                  : "ring-line hover:bg-surface-raised",
+                verse.number === live
+                  ? "bg-coral/12 ring-coral"
+                  : verse.number === selected
+                    ? "bg-violet/18 ring-violet/50"
+                    : "ring-line hover:bg-surface-raised",
               )}
             >
               {verse.number}

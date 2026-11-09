@@ -21,7 +21,7 @@ import {
 } from "../schemas/timing";
 import type { Person, ServiceType, ServiceRecord } from "../domain/models";
 import type { Monitor, ProjectionStatus } from "../domain/monitors";
-import type { ProjectionFrame } from "../domain/projection";
+import type { ProjectionBackground, ProjectionFrame } from "../domain/projection";
 import {
   projectionFrameSchema,
   projectionStartSchema,
@@ -50,9 +50,19 @@ import {
   mediaRoleChangeSchema,
 } from "../schemas/media";
 import { z } from "@shared/zod";
-import type { ChurchSettings, ProjectionSettings, Settings } from "../domain/models";
+import type {
+  BibleAppearance,
+  ChurchSettings,
+  ProjectionSettings,
+  Settings,
+} from "../domain/models";
 import type { SerializedError } from "../errors";
-import { churchSchema, projectionSchema } from "../schemas/settings";
+import {
+  bibleAppearanceSchema,
+  biblePresentSchema,
+  churchSchema,
+  projectionSchema,
+} from "../schemas/settings";
 
 export function defineChannel<I, O>(
   name: string,
@@ -208,6 +218,23 @@ export const contract = {
   ),
   "projection:stop": defineChannel("projection:stop", z.void(), z.custom<ProjectionStatus>()),
   "window:open-settings": defineChannel("window:open-settings", z.void(), z.void()),
+  "window:open-bible": defineChannel("window:open-bible", z.void(), z.void()),
+  "bible:present": defineChannel("bible:present", biblePresentSchema, z.void()),
+  "bible:get-appearance": defineChannel(
+    "bible:get-appearance",
+    z.void(),
+    z.custom<BibleAppearance>(),
+  ),
+  "bible:set-appearance": defineChannel(
+    "bible:set-appearance",
+    bibleAppearanceSchema,
+    z.custom<BibleAppearance>(),
+  ),
+  "projection:backgrounds": defineChannel(
+    "projection:backgrounds",
+    z.void(),
+    z.custom<ProjectionBackground[]>(),
+  ),
   "settings:set-slide-text-size": defineChannel(
     "settings:set-slide-text-size",
     z.number().int().min(SLIDE_TEXT_SIZE.min).max(SLIDE_TEXT_SIZE.max),
@@ -303,7 +330,7 @@ export const contract = {
   "app:open-atmosfera": defineChannel("app:open-atmosfera", z.void(), z.void()),
   "remote:status": defineChannel("remote:status", z.void(), z.custom<RemoteStatus>()),
   "remote:set-enabled": defineChannel("remote:set-enabled", z.boolean(), z.custom<RemoteStatus>()),
-  "remote:new-code": defineChannel("remote:new-code", z.void(), z.custom<RemoteStatus>()),
+  "remote:new-link": defineChannel("remote:new-link", z.void(), z.custom<RemoteStatus>()),
   "remote:disconnect-all": defineChannel(
     "remote:disconnect-all",
     z.void(),

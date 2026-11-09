@@ -18,9 +18,9 @@ import { hostname } from "node:os";
 import { app, BrowserWindow, protocol, shell } from "electron";
 import { RemoteServer } from "../remote/remote-server";
 import { openSettingsWindow } from "../windows/settings-window";
+import { openBibleWindow } from "../windows/bible-window";
 import { Thumbnails } from "../files/thumbnails";
 import { createThumbnailRenderer } from "../files/electron-thumbnails";
-import { advertiseOnNetwork } from "../remote/discovery";
 import { remoteHandlers } from "../ipc/remote-handlers";
 import { BIBLE_BOOKS } from "@shared/domain/bible-books";
 import { createProjection } from "../windows/projection";
@@ -122,7 +122,6 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
     // The iPad's remote control: off until the operator turns it on (it opens the local network).
     const remote = new RemoteServer({
       computerName: hostname(),
-      advertise: advertiseOnNetwork(`Iris · ${hostname()}`),
       onCommand: (command) => broadcast("remote:command", command),
       changed: (status) => broadcast("remote:changed", status),
       log: logMessage,
@@ -151,6 +150,15 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
           repository.setPreference("remoteEnabled", isEnabled),
         ),
         "window:open-settings": () => openSettingsWindow(),
+        "window:open-bible": () => openBibleWindow(),
+        "bible:present": (passage) => broadcast("bible:present", passage),
+        "bible:get-appearance": () => consoleService.bibleAppearance(),
+        "bible:set-appearance": (input) => {
+          const appearance = consoleService.setBibleAppearance(input);
+          broadcast("bible:appearance", appearance);
+          return appearance;
+        },
+        "projection:backgrounds": () => consoleService.backgrounds(),
         "settings:set-slide-text-size": (size) => consoleService.setSlideTextSize(size),
         "updates:status": () => updates.status(),
         "updates:retry": () => updates.retry(),

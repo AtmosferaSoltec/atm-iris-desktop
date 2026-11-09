@@ -1,5 +1,5 @@
-import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { CODE_LENGTH, type RemoteErrorCode } from "@shared/remote/protocol";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import type { RemoteErrorCode } from "@shared/remote/protocol";
 
 export type PairingResult = { ok: true; token: string } | { ok: false; code: RemoteErrorCode };
 
@@ -12,8 +12,8 @@ type Options = {
 };
 
 /**
- * Who may control the console. A six-digit code is short, so it is single-use, expires, and is
- * thrown away after a few wrong tries (a million combinations against five attempts). A token
+ * Who may control the console. The secret travels only inside the QR on the computer's screen:
+ * it is single-use, expires and is thrown away after a few wrong tries. A token
  * proves a connection that already paired; it lives only in memory, so closing Iris ends every session.
  */
 export class PairingGate {
@@ -29,9 +29,7 @@ export class PairingGate {
 
   constructor(options: Options = {}) {
     this.now = options.now ?? Date.now;
-    this.makeCode =
-      options.newCode ??
-      ((): string => String(randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, "0"));
+    this.makeCode = options.newCode ?? ((): string => randomBytes(16).toString("base64url"));
     this.makeToken = options.newToken ?? ((): string => randomBytes(24).toString("base64url"));
     this.ttlMs = options.ttlMs ?? 5 * 60_000;
     this.maxAttempts = options.maxAttempts ?? 5;

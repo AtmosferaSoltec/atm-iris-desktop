@@ -36,7 +36,6 @@ afterEach(async () => {
 async function start(commands: unknown[] = [], statuses: RemoteStatus[] = []) {
   server = new RemoteServer({
     computerName: "PC",
-    advertise: () => () => {},
     onCommand: (command) => commands.push(command),
     onRequest: async (request) =>
       request.kind === "bible-books"
