@@ -161,6 +161,7 @@ export function boot(): { db: SqliteDatabase; settings: SqliteSettingsRepository
         "projection:backgrounds": () => consoleService.backgrounds(),
         "settings:set-slide-text-size": (size) => consoleService.setSlideTextSize(size),
         "updates:status": () => updates.status(),
+        "updates:look": () => updates.lookForUpdate(),
         "updates:retry": () => updates.retry(),
         "updates:download": () => updates.download(),
         "updates:install": () => updates.install(),

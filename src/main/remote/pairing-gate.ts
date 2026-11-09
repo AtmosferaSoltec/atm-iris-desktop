@@ -8,6 +8,8 @@ type Options = {
   newCode?: () => string;
   newToken?: () => string;
   ttlMs?: number;
+  /** How long the secret just used still pairs (see `attempt`). */
+  graceMs?: number;
   maxAttempts?: number;
 };
 
@@ -22,6 +24,8 @@ export class PairingGate {
   private readonly makeToken: () => string;
   private readonly ttlMs: number;
   private readonly maxAttempts: number;
+  private readonly graceMs: number;
+  private lastUsed: { code: string; token: string; at: number } | null = null;
   private currentCode = "";
   private expiry = 0;
   private failures = 0;
@@ -33,6 +37,7 @@ export class PairingGate {
     this.makeToken = options.newToken ?? ((): string => randomBytes(24).toString("base64url"));
     this.ttlMs = options.ttlMs ?? 5 * 60_000;
     this.maxAttempts = options.maxAttempts ?? 5;
+    this.graceMs = options.graceMs ?? 15_000;
     this.rotate();
   }
 
@@ -52,6 +57,12 @@ export class PairingGate {
   }
 
   attempt(code: string): PairingResult {
+    // The iPad tries every address in the QR at once, and they can all be this same computer
+    // (cable, virtual adapters…): the first to arrive uses the secret up, the rest arrive a moment
+    // later with the same one. They get the same session instead of a refusal.
+    const used = this.lastUsed;
+    if (used && this.now() - used.at < this.graceMs && sameText(code, used.code))
+      return { ok: true, token: used.token };
     if (this.now() >= this.expiry) {
       this.rotate();
       return { ok: false, code: "CODE_EXPIRED" };
@@ -66,6 +77,7 @@ export class PairingGate {
     }
     const token = this.makeToken();
     this.tokens.add(token);
+    this.lastUsed = { code, token, at: this.now() };
     // Single use: the next iPad needs the next code.
     this.rotate();
     return { ok: true, token };
@@ -77,6 +89,7 @@ export class PairingGate {
 
   revokeAll(): void {
     this.tokens.clear();
+    this.lastUsed = null;
   }
 }
 

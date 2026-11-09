@@ -1,3 +1,4 @@
+import { UpdatesPanel } from "./updates-panel";
 import { BiblesPanel } from "@renderer/features/console/bible/bibles-panel";
 import { MaintenancePanels } from "@renderer/features/backup/components/maintenance-panels";
 import { Building2 } from "lucide-react";
@@ -113,6 +114,7 @@ export function ChurchSettingsPage() {
         </Panel>
       )}
       <BiblesPanel />
+      <UpdatesPanel />
       <MaintenancePanels />
       <footer className="flex justify-center pt-2 pb-4">
         <AtmosferaCredit />

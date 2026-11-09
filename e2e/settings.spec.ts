@@ -42,3 +42,18 @@ test("creates the Iris home and retains church settings across restarts", async 
     await rm(home, { recursive: true, force: true });
   }
 });
+
+test("Ajustes has «Buscar actualizaciones» and says when this copy does not update", async () => {
+  const instance = await launchApp();
+  try {
+    const page = await instance.app.firstWindow();
+    const settings = await openSettings(instance.app, page);
+    await expect(settings.getByText("Versión instalada:", { exact: false })).toBeVisible();
+    await settings.getByRole("button", { name: "Buscar actualizaciones", exact: true }).click();
+    await expect(
+      settings.getByText("Esta copia de Iris no se actualiza por internet.", { exact: true }),
+    ).toBeVisible();
+  } finally {
+    await instance.close();
+  }
+});

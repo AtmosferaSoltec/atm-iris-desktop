@@ -22,9 +22,23 @@ describe("PairingGate", () => {
     const result = instance.attempt("111111");
     expect(result.ok).toBe(true);
     if (result.ok) expect(instance.isValidToken(result.token)).toBe(true);
-    // Single use: the same code no longer works, a new one is shown.
+    // Single use: a new code is shown.
     expect(instance.code).not.toBe("111111");
+  });
+
+  it("gives the same session to the attempts that arrive together, and refuses it afterwards", () => {
+    const { instance, advance } = gate();
+    const first = instance.attempt("111111");
+    advance(300);
+    // The iPad tried several addresses of this computer at once: same code, a moment later.
+    expect(instance.attempt("111111")).toEqual(first);
+    advance(20_000);
     expect(instance.attempt("111111")).toEqual({ ok: false, code: "WRONG_CODE" });
+    // Revoking every iPad also forgets the grace.
+    const second = instance.attempt(instance.code);
+    expect(second.ok).toBe(true);
+    instance.revokeAll();
+    expect(instance.attempt("222222")).toEqual({ ok: false, code: "WRONG_CODE" });
   });
 
   it("rejects a wrong code, then replaces the code after too many tries", () => {

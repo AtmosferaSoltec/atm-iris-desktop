@@ -162,3 +162,26 @@ it("never contacts the feed when disabled in development or unsupported systems"
   expect((await service.check()).phase).toBe("disabled");
   expect(port.check).not.toHaveBeenCalled();
 });
+
+it("looks for an update on demand without touching the startup flow", async () => {
+  const { service, port, options } = fixture();
+  await service.check(); // startup: finds 0.5.0 and offers it
+  const before = service.status();
+  vi.mocked(port.check).mockResolvedValueOnce("0.6.0");
+  expect(await service.lookForUpdate()).toEqual({
+    currentVersion: "0.4.0",
+    latestVersion: "0.6.0",
+    isNewer: true,
+  });
+  expect(service.status()).toEqual(before);
+  vi.mocked(port.check).mockResolvedValueOnce("0.4.0");
+  expect((await service.lookForUpdate()).isNewer).toBe(false);
+  vi.mocked(port.check).mockRejectedValueOnce(new Error("sin red"));
+  await expect(service.lookForUpdate()).rejects.toThrow("No pudimos comprobar actualizaciones");
+  expect(options.reportError).toHaveBeenCalled();
+});
+
+it("does not look for updates in a copy that does not update", async () => {
+  const { service } = fixture(null, { isEnabled: false });
+  await expect(service.lookForUpdate()).rejects.toThrow("no se actualiza");
+});

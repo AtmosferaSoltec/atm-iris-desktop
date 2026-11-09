@@ -3,6 +3,12 @@ import { isNewerVersion, type UpdateStatus } from "@shared/schemas/updates";
 import type { ChannelName } from "@shared/ipc/contract";
 import type { SettingsRepository } from "../repositories/types";
 
+export type UpdateCheckResult = {
+  currentVersion: string;
+  latestVersion: string | null;
+  isNewer: boolean;
+};
+
 export interface UpdatePort {
   check(): Promise<string | null>;
   download(progress: (percent: number) => void): Promise<void>;
@@ -75,6 +81,32 @@ export class UpdateService {
       this.operation = null;
     });
     return this.operation;
+  }
+  /**
+   * "Buscar actualizaciones" in Ajustes: only asks the feed and reports, never touches the
+   * startup flow, so it cannot lock the console in the middle of a service. A newer version is
+   * then installed the next time Iris opens, through the usual mandatory screen.
+   */
+  async lookForUpdate(): Promise<UpdateCheckResult> {
+    const currentVersion = this.options.version;
+    if (!this.options.isEnabled)
+      throw new AppError("CONFLICT", "Esta copia de Iris no se actualiza por internet.");
+    if (this.state.phase === "installing")
+      throw new AppError("CONFLICT", "Iris ya se está actualizando.");
+    try {
+      const latest = await this.checkWithTimeout();
+      return {
+        currentVersion,
+        latestVersion: latest,
+        isNewer: isNewerVersion(latest, currentVersion),
+      };
+    } catch (error) {
+      this.options.reportError(error);
+      throw new AppError(
+        "OFFLINE",
+        "No pudimos comprobar actualizaciones. Revisa la conexión a internet.",
+      );
+    }
   }
   private async runCheck(): Promise<UpdateStatus> {
     this.change({ phase: "checking", message: null, progress: 0 });

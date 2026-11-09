@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.4
+
+- Control desde iPad: arreglado el error de «código incorrecto» que se repetía al escanear el QR cuando la computadora tiene varias direcciones de red (cable más adaptadores virtuales). Ahora todas las pruebas del iPad a la misma computadora comparten la misma vinculación.
+- Ajustes → Actualizaciones: botón «Buscar actualizaciones» que dice si hay una versión nueva sin interrumpir el servicio; para instalarla se cierra Iris y se abre de nuevo.
+
 ## 1.4.3
 
 - Diapositivas: con doble clic se muestra la diapositiva aunque «Limpiar pantalla» esté activo (la pantalla se destapa y la muestra).
