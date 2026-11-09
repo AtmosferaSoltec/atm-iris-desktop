@@ -63,7 +63,16 @@ export class RemoteServer {
   }
 
   async start(): Promise<void> {
+    // Two callers at once (the app opening and the iPad tool) must not start two servers.
     if (this.http) return;
+    return (this.starting ??= this.doStart().finally(() => {
+      this.starting = null;
+    }));
+  }
+
+  private starting: Promise<void> | null = null;
+
+  private async doStart(): Promise<void> {
     const http = createServer((_request, response) => {
       // Opening this address in the iPad's browser shows whether the computer can be reached at all
       // (a blocked firewall is the usual reason it cannot).
@@ -280,8 +289,14 @@ function listen(server: Server, port: number): Promise<void> {
 }
 
 function localAddresses(): string[] {
-  return Object.values(networkInterfaces())
-    .flat()
-    .filter((entry) => entry?.family === "IPv4" && !entry.internal)
-    .map((entry) => entry!.address);
+  return (
+    Object.values(networkInterfaces())
+      .flat()
+      // 169.254.x.x is a link-local address nobody can reach from the iPad.
+      .filter(
+        (entry) =>
+          entry?.family === "IPv4" && !entry.internal && !entry.address.startsWith("169.254."),
+      )
+      .map((entry) => entry!.address)
+  );
 }

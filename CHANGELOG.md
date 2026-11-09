@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.5
+
+- Control desde iPad: al conectarse un iPad, el QR se oculta («Conectar otro iPad» lo vuelve a mostrar) y el QR es más pequeño. Con esto el iPad ya no vuelve a leer el QR que acaba de usar, que era lo que producía el «código incorrecto» y las conexiones y desconexiones rápidas. Se evita arrancar dos servidores a la vez y se ignoran las direcciones 169.254.x.x.
+
 ## 1.4.4
 
 - Control desde iPad: arreglado el error de «código incorrecto» que se repetía al escanear el QR cuando la computadora tiene varias direcciones de red (cable más adaptadores virtuales). Ahora todas las pruebas del iPad a la misma computadora comparten la misma vinculación.

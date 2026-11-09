@@ -28,7 +28,7 @@ export function RemoteDialog({ onClose }: { onClose: () => void }) {
     if (!link) return;
     let isCurrent = true;
     // Dark on white with a quiet zone: the camera reads it even from a dim screen.
-    QRCode.toDataURL(link, { margin: 2, width: 360, errorCorrectionLevel: "M" }).then(
+    QRCode.toDataURL(link, { margin: 2, width: 220, errorCorrectionLevel: "M" }).then(
       (url) => isCurrent && setQr(url),
       (error) => toast.error(errorMessage(error)),
     );
@@ -38,6 +38,11 @@ export function RemoteDialog({ onClose }: { onClose: () => void }) {
   }, [link]);
 
   const count = status?.deviceCount ?? 0;
+  // The QR is for connecting: once another iPad joins it goes away (the camera has nothing left to
+  // read, and it is not left on the screen for the room to see). "Conectar otro iPad" brings it back.
+  const [baseline, setBaseline] = useState<number | null>(null);
+  if (status && baseline === null) setBaseline(status.deviceCount);
+  const isJustPaired = baseline !== null && count > baseline;
   return (
     <Dialog
       open
@@ -47,13 +52,22 @@ export function RemoteDialog({ onClose }: { onClose: () => void }) {
       size="md"
     >
       <div className="flex flex-col items-center gap-5 pb-6">
-        <div className="grid size-[360px] max-w-full place-items-center rounded-lg bg-white">
-          {qr && link ? (
-            <img src={qr} alt="Código QR para conectar el iPad" className="size-full" />
-          ) : (
-            <Spinner />
-          )}
-        </div>
+        {isJustPaired ? (
+          <div className="grid h-[220px] w-full max-w-[260px] place-items-center gap-3 rounded-lg bg-surface p-4 text-center">
+            <p className="text-sm font-medium">iPad conectado.</p>
+            <Button variant="secondary" onClick={() => setBaseline(count)}>
+              Conectar otro iPad
+            </Button>
+          </div>
+        ) : (
+          <div className="grid size-[220px] place-items-center rounded-lg bg-white">
+            {qr && link ? (
+              <img src={qr} alt="Código QR para conectar el iPad" className="size-full" />
+            ) : (
+              <Spinner />
+            )}
+          </div>
+        )}
         <p className="text-sm text-ink-2" aria-live="polite">
           {count === 0
             ? "Ningún iPad conectado."
