@@ -59,6 +59,17 @@ export function SongEditor({
   async function save(): Promise<void> {
     clearErrors();
     try {
+      // A new file name is applied only now, so Cancelar never leaves a renamed file behind.
+      const rename = track?.rename?.trim();
+      if (track && rename && rename !== track.audio.fileName.replace(/\.[^.]+$/, "")) {
+        try {
+          const renamed = await invoke("media:rename", { id: track.audio.id, name: rename });
+          setTrack({ kind: "audio", audio: renamed });
+        } catch (error) {
+          setError("audioId", { message: errorMessage(error) });
+          return;
+        }
+      }
       const input = parseInput(songFormSchema, {
         title,
         author,
@@ -179,7 +190,15 @@ export function SongEditor({
             error={errorFor("author", author)}
           />
         </div>
-        <TrackField track={track} onChange={setTrack} error={errorFor("audioId", trackId)} />
+        <TrackField
+          track={track}
+          onChange={(next) => {
+            setTrack(next);
+            clearErrors("audioId");
+          }}
+          songId={song?.id}
+          error={errorFor("audioId", trackId)}
+        />
         {backgrounds && (
           <SongBackgroundField
             backgrounds={backgrounds}

@@ -18,6 +18,7 @@ export function songsHandlers(
   | "songs:unarchive"
   | "songs:match-audio-preview"
   | "songs:match-audio-confirm"
+  | "media:choose-track"
 > {
   return {
     "songs:list": (input) => repository.list(input),
@@ -29,5 +30,6 @@ export function songsHandlers(
     "songs:unarchive": (id) => service.archive(id, false),
     "songs:match-audio-preview": () => audioMatch.preview(),
     "songs:match-audio-confirm": (input) => audioMatch.confirm(input),
+    "media:choose-track": ({ path, songId }) => service.chooseTrack(path, songId),
   };
 }

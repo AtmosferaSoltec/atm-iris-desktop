@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtemp, readFile, readdir, rm, unlink, writeFile, utimes } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createIrisHome, type IrisHome } from "../files/iris-home";
 import { createTestDatabase } from "../db/test-database";
 import type { SqliteDatabase } from "../db/sqlite";
@@ -177,4 +177,52 @@ it("rolls back an audio rename if the database update fails", async () => {
   update.mockRestore();
   expect(repository.get(original.asset.id)?.relativePath).toBe(original.relativePath);
   expect(await readdir(home.audioDir)).toEqual(["pista.mp3"]);
+});
+
+it("renames an audio file when only the letter case changes", async () => {
+  await writeFile(join(home.audioDir, "pista.mp3"), "audio bytes");
+  await service.scan();
+  const original = repository.all()[0].asset;
+  const renamed = await service.rename({ id: original.id, name: "Pista" });
+  expect(renamed).toMatchObject({ id: original.id, fileName: "Pista.mp3" });
+  expect(await readdir(home.audioDir)).toEqual(["Pista.mp3"]);
+  expect(await readFile(join(home.audioDir, "Pista.mp3"), "utf8")).toBe("audio bytes");
+});
+
+describe("choosing a song's track", () => {
+  it("copies a file from outside Iris and leaves the original alone", async () => {
+    const source = join(root, "Descargas", "Himno.mp3");
+    await mkdir(dirname(source), { recursive: true });
+    await writeFile(source, "audio bytes");
+    const choice = await service.chooseTrack(source);
+    expect(choice).toMatchObject({
+      isCopied: true,
+      asset: { fileName: "Himno.mp3", role: "track" },
+    });
+    expect(await readFile(join(home.audioDir, "Himno.mp3"), "utf8")).toBe("audio bytes");
+    expect(await readFile(source, "utf8")).toBe("audio bytes");
+  });
+  it("uses a file already in Iris/Audio as it is, without a duplicate", async () => {
+    await mkdir(join(home.audioDir, "Coros"));
+    const inside = join(home.audioDir, "Coros", "Aleluya.mp3");
+    await writeFile(inside, "audio bytes");
+    const first = await service.chooseTrack(inside);
+    expect(first).toMatchObject({ isCopied: false, asset: { fileName: "Aleluya.mp3" } });
+    const again = await service.chooseTrack(inside);
+    expect(again.asset.id).toBe(first.asset.id);
+    expect(await readdir(join(home.audioDir, "Coros"))).toEqual(["Aleluya.mp3"]);
+    expect(await readdir(home.audioDir)).toEqual(["Coros"]);
+  });
+  it("copies an MP3 kept in another Iris folder into Iris/Audio", async () => {
+    const sound = join(home.soundsDir, "campana.mp3");
+    await writeFile(sound, "audio bytes");
+    expect(await service.chooseTrack(sound)).toMatchObject({ isCopied: true });
+    expect(await readdir(home.audioDir)).toEqual(["campana.mp3"]);
+  });
+  it("refuses anything that is not an MP3", async () => {
+    const source = join(root, "pista.wav");
+    await writeFile(source, "audio bytes");
+    await expect(service.chooseTrack(source)).rejects.toThrow("Elige un archivo MP3.");
+    expect(await readdir(home.audioDir)).toEqual([]);
+  });
 });

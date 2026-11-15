@@ -48,6 +48,8 @@ import {
   mediaListSchema,
   mediaMeasuresSchema,
   mediaRoleChangeSchema,
+  trackChoiceSchema,
+  type TrackChoice,
 } from "../schemas/media";
 import { z } from "@shared/zod";
 import type {
@@ -291,6 +293,11 @@ export const contract = {
   ),
   "media:get": defineChannel("media:get", mediaIdSchema, z.custom<LocalMediaAsset>()),
   "media:import": defineChannel("media:import", mediaImportSchema, z.custom<LocalMediaAsset[]>()),
+  "media:choose-track": defineChannel(
+    "media:choose-track",
+    trackChoiceSchema,
+    z.custom<TrackChoice>(),
+  ),
   "media:set-measures": defineChannel(
     "media:set-measures",
     mediaMeasuresSchema,

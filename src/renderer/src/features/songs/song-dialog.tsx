@@ -24,6 +24,9 @@ export function SongDialog({
     queryFn: () => invoke("songs:get", songId!),
     enabled: Boolean(songId),
     staleTime: 0,
+    // The editor copies the song into its own state once, when it opens: a cached copy from an
+    // earlier opening would show what the song was before its last save (its audio included).
+    gcTime: 0,
   });
   const media = useQuery({
     queryKey: ["media", "backgrounds"],

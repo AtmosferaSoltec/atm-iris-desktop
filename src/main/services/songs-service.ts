@@ -2,6 +2,7 @@ import { AppError, parseInput } from "@shared/errors";
 import { createId } from "@shared/id";
 import type { Song } from "@shared/domain/models";
 import { songInputSchema } from "@shared/schemas/songs";
+import type { TrackChoice } from "@shared/schemas/media";
 import type { SongsRepository, MediaRepository } from "../repositories/types";
 import type { MediaService } from "./media-service";
 
@@ -59,6 +60,24 @@ export class SongsService {
       }
     }
     return { song, ...(warning ? { warning } : {}) };
+  }
+  /**
+   * Picks the file for a song's track. A track belongs to one song, so one already used by
+   * another song is refused here, when it is chosen, not later when the song is saved.
+   */
+  async chooseTrack(path: string, songId?: string): Promise<TrackChoice> {
+    const choice = await this.mediaService.chooseTrack(path);
+    const owner = choice.isCopied ? null : this.repository.audioOwner(choice.asset.id);
+    if (owner && owner !== songId) {
+      const title = this.repository.get(owner)?.title;
+      throw new AppError(
+        "CONFLICT",
+        title
+          ? `Ese audio ya es de «${title}». Elige otro archivo o quítaselo primero a esa canción.`
+          : "Ese audio ya es de otra canción. Elige otro archivo.",
+      );
+    }
+    return choice;
   }
   async delete(id: string): Promise<void> {
     const song = this.get(id);

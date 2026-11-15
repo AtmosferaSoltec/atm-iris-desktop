@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6
+
+- Canciones: un solo botón para agregar el audio («Elegir archivo MP3» o arrastrarlo). El MP3 se copia a la carpeta de Iris y el original queda donde estaba; si ya estaba en la carpeta de Iris, se usa sin duplicarlo. Si ese audio ya es de otra canción, se avisa al elegirlo (con el nombre de la canción) y no al guardar.
+- Canciones: el editor ya no se abre con datos viejos justo después de guardar; el nuevo nombre de un audio se aplica al pulsar «Guardar» (no si se cancela), se puede renombrar cambiando solo mayúsculas, y «Reintentar» vuelve a copiar el archivo si la copia falla.
+
 ## 1.4.5
 
 - Control desde iPad: al conectarse un iPad, el QR se oculta («Conectar otro iPad» lo vuelve a mostrar) y el QR es más pequeño. Con esto el iPad ya no vuelve a leer el QR que acaba de usar, que era lo que producía el «código incorrecto» y las conexiones y desconexiones rápidas. Se evita arrancar dos servidores a la vez y se ignoran las direcciones 169.254.x.x.

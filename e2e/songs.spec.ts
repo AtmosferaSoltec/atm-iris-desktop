@@ -1,5 +1,5 @@
 import { silentMp3 } from "./audio-fixture";
-import { writeFile, stat } from "node:fs/promises";
+import { readdir, writeFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { launchApp } from "./helpers";
@@ -72,10 +72,16 @@ test("imports a local track and renames it safely and trashes it when the song i
     await page.getByText("Solo pista local", { exact: true }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Editar canción", exact: true }).click();
     editor = page.getByRole("dialog", { name: "Solo pista local", exact: true });
+    await editor.getByRole("button", { name: "Renombrar el audio", exact: true }).click();
     await editor.getByLabel("Nombre del archivo de audio", { exact: true }).fill("Renamed audio");
-    await editor.getByRole("button", { name: "Renombrar", exact: true }).click();
-    await expect(editor.getByText("Renamed audio.mp3", { exact: true })).toBeVisible();
+    // The new name waits for Guardar: nothing changes on disk before.
+    expect((await stat(join(instance.home, "Audio", "fixture.mp3"))).isFile()).toBe(true);
+    await editor.getByRole("button", { name: "Guardar", exact: true }).click();
+    await expect(editor).toHaveCount(0);
     expect((await stat(join(instance.home, "Audio", "Renamed audio.mp3"))).isFile()).toBe(true);
+    await page.getByText("Solo pista local", { exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Editar canción", exact: true }).click();
+    await expect(editor.getByText("Renamed audio.mp3", { exact: true })).toBeVisible();
     await expect(stat(join(instance.home, "Audio", "fixture.mp3"))).rejects.toMatchObject({
       code: "ENOENT",
     });
@@ -126,6 +132,25 @@ test("discards an imported audio when it is removed or its draft is cancelled", 
       )
       .toBe(false);
     expect((await stat(source)).isFile()).toBe(true);
+  } finally {
+    await instance.close();
+  }
+});
+
+test("uses an audio already in the Iris folder without copying it, and keeps it on cancel", async () => {
+  const instance = await launchApp();
+  try {
+    const inside = join(instance.home, "Audio", "ya en iris.mp3");
+    await writeFile(inside, silentMp3());
+    const page = await instance.app.firstWindow();
+    await page.getByRole("button", { name: "Nueva canción", exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "Nueva canción", exact: true });
+    await editor.locator('input[type="file"]').setInputFiles(inside);
+    await expect(editor.getByText("ya en iris.mp3", { exact: true })).toBeVisible();
+    expect(await readdir(join(instance.home, "Audio"))).toEqual(["ya en iris.mp3"]);
+    await editor.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await expect(editor).toHaveCount(0);
+    expect((await stat(inside)).isFile()).toBe(true);
   } finally {
     await instance.close();
   }

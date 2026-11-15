@@ -1,5 +1,4 @@
-import { AudioPickerDialog } from "./audio-picker-dialog";
-import { Pause, Play, RotateCw, X } from "lucide-react";
+import { FileAudio, Pause, Pencil, Play, RotateCw, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Button, IconButton } from "@renderer/components/ui/button";
 import { Field } from "@renderer/components/ui/field";
@@ -7,133 +6,153 @@ import { Spinner } from "@renderer/components/ui/spinner";
 import { TextField } from "@renderer/components/ui/text-field";
 import { toast } from "@renderer/components/ui/toaster";
 import type { MediaAsset } from "@shared/domain/models";
+import { AppError, errorMessage } from "@shared/errors";
 import { fileFacts } from "@renderer/features/media/media-format";
-import { useMediaUpload } from "@renderer/features/media/upload/use-media-upload";
+import { assetUrl } from "@renderer/features/media/upload/use-media-upload";
+import { measureMediaUrl } from "@renderer/features/media/upload/measure";
 import { cn } from "@renderer/lib/cn";
 import { clock } from "@shared/lib/format";
 import { invoke } from "@renderer/lib/ipc";
-import { errorMessage } from "@shared/errors";
 import { useTrackPlayer } from "../use-track-player";
 
-import { IMPORT_STATUS_TEXT as STATUS_TEXT } from "@renderer/features/media/messages";
-
-export type Track = { kind: "audio"; audio: MediaAsset };
+/** A song's track. `rename` is a new file name the person typed: it is applied when the song is saved. */
+export type Track = { kind: "audio"; audio: MediaAsset; rename?: string };
 
 type Props = {
   track: Track | null;
   onChange: (track: Track | null) => void;
+  /** The song being edited, so its own track is not refused as "already used". */
+  songId?: string;
   error?: string;
 };
 
-export function TrackField({ track, onChange, error }: Props) {
+type Work =
+  | { status: "idle" }
+  | { status: "copying"; fileName: string; percent: number | null }
+  | { status: "error"; message: string; retry: File | null };
+
+const baseName = (fileName: string): string => fileName.replace(/\.[^.]+$/, "");
+
+/**
+ * One way to give a song its audio: pick or drop an MP3 from anywhere. Main keeps every track in
+ * Iris/Audio: a file already there is used as it is, anything else is copied in and the original is
+ * left where it was.
+ */
+export function TrackField({ track, onChange, songId, error }: Props) {
   const player = useTrackPlayer();
-  const importedTracks = useRef(new Set<string>());
+  // Copies made while this editor is open: if the song is not saved with them, they go to the trash.
+  const copiedTracks = useRef(new Set<string>());
   const isOpen = useRef(true);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [work, setWork] = useState<Work>({ status: "idle" });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(track?.rename !== undefined);
+  const isBusy = work.status === "copying";
+  const audio = track?.audio ?? null;
+  const isMissing = Boolean(audio && "isMissing" in audio && audio.isMissing);
+
   useEffect(() => {
     isOpen.current = true;
-    const ids = importedTracks.current;
+    const ids = copiedTracks.current;
     return () => {
       isOpen.current = false;
       for (const id of ids)
-        void invoke("media:discard-track", id).catch((error) => toast.error(errorMessage(error)));
+        void invoke("media:discard-track", id).catch((cause) => toast.error(errorMessage(cause)));
     };
   }, []);
+
+  useEffect(
+    () =>
+      window.iris.onEvent("media:import-progress", (progress) => {
+        setWork((current) =>
+          current.status === "copying" && current.fileName === progress.fileName
+            ? {
+                ...current,
+                percent: Math.round((progress.completedBytes / progress.totalBytes) * 100),
+              }
+            : current,
+        );
+      }),
+    [],
+  );
+
+  function discard(id: string) {
+    void invoke("media:discard-track", id).catch((cause) => toast.error(errorMessage(cause)));
+  }
+
   function replaceTrack(next: Track | null) {
     const previousId = track?.audio.id;
-    if (previousId && previousId !== next?.audio.id && importedTracks.current.has(previousId))
-      void invoke("media:discard-track", previousId).catch((error) =>
-        toast.error(errorMessage(error)),
-      );
-    setAudioName("");
+    if (previousId && previousId !== next?.audio.id && copiedTracks.current.has(previousId)) {
+      copiedTracks.current.delete(previousId);
+      discard(previousId);
+    }
+    setIsRenaming(false);
     onChange(next);
   }
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isChoosingAudio, setIsChoosingAudio] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [audioName, setAudioName] = useState("");
-  const upload = useMediaUpload("track", {
-    onUploaded: async (asset) => {
-      if (!isOpen.current) {
-        await invoke("media:discard-track", asset.id);
-        return;
-      }
-      player.stop();
-      importedTracks.current.add(asset.id);
-      replaceTrack({ kind: "audio", audio: asset });
-      toast.success("Pista lista. Guarda la canción para conservarla.");
-    },
-  });
-  const item = upload.items.at(-1);
-  const isUploading = upload.isImporting;
-  const audio = track?.kind === "audio" ? track.audio : null;
 
-  function choose(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
+  async function choose(file: File | undefined) {
+    if (!file || isBusy) return;
     if (!/\.mp3$/i.test(file.name)) {
-      toast.error("Elige un archivo MP3.");
+      setWork({ status: "error", message: "Elige un archivo MP3.", retry: null });
       return;
     }
-    for (const previous of upload.items) upload.onDismiss(previous.id);
-    void upload.importFiles([file]);
+    setWork({ status: "copying", fileName: file.name, percent: null });
+    try {
+      const result = await window.iris.chooseTrack(file, songId);
+      if (!result.ok)
+        throw new AppError(result.error.code, result.error.message, result.error.fields);
+      const { isCopied } = result.data;
+      let asset = result.data.asset;
+      if (!isOpen.current) {
+        if (isCopied) discard(asset.id);
+        return;
+      }
+      if (isCopied) copiedTracks.current.add(asset.id);
+      if (asset.durationSeconds === null) {
+        const measures = await measureMediaUrl(assetUrl(asset.id), "audio");
+        asset = await invoke("media:set-measures", { id: asset.id, ...measures });
+      }
+      player.stop();
+      replaceTrack({ kind: "audio", audio: asset });
+      setWork({ status: "idle" });
+      toast.success(
+        isCopied
+          ? "Audio copiado a la carpeta de Iris. El archivo original sigue donde estaba."
+          : "Ese audio ya estaba en la carpeta de Iris: se usa sin copiarlo otra vez.",
+      );
+    } catch (cause) {
+      setWork({ status: "error", message: errorMessage(cause), retry: file });
+    }
   }
 
   function onDrop(event: DragEvent) {
     event.preventDefault();
     setIsDragging(false);
-    if (!isUploading) choose(event.dataTransfer.files);
+    void choose(event.dataTransfer.files[0]);
   }
 
-  const picker = (
-    <input
-      ref={fileInput}
-      type="file"
-      accept=".mp3,audio/mpeg"
-      className="sr-only"
-      tabIndex={-1}
-      aria-hidden
-      onChange={(event) => {
-        choose(event.target.files);
-        event.target.value = "";
-      }}
-    />
-  );
+  const openPicker = () => fileInput.current?.click();
+  const playState = audio ? player.stateOf(audio.id) : "idle";
 
   return (
     <Field id="track" label="Pista" error={error}>
-      {isChoosingAudio && (
-        <AudioPickerDialog
-          onClose={() => setIsChoosingAudio(false)}
-          onPick={(asset) => {
-            player.stop();
-            replaceTrack({ kind: "audio", audio: asset });
-          }}
-        />
-      )}
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isUploading}
-          onClick={() => setIsChoosingAudio(true)}
-        >
-          Elegir audio de Iris
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isUploading}
-          onClick={() => fileInput.current?.click()}
-        >
-          Elegir archivo MP3
-        </Button>
-      </div>
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".mp3,audio/mpeg"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(event) => {
+          void choose(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
       <input type="hidden" name="audioId" value={audio?.id ?? ""} />
       <div
         onDragOver={(event) => {
           event.preventDefault();
-          setIsDragging(true);
+          if (!isBusy) setIsDragging(true);
         }}
         onDragLeave={(event) => {
           if (event.currentTarget === event.target) setIsDragging(false);
@@ -143,34 +162,33 @@ export function TrackField({ track, onChange, error }: Props) {
           "rounded-md border border-line bg-surface transition-colors",
           isDragging && "border-coral",
           error && "border-danger/80",
+          !audio && !isBusy && "border-dashed",
         )}
       >
-        {isUploading ? (
+        {isBusy ? (
           <div className="flex items-center gap-3 p-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-sm bg-success/14 text-success">
               <Spinner className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{item?.title ?? "Pista"}</p>
-              <p className="text-xs text-ink-2">
-                {item ? STATUS_TEXT[item.status] : "Preparando…"}
+              <p className="truncate text-sm font-semibold">{work.fileName}</p>
+              <p className="text-xs text-ink-2 tabular-nums">
+                Copiando a la carpeta de Iris…{work.percent !== null && ` ${work.percent} %`}
               </p>
             </div>
           </div>
         ) : audio ? (
           <div className="flex items-center gap-3 p-3">
             <IconButton
-              label={
-                player.stateOf(audio.id) === "playing" ? "Pausar la pista" : "Escuchar la pista"
-              }
-              isActive={player.stateOf(audio.id) === "playing"}
-              disabled={player.stateOf(audio.id) === "loading"}
+              label={playState === "playing" ? "Pausar la pista" : "Escuchar la pista"}
+              isActive={playState === "playing"}
+              disabled={playState === "loading" || isMissing}
               onClick={() => void player.toggle(audio)}
               className="text-success"
             >
-              {player.stateOf(audio.id) === "loading" ? (
+              {playState === "loading" ? (
                 <Spinner className="size-4" />
-              ) : player.stateOf(audio.id) === "playing" ? (
+              ) : playState === "playing" ? (
                 <Pause />
               ) : (
                 <Play />
@@ -179,10 +197,25 @@ export function TrackField({ track, onChange, error }: Props) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{audio.fileName}</p>
               <p className="truncate text-xs text-ink-2">
-                {fileFacts(audio)}
-                {audio.durationSeconds !== null && ` · ${clock(audio.durationSeconds)}`}
+                {isMissing
+                  ? "No encontramos el archivo en la carpeta de Iris. Elige el MP3 otra vez."
+                  : `${fileFacts(audio)}${audio.durationSeconds !== null ? ` · ${clock(audio.durationSeconds)}` : ""}`}
               </p>
             </div>
+            <IconButton
+              label="Renombrar el audio"
+              isActive={isRenaming}
+              onClick={() => {
+                if (isRenaming) onChange({ kind: "audio", audio });
+                else onChange({ kind: "audio", audio, rename: baseName(audio.fileName) });
+                setIsRenaming(!isRenaming);
+              }}
+            >
+              <Pencil />
+            </IconButton>
+            <Button variant="ghost" size="sm" onClick={openPicker}>
+              Cambiar
+            </Button>
             <IconButton
               label="Quitar la pista"
               onClick={() => {
@@ -194,59 +227,52 @@ export function TrackField({ track, onChange, error }: Props) {
             </IconButton>
           </div>
         ) : (
-          <p className="p-3 text-center text-xs text-ink-2">Arrastra un MP3 aquí</p>
+          <div className="flex flex-col items-center gap-2 p-4 text-center">
+            <FileAudio className="size-5 text-ink-2" aria-hidden />
+            <p className="text-sm">Arrastra un MP3 aquí</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Upload className="size-4" />}
+              onClick={openPicker}
+            >
+              Elegir archivo MP3
+            </Button>
+          </div>
         )}
       </div>
-      {audio && (
-        <div className="flex items-end gap-2">
-          <TextField
-            id="audio-name"
-            label="Nombre del archivo de audio"
-            placeholder={audio.fileName.replace(/\.[^.]+$/, "")}
-            value={audioName}
-            onChange={(event) => setAudioName(event.target.value)}
-            containerClassName="min-w-0 flex-1"
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!audioName.trim()}
-            isLoading={isRenaming}
-            onClick={async () => {
-              setIsRenaming(true);
-              player.stop();
-              try {
-                const renamed = await invoke("media:rename", { id: audio.id, name: audioName });
-                onChange({ kind: "audio", audio: renamed });
-                setAudioName("");
-                toast.success("Nombre del audio actualizado");
-              } catch (error) {
-                toast.error(errorMessage(error));
-              } finally {
-                setIsRenaming(false);
-              }
-            }}
-          >
-            Renombrar
-          </Button>
-        </div>
+      {audio && isRenaming && (
+        <TextField
+          id="audio-name"
+          label="Nombre del archivo de audio"
+          hint="El archivo se renombra al guardar la canción."
+          placeholder={baseName(audio.fileName)}
+          value={track?.rename ?? ""}
+          onChange={(event) => onChange({ kind: "audio", audio, rename: event.target.value })}
+        />
       )}
-      {item?.status === "error" && (
+      {work.status === "error" ? (
         <p role="alert" className="flex items-center gap-2 text-xs font-medium text-danger">
-          {item.error}
-          {item.canRetry && (
+          {work.message}
+          {work.retry && (
             <Button
               variant="ghost"
               size="sm"
               icon={<RotateCw className="size-3.5" />}
-              onClick={() => void upload.importFiles()}
+              onClick={() => void choose(work.retry ?? undefined)}
             >
               Reintentar
             </Button>
           )}
         </p>
+      ) : (
+        !audio &&
+        !isBusy && (
+          <p className="text-xs text-ink-2">
+            Iris guarda una copia en su carpeta de audios; el archivo original no se toca.
+          </p>
+        )
       )}
-      {picker}
     </Field>
   );
 }

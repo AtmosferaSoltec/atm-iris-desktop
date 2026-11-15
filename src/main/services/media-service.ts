@@ -1,8 +1,8 @@
 import { createReadStream, existsSync } from "node:fs";
-import { link, open, readdir, stat, statfs, unlink } from "node:fs/promises";
+import { link, open, readdir, realpath, rename, stat, statfs, unlink } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
-import { basename, dirname, extname } from "node:path";
+import { basename, dirname, extname, isAbsolute, relative, sep } from "node:path";
 import type { z } from "@shared/zod";
 import type {
   LocalMediaAsset,
@@ -185,6 +185,37 @@ export class MediaService {
       );
     }
   }
+  /**
+   * The one way a song gets its track: a file already in Iris/Audio is used as it is (no
+   * duplicate), anything else is copied in and the original is left alone.
+   */
+  async chooseTrack(source: string): Promise<{ asset: LocalMediaAsset; isCopied: boolean }> {
+    if (!/\.mp3$/i.test(source))
+      throw new AppError("FILE_TYPE_UNSUPPORTED", "Elige un archivo MP3.");
+    const relativePath = await this.audioPathOf(source);
+    if (relativePath) {
+      const find = (): MediaEntry | undefined =>
+        this.repository.all().find((entry) => entry.relativePath === relativePath);
+      let entry = find();
+      if (!entry || entry.asset.isMissing) {
+        await this.scan();
+        entry = find();
+      }
+      if (entry) return { asset: entry.asset, isCopied: false };
+    }
+    return { asset: await this.importFile(source, "track"), isCopied: true };
+  }
+  /** The file's path relative to the Iris home when it lives inside Iris/Audio, else null. */
+  private async audioPathOf(source: string): Promise<string | null> {
+    try {
+      const [file, folder] = await Promise.all([realpath(source), realpath(this.folder("audio"))]);
+      const inside = relative(folder, file);
+      if (!inside || inside.startsWith("..") || isAbsolute(inside)) return null;
+      return `${mediaFolder("track", "audio")}/${inside.split(sep).join("/")}`;
+    } catch {
+      return null;
+    }
+  }
   async setMeasures(input: z.infer<typeof mediaMeasuresSchema>): Promise<LocalMediaAsset> {
     const entry = this.getEntry(input.id);
     const next = {
@@ -252,28 +283,43 @@ export class MediaService {
     const source = this.home.resolveInside(entry.relativePath);
     const destination = this.home.resolveInside(nextPath);
     const siblings = await readdir(this.home.resolveInside(directory));
-    if (siblings.some((candidate) => candidate.toLowerCase() === fileName.toLowerCase()))
+    if (
+      siblings.some(
+        (candidate) =>
+          candidate !== entry.asset.fileName && candidate.toLowerCase() === fileName.toLowerCase(),
+      )
+    )
       throw new AppError("CONFLICT", "Ya existe un archivo con ese nombre. Elige otro.");
+    // Only the letter case changes: on Windows both names are the same file, so a link would
+    // collide with itself. A plain rename is safe because no other file has that name.
+    const isCaseOnly = entry.asset.fileName.toLowerCase() === fileName.toLowerCase();
     this.activeImports.add(entry.relativePath);
     this.activeImports.add(nextPath);
     let hasLinked = false;
+    let hasRenamed = false;
     let hasUpdated = false;
     try {
-      // Exclusive linking refuses collisions without ever overwriting another audio file.
-      await link(source, destination);
-      hasLinked = true;
+      if (isCaseOnly) {
+        await rename(source, destination);
+        hasRenamed = true;
+      } else {
+        // Exclusive linking refuses collisions without ever overwriting another audio file.
+        await link(source, destination);
+        hasLinked = true;
+      }
       this.repository.update({
         ...entry,
         relativePath: nextPath,
         asset: { ...entry.asset, fileName, title: name, updatedAt: new Date().toISOString() },
       });
       hasUpdated = true;
-      await unlink(source);
+      if (!isCaseOnly) await unlink(source);
       this.changed();
       return this.get(input.id);
     } catch (error) {
       if (hasUpdated) this.repository.update(entry);
       if (hasLinked) await unlink(destination).catch(() => {});
+      if (hasRenamed) await rename(destination, source).catch(() => {});
       if (error instanceof AppError) throw error;
       throw new AppError(
         "INTERNAL",

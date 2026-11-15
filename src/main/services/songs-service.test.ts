@@ -158,3 +158,21 @@ it("requires MP3 for new tracks and preserves an existing legacy local track", a
   });
   expect(saved.song.audio?.id).toBe(audio.id);
 });
+
+it("refuses, when it is chosen, a track that already belongs to another song", async () => {
+  const inside = join(media.home.audioDir, "Cristo vive.mp3");
+  await writeFile(inside, "audio");
+  const first = await service.chooseTrack(inside);
+  const owner = await service.save(null, {
+    ...input,
+    title: "Cristo vive",
+    audioId: first.asset.id,
+  });
+  await expect(service.chooseTrack(inside)).rejects.toThrow(
+    "Ese audio ya es de «Cristo vive». Elige otro archivo o quítaselo primero a esa canción.",
+  );
+  expect((await service.chooseTrack(inside, owner.song.id)).asset.id).toBe(first.asset.id);
+  const outside = join(root, "Cristo vive.mp3");
+  await writeFile(outside, "audio");
+  expect(await service.chooseTrack(outside)).toMatchObject({ isCopied: true });
+});

@@ -25,6 +25,18 @@ contextBridge.exposeInMainWorld("iris", {
       ipcRenderer.removeListener(name, handler);
     };
   },
+  // The renderer hands over a File the person picked or dropped; only here does it become a path.
+  "media:choose-track": () =>
+    Promise.resolve({
+      ok: false,
+      error: { code: "VALIDATION_FAILED", message: "No se permite esta solicitud." },
+    }),
+  chooseTrack(file: File, songId?: string) {
+    return ipcRenderer.invoke("media:choose-track", {
+      path: webUtils.getPathForFile(file),
+      ...(songId ? { songId } : {}),
+    });
+  },
   importDropped(files: File[], role: MediaRole) {
     return ipcRenderer.invoke("media:import", {
       role,

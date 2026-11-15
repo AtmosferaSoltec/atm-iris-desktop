@@ -1,5 +1,6 @@
 import { SOUND_ICON_KEYS } from "@shared/domain/sounds";
 import { z } from "@shared/zod";
+import type { LocalMediaAsset } from "@shared/domain/models";
 
 export const mediaRoleSchema = z.enum(["library", "background", "track", "sound"]);
 export const mediaIdSchema = z.string().uuid("Ese archivo no existe.");
@@ -17,6 +18,12 @@ export const mediaImportSchema = z.object({
   role: mediaRoleSchema,
   paths: z.array(z.string().min(1)).max(100).optional(),
 });
+/** A song's track, chosen as a file: main reuses it when it is already in Iris/Audio, else copies it. */
+export const trackChoiceSchema = z.object({
+  path: z.string().min(1).max(4096),
+  songId: z.string().uuid().optional(),
+});
+export type TrackChoice = { asset: LocalMediaAsset; isCopied: boolean };
 export const mediaMeasuresSchema = z.object({
   id: mediaIdSchema,
   durationSeconds: z.number().finite().min(0).max(86400).nullable(),
